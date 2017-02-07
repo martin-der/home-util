@@ -1,0 +1,1 @@
+Le voisin {yellow{a dit quelque chose que l'{underline{on {bold{peut}} traduire}} par "{red{c'est de la faute à {blue{Rousseau}} et {green{Voltaire}}... rien de plus}}"}}. Mais il était saoul.
