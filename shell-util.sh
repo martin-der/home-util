@@ -162,13 +162,20 @@ function log_error()  {
 mdu_getTextDecoration() {
 	local prefix="_mdu_text_decoration__"
 	local i="${prefix}$1"
-	echo -n -e "${!i}"
+	#[ -z ${i} ] && 
+	echo -n -e "${!i-}"
 }
 mdu_setTextDecoration() {
 	local prefix="_mdu_text_decoration__"
 	local i="${prefix}$1"
 	read -d"\0" "$i" <<<"$2"
 }
+mdu_unsetTextDecoration() {
+	local prefix="_mdu_text_decoration__"
+	local i="${prefix}$1"
+	unset "$i"
+}
+
 
 function _decorationBiggestGroup() {
 	sed "s#^\([^{]*\){\([a-zA-Z\-]*\){\(.*\)}}\([^}]*\)\$#\\$2#" <<< "$1"
