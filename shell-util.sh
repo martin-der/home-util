@@ -170,6 +170,11 @@ mdu_setTextDecoration() {
 	local i="${prefix}$1"
 	read -d"\0" "$i" <<<"$2"
 }
+mdu_isSetTextDecoration() {
+	local prefix="_mdu_text_decoration__"
+	local i="${prefix}$1"
+	[ -z ${i} ] && return 1 || return 0
+}
 mdu_unsetTextDecoration() {
 	local prefix="_mdu_text_decoration__"
 	local i="${prefix}$1"
@@ -184,6 +189,10 @@ function _decorationFirstGroup() {
 	sed "s#^\([^{]*\){\([a-zA-Z\-]*\){\([^{]*\)}}\(.*\)\$#\\$2#" <<< "$1"
 }
 function _echoDecorationValue() {
+	mdu_isSetTextDecoration "$1" && {
+		mdu_getTextDecoration "$1"
+		return 0
+	}
 	case "$1" in 
 		"red") echo -e -n "$RED" ;;
 		"green") echo -e -n "$GREEN" ;;
@@ -193,8 +202,9 @@ function _echoDecorationValue() {
 		"italic") echo -e -n "$FONT_STYLE_ITALIC" ;;
 		"strike") echo -e -n "$FONT_STYLE_STRIKE" ;;
 		"underline") echo -e -n "$FONT_STYLE_UNDERLINE" ;;
-		*) mdu_getTextDecoration "$1" ;;
-	esac 
+		*) return 1 ;;
+	esac
+	return 0
 }
 function decorate()  {
 	decorate_n "$1" "${2:-}"
@@ -257,7 +267,7 @@ function line_isEmpty() {
 
 # Param 1  : key
 # StdInput : text to be searched in 
-function properties_find {
+function find_property {
 	KEY="$1"
 	while read l ; do
 		line_isComment_withSharp "$l" && continue
@@ -271,6 +281,11 @@ function properties_find {
 		fi
 	done
 	return 1
+}
+# Deprecated : use find_property
+function properties_find {
+	find_property $@
+	return $?
 }
 
 function line_KeyValue_getKey() {
