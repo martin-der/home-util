@@ -23,26 +23,39 @@ animal=lion
 state=idle
 age=11"
 
+properties_3="food=apple
+ foo   = apple
+  animal =cow
+ state   = idle   
+age=11"
+
+
 
 testFindFirstProperty() {
-	local animal="$(echo "$properties" | find_property "animal")"
-	assertEquals $? 0
-	assertEquals lion "$animal"
-}
-
-testFindProperty() {
 	local food="$(echo "$properties" | find_property "food")"
 	assertEquals $? 0
 	assertEquals apple "$food"
 }
 
+testFindProperty() {
+	local animal="$(echo "$properties" | find_property "animal")"
+	assertEquals $? 0
+	assertEquals lion "$animal"
+}
+
 testDontFindPropertyInComment() {
-	local color="$(echo "$properties" | find_property "#color")"
-	assertNotEquals $? 0
+	local color="$(echo "$properties_2" | find_property "#color")"
+	assertFalse "find_property '#color'" "[$? -eq 1]"
 	assertEquals "" "$color"
 	color="$(echo "$properties" | find_property "color")"
-	assertNotEquals $? 0
+	assertFalse "find_property 'color'" "[$? -eq 1]"
 	assertEquals "" "$color"
+}
+
+testFindPropertyWhitSpacesInKeys() {
+	local animal="$(echo "$properties_3" | find_property "animal")"
+	assertEquals $? 0
+	assertEquals cow "$animal"
 }
 
 
