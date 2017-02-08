@@ -32,6 +32,11 @@ DRY_MODE=0
 
 TAG=""
 
+MDU_HUMAN_MODE=${MDU_HUMAN_MODE:-1}
+MDU_NO_COLOR=${MDU_NO_COLOR:-0}
+MDU_LOG_TAG=${MDU_LOG_TAG:-}
+
+
 if test "x$MDU_HUMAN_MODE" != x
 then
 	HUMAN_MODE="$MDU_HUMAN_MODE"
@@ -206,8 +211,8 @@ function decorate_n()  {
 		local decoration=$(_echoDecorationValue "$key")
 		echo -e -n "$decoration"
 		echo -e -n "$content"
-		echo -e -n "$previousDecoration"
-		decorate_n "$post" "$previousDecoration"
+		echo -e -n "AAA$previousDecoration"
+		decorate_n "$post" "BBB$previousDecoration"
 		return
 	}
 
