@@ -162,7 +162,7 @@ mdu_getTextDecoration() {
 mdu_setTextDecoration() {
 	local prefix="_mdu_text_decoration__"
 	local i="${prefix}$1"
-	read -d"\0" $arg <<<"$2"
+	read -d"\0" "$i" <<<"$2"
 }
 
 function _decorationBiggestGroup() {
@@ -185,7 +185,7 @@ function _echoDecorationValue() {
 	esac 
 }
 function decorate()  {
-	decorate_n "$1" "$2"
+	decorate_n "$1" "${2:-}"
 	echo
 }
 function decorate_n()  {
