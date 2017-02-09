@@ -388,7 +388,7 @@ function uninstallAlternative() {
 	DESTINATION="${APP_DIR}/${ALTERNATIVE}"
 
 
-	$DRYDO rm -rf "$DESTINATION"  || exit $ERROR_EXECUTION_FAILED
+	$DRYDO rm -rf "$DESTINATION" || exit $ERROR_EXECUTION_FAILED
 	
 	log_info "Alternative '$ALTERNATIVE' (in '$DESTINATION') for application '$APPLICATION' was uninstalled"
 }
@@ -396,7 +396,7 @@ function uninstallAlternative() {
 function listApplications() {
 	APPS_DIR_escaped="$(escaped_for_regex "$APPS_DIR")"
 	find "${APPS_DIR}" -maxdepth 1 -type d -name '*.d' | while read appdir ; do
-		echo "$appdir" | sed "s#^${APPS_DIR_escaped}/\(.*\)\.d\$#\1#"
+		sed "s#^${APPS_DIR_escaped}/\(.*\)\.d\$#\1#" <<< "$appdir"
 	done
 }
 

@@ -74,7 +74,7 @@ testInstallAlternativeFromZip() {
 testInstallAlternativeFromDirectory() {
 	./opt-admin.sh create foo-app
 	assertEquals 0 $?
-	./opt-admin.sh install foo-app "$RESOURCES_DIR/foobix" 
+	./opt-admin.sh install foo-app "$RESOURCES_DIR/foobix"
 	assertEquals 0 $?
 	output="$("$TMP_DIR/foo-app.d/foobix/bin/foobix")"
 	assertEquals 0 $?
