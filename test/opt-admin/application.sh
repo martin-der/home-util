@@ -8,7 +8,7 @@ test_root_dir="${root_dir}/test"
 
 oneTimeSetUp() {
 	. "${root_dir}/shell-util.sh" || exit 1
-	export MDU_LOG_LEVEL=info
+	export MDU_LOG_LEVEL=debug
 	RESOURCES_DIR="${test_root_dir}/resources"
 }
 
@@ -24,75 +24,79 @@ tearDown() {
 
 testCreateApplication() {
 	./opt-admin.sh create foo-app
-	assertEquals $? 0
+	assertEquals 0 $?
 	assertTrue "Directory '$MDU_OPT_DIRECTORY/foo-app.d' has been created" "[ -d \"$MDU_OPT_DIRECTORY/foo-app.d\" ]"
 }
 
 
 testFailToInstallAlternativeWithoutSource() {
 	./opt-admin.sh create foo-app
-	assertEquals $? 0
+	assertEquals 0 $?
 	./opt-admin.sh install foo-app
-	assertNotSame $? 0
+	assertNotSame 0 $?
 }
-testFailToInstallSameAlternative() {
+testFailToCreateSameApplication() {
 	./opt-admin.sh create foo-app
-	assertEquals $? 0
+	assertEquals 0 $?
 	./opt-admin.sh create foo-app
-	assertNotSame $? 0
-}
-
-testInstallAlternativeFromDirectory() {
-	./opt-admin.sh create foo-app
-	assertEquals $? 0
-	./opt-admin.sh install foo-app "$RESOURCES_DIR/foobix"
-	assertEquals $? 0
-	output="$(grep "Known bugs" "$TMP_DIR/foo-app.d/foobix/README.md")"
-	assertEquals $? 0
-	assertEquals "foobix's readme contains 'Known Bugs'" "## Known bugs" "$output"
+	assertNotSame 0 $?
 }
 
 testInstallAlternativeFromTarGz() {
 	./opt-admin.sh create foo-app
-	assertEquals $? 0
+	assertEquals 0 $?
 	./opt-admin.sh install foo-app "$RESOURCES_DIR/foobix.tar.gz"
-	assertEquals $? 0
+	assertEquals 0 $?
 	output="$("$TMP_DIR/foo-app.d/foobix/bin/foobix")"
-	assertEquals $? 0
+	assertEquals 0 $?
 	assertEquals "Result of foobix is 'foobax'" "foobax" "$output"
 }
 testInstallNamedAlternativeFromTarGz() {
 	./opt-admin.sh create foo-app
-	assertEquals $? 0
+	assertEquals 0 $?
 	./opt-admin.sh install foo-app "$RESOURCES_DIR/foobix.tar.gz" foobix-v0
-	assertEquals $? 0
+	assertEquals 0 $?
 	output="$("$TMP_DIR/foo-app.d/foobix-v0/bin/foobix")"
-	assertEquals $? 0
+	assertEquals 0 $?
 	assertEquals "Result of foobix is 'foobax'" "foobax" "$output"
 }
 
 testInstallAlternativeFromZip() {
 	./opt-admin.sh create foo-app
-	assertEquals $? 0
+	assertEquals 0 $?
 	./opt-admin.sh install foo-app "$RESOURCES_DIR/foobix.zip"
-	assertEquals $? 0
+	assertEquals 0 $?
 	output="$(grep "Known bugs" "$TMP_DIR/foo-app.d/foobix/README.md")"
-	assertEquals $? 0
+	assertEquals 0 $?
 	assertEquals "foobix's readme contains 'Known Bugs'" "## Known bugs" "$output"
 }
 
-testSetNamedAlternativeFromTarGz() {
+testInstallAlternativeFromDirectory() {
 	./opt-admin.sh create foo-app
-	assertEquals $? 0
-	./opt-admin.sh install foo-app "$RESOURCES_DIR/foobix.tar.gz" foofoo
-	assertEquals $? 0
-	./opt-admin.sh choose foo-app foofoo
-	assertEquals $? 0
-	output="$("$TMP_DIR/foo-app/bin/foobix")"
-	assertEquals $? 0
+	assertEquals 0 $?
+	./opt-admin.sh install foo-app "$RESOURCES_DIR/foobix" 
+	assertEquals 0 $?
+	output="$("$TMP_DIR/foo-app.d/foobix/bin/foobix")"
+	assertEquals 0 $?
+	assertEquals "Result of foobix is 'foobax'" "foobax" "$output"
+}
+testInstallNameAlternativeFromDirectory() {
+	./opt-admin.sh create foo-app
+	assertEquals 0 $?
+	./opt-admin.sh install foo-app "$RESOURCES_DIR/foobix" foobix-v0
+	assertEquals 0 $?
+	output="$("$TMP_DIR/foo-app.d/foobix-v0/bin/foobix")"
+	assertEquals 0 $?
 	assertEquals "Result of foobix is 'foobax'" "foobax" "$output"
 }
 
+
+testFailToCreateSameApplication() {
+	./opt-admin.sh create foo-app
+	assertEquals $? 0
+	./opt-admin.sh create foo-app
+	assertNotSame $? 0
+}
 
 . "$test_root_dir/shunit2-2.0.3/src/shell/shunit2"
 

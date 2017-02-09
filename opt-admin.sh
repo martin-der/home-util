@@ -334,11 +334,11 @@ function setAlternative() {
 function installAlternative() {
 	APPLICATION="$1"
 	SOURCE="$2"
-	ALTERNATIVE_NAME="$3"
-
-	SOURCE_NAME="$(basename "$SOURCE")"
+	[ -z ${3+x} ] || ALTERNATIVE_NAME="${3}"
 
 	APP_DIR="${APPS_DIR}/${APPLICATION}.d"
+	SOURCE_NAME="$(basename "$SOURCE")"
+	
 	DESTINATION="${APP_DIR}/${ALTERNATIVE_NAME-${SOURCE_NAME}}"
 
 	TMP_DIR=`mktemp -d`
@@ -346,6 +346,8 @@ function installAlternative() {
 	log_debug "Working in $TMP_DIR"
 
 	if test -f "$SOURCE" ; then 
+
+		log_debug "Install destination is '$DESTINATION'"
 
 		(
 		$DRYDO cp "$SOURCE" "$TMP_DIR/$SOURCE_NAME" || exit $ERROR_EXECUTION_FAILED
@@ -368,10 +370,10 @@ function installAlternative() {
 		log_info "Alternative '$SOURCE' for application '$APPLICATION' successfully installed in '$DESTINATION'"
 	elif test -d "$SOURCE" ; then 
 
-		SOURCE_NAME="$(basename "$SOURCE")"
-
-		$DRYDO cp -r "$SOURCE" "$DESTINATION" 
-
+		log_debug "Copying folder from '$SOURCE' to '$DESTINATION'"
+		$DRYDO cp -r "$SOURCE" "$DESTINATION" || exit $ERROR_EXECUTION_FAILED
+ 
+		log_info "Alternative '$SOURCE' for application '$APPLICATION' successfully installed in '$DESTINATION'"
 	else
 		log_error "Does not exist or is not a file or directory : '$SOURCE'"
 		exit 100
@@ -448,11 +450,11 @@ function installApplicationAlternative() {
 	dieIfArgumentMissing "$APPLICATION" "Application" 2
 	checkApplicationExistsOrDie "$APPLICATION"
 	dieIfArgumentMissing "$SOURCE" "Source" 3
-	test "x$ALTERNATIVE_NAME" == "x" || checkApplicationAlternativeDoesntExistOrDie "$APPLICATION" "$ALTERNATIVE_NAME"
+	[ "x$ALTERNATIVE_NAME" == "x" ] || checkApplicationAlternativeDoesntExistOrDie "$APPLICATION" "$ALTERNATIVE_NAME"
 
 	checkApplicationExists "$APPLICATION" || createApplication "$APPLICATION"
 
-	installAlternative "$APPLICATION" "$SOURCE" "$ALTERNATIVE_NAME"
+	installAlternative $@
 }
 function uninstallApplicationAlternative() {
 	APPLICATION="$1"
