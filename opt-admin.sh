@@ -1,8 +1,8 @@
 #!/bin/bash
 
 
-source "$(dirname "$0")/shell-util" 2>/dev/null || source shell-util  || exit 1
-source "$(dirname "$0")/completion-helper" 2>/dev/null || source completion-helper  || exit 1
+source "$(dirname "$0")/shell-util.sh" 2>/dev/null || source shell-util  || exit 1
+source "$(dirname "$0")/completion-helper.sh" 2>/dev/null || source completion-helper  || exit 1
 
 set -u
 
@@ -373,7 +373,7 @@ function installAlternative() {
 		$DRYDO cp -r "$SOURCE" "$DESTINATION" 
 
 	else
-		log_error "Not implemented : handling 'not-a-file' : '$SOURCE'"
+		log_error "Does not exist or is not a file or directory : '$SOURCE'"
 		exit 100
 	fi
 	
