@@ -102,12 +102,12 @@ function publicDirectoryWithSamba {
 }
 
 function makeDirectoryPublic() {
-	DIRECTORY=$1
+	local DIRECTORY="$1"
 
-	group_read_permission="$(stat -c %A "$DIRECTORY" | sed 's/^d...\(.\)..\(.\)..$/\1/')"
-	other_read_permission="$(stat -c %A "$DIRECTORY" | sed 's/^d...\(.\)..\(.\)..$/\2/')"
+	local group_read_permission="$(stat -c %A "$DIRECTORY" | sed 's/^d...\(.\)..\(.\)..$/\1/')"
+	local other_read_permission="$(stat -c %A "$DIRECTORY" | sed 's/^d...\(.\)..\(.\)..$/\2/')"
 
-	if test "x$group_read_permission" != xr -o "x$other_read_permission" != xr ; then
+	if [ "x$group_read_permission" != xr -o "x$other_read_permission" != xr ] ; then
 		log_info "Make «$DIRECTORY» truly public : 'chmod' it"
 		chmod g+r,o+r "$DIRECTORY"
 	fi
@@ -150,9 +150,9 @@ function createLink() {
 }
 
 function createLinkInBin() {
-	SOURCE="$1"
-	FILENAME="$(basename "$SOURCE")"
-	BIN_LINK="$BIN_DIR/$(cleanFilename "$FILENAME")"
+	local SOURCE="$1"
+	local FILENAME="$(basename "$SOURCE")"
+	local BIN_LINK="$BIN_DIR/$(cleanFilename "$FILENAME")"
 
 	createLink "$BIN_LINK" "$SOURCE"
 }
@@ -212,13 +212,13 @@ while read l ; do
 done <<< "$LINK_LIST"
 
 log_debug "Create executables symbolic links in ~/bin"
-if test ! -d "$BIN_DIR" ; then
+if [ ! -d "$BIN_DIR" ] ; then
 	mkdir "$BIN_DIR"
 fi
-if test -d "$BIN_DIR" ; then
-	echo "$EXECUTABLE_LIST" | while read f ; do
+if [ -d "$BIN_DIR" ] ; then
+	while read f ; do
 		createLinkInBin "$EXECUTABLE_SOURCE_DIR/$f"
-	done
+	done <<< "${EXECUTABLE_LIST}"
 fi
 
 
