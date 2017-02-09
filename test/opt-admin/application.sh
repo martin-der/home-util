@@ -2,14 +2,13 @@
 
 #test_root_dir="$HOME/dev/prog/home-util/test"
 pushd "$(dirname "$0")" > /dev/null
-test_root_dir="$(pwd -P)/.."
+test_root_dir="$(pwd -P)/../.."
 popd > /dev/null
 
-
 oneTimeSetUp() {
-	. "${test_root_dir}/../shell-util.sh" || exit 1
+	. "${test_root_dir}/shell-util.sh" || exit 1
 	export MDU_LOG_LEVEL=info
-	RESOURCES_DIR="."
+	RESOURCES_DIR="${test_root_dir}/resources"
 }
 
 setUp() {
