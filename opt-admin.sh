@@ -4,12 +4,16 @@
 source "$(dirname "$0")/shell-util" 2>/dev/null || source shell-util  || exit 1
 source "$(dirname "$0")/completion-helper" 2>/dev/null || source completion-helper  || exit 1
 
+set -u
 
-if test "x$MDU_OPT_DIRECTORY" != "x" ; then
-	APPS_DIR="$MDU_OPT_DIRECTORY"
-else
+if [ -z ${MDU_OPT_DIRECTORY+x} ] ; then
 	APPS_DIR="/opt"
+else
+	APPS_DIR="$MDU_OPT_DIRECTORY"
 fi
+
+
+log_info "Opt directory = '$APPS_DIR'"
 
 ACTION_HELP="help"
 ACTION_APPLICATIONS="applications"
@@ -28,7 +32,9 @@ ERROR_NO_SUCH_ACTION=3
 ERROR_INVALID_PARAMETER=8
 ERROR_EXECUTION_FAILED=20
 
+DRYDO=""
 #DRYDO=echo
+
 
 
 
@@ -330,16 +336,16 @@ function installAlternative() {
 	SOURCE="$2"
 	ALTERNATIVE_NAME="$3"
 
+	SOURCE_NAME="$(basename "$SOURCE")"
+
 	APP_DIR="${APPS_DIR}/${APPLICATION}.d"
-	DESTINATION="${APP_DIR}/${ALTERNATIVE_NAME}"
+	DESTINATION="${APP_DIR}/${ALTERNATIVE_NAME-${SOURCE_NAME}}"
 
 	TMP_DIR=`mktemp -d`
 	trap "rm -rf $TMP_DIR" EXIT
 	log_debug "Working in $TMP_DIR"
 
 	if test -f "$SOURCE" ; then 
-
-		SOURCE_NAME="$(basename "$SOURCE")"
 
 		(
 		$DRYDO cp "$SOURCE" "$TMP_DIR/$SOURCE_NAME" || exit $ERROR_EXECUTION_FAILED
@@ -359,12 +365,18 @@ function installAlternative() {
 		fi
 		)
 
-	else
-		log_error "Not implemented : handling 'not-a-file' : '$SOURCE'" && exit 100
+		log_info "Alternative '$SOURCE' for application '$APPLICATION' successfully installed in '$DESTINATION'"
+	elif test -d "$SOURCE" ; then 
 
+		SOURCE_NAME="$(basename "$SOURCE")"
+
+		$DRYDO cp -r "$SOURCE" "$DESTINATION" 
+
+	else
+		log_error "Not implemented : handling 'not-a-file' : '$SOURCE'"
+		exit 100
 	fi
 	
-	log_info "Alternative '$ALTERNATIVE' for application '$APPLICATION' successfully installed in '$DESTINATION'"
 }
 function uninstallAlternative() {
 	APPLICATION="$1"
@@ -430,8 +442,8 @@ function chooseApplicationAlternative() {
 
 function installApplicationAlternative() {
 	APPLICATION="$1"
-	SOURCE="$2"
-	ALTERNATIVE_NAME="$3"
+	SOURCE="${2-}"
+	ALTERNATIVE_NAME="${3-}"
 
 	dieIfArgumentMissing "$APPLICATION" "Application" 2
 	checkApplicationExistsOrDie "$APPLICATION"
