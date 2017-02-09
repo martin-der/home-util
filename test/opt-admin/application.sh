@@ -80,7 +80,7 @@ testInstallAlternativeFromDirectory() {
 	assertEquals 0 $?
 	assertEquals "Result of foobix is 'foobax'" "foobax" "$output"
 }
-testInstallNameAlternativeFromDirectory() {
+testInstallNamedAlternativeFromDirectory() {
 	./opt-admin.sh create foo-app
 	assertEquals 0 $?
 	./opt-admin.sh install foo-app "$RESOURCES_DIR/foobix" foobix-v0
