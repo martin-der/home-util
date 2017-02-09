@@ -146,25 +146,28 @@ _mdu_CH_init_builder_helper() {
 
 	local used_params=0
 
-	[ "x$1" == "xhelp" ] || return
+
+	[ ! -z ${1+x} -a "x$1" == "xhelp" ] || return
 	shift	
 
-	[ "x$1" == "x--dump-man" ] && {
+	[ -z ${1+x} ] && return 0
+
+	[ "$1" == "--dump-man" ] && {
 		_dump_man	
 		exit 0
 	}
 
-	[ "x$1" == "x--man" ] && {
+	[ "$1" == "--man" ] && {
 		_dump_man | man /dev/stdin
 		exit 0
 	}
 
-	[ "x$1" == "x--is-mdu-helper" ] && {
+	[ "$1" == "--is-mdu-helper" ] && {
 		echo "mdu_helper_capable"
 		exit 0
 	}
 
-	[ "x$1" == "x--helper-complete" ] && {
+	[ "$1" == "--helper-complete" ] && {
 		complete ${_complete_options} -F _perform_completion "$_mdu_CH_application"
 		mdu_CH_exit=1
 		export mdu_CH_exit
