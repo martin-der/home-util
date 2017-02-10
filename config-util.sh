@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source "$(dirname "$0")/shell-util" 2>/dev/null || source shell-util  || exit 1
+source "$(dirname "$0")/shell-util.sh" 2>/dev/null || source shell-util  || exit 1
 
 # param 1 : key
 # param 2 : value
