@@ -60,4 +60,5 @@ testNoProblemIfNoXDGConfProvided() {
 
 
 . "$test_root_dir/shunit2-2.0.3/src/shell/shunit2"
+[ $__shunit_testsFailed -gt 0 ] && exit 5
 
