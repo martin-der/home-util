@@ -43,7 +43,7 @@ testCreateBinDirectoryWithLinkedExcutables() {
 
 	echo 'directory.bin=$HOME/bin' >> "$mdu_config"
 
-	echo "link.executable.sourceDirecory=$test_root_dir/resources" >> "$mdu_config"
+	echo "link.executable.sourceDirectory=$test_root_dir/resources" >> "$mdu_config"
 	echo 'link.executable.elements=foobix/bin/foobix\
 script-system-util/config-util.sh' >> "$mdu_config"
 

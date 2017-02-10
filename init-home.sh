@@ -18,7 +18,7 @@ CONFIGURATION_FILE="$HOME/.config/mdu/init.properties"
 CONFIG_2_ENV_LIST="directory.bin=BIN_DIR
 directory.local=LOCAL_DIR
 directory.project.dev=PROJECTS_DEV_DIR
-link.executable.sourceDirecory=EXECUTABLE_SOURCE_DIR
+link.executable.sourceDirectory=EXECUTABLE_SOURCE_DIR
 link.executable.elements=EXECUTABLE_LIST
 link.elements=LINK_LIST
 share.samba.enabled=SHARE_WITH_SAMBA"
