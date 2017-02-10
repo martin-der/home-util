@@ -121,7 +121,7 @@ function makeDirectoryPublic() {
 		chmod g+r,o+r "$DIRECTORY"
 	fi
 
-	[ ${SHARE_WITH_SAMBA:-1} -ne 0 ] && {
+	[ ${SHARE_WITH_SAMBA:-0} -ne 0 ] && {
 		if command_exists net ; then
 			publicDirectoryWithSamba "$DIRECTORY"
 		else
