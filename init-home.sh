@@ -20,7 +20,16 @@ directory.local=LOCAL_DIR
 directory.project.dev=PROJECTS_DEV_DIR
 link.executable.sourceDirecory=EXECUTABLE_SOURCE_DIR
 link.executable.elements=EXECUTABLE_LIST
-link.elements=LINK_LIST"
+link.elements=LINK_LIST
+share.samba.enabled=SHARE_WITH_SAMBA"
+
+
+exit_code=0
+
+handle_error() {
+	[ $exit_code -lt $1 ] && exit_code=$1
+	log_error "$2"
+} 
 
 function parseConfig() {
 	config="$(cat "$1" | sed  '                                                                                                                                                                                     
@@ -57,7 +66,7 @@ function createXDGDirectory() {
 		mkdir -p "$XDG_DIR" || result=1
 	else
 		if test ! -d "$XDG_DIR" ; then
-			log_info "XDG «$NAME» exists but its not a directory"
+			log_info "XDG «$NAME» exists but it's not a directory"
 		fi
 	fi
 	return $result
@@ -67,7 +76,7 @@ function publicDirectoryWithSamba {
 	DIRECTORY=$1
 
 	if test "x$USER" = "x" ; then
-		log_error "Cannot create samba share without 'USER' variable defined"
+		handle_error 1 "Cannot create samba share without 'USER' variable defined"
 		return 1
 	fi
 
@@ -81,7 +90,7 @@ function publicDirectoryWithSamba {
 
 	if test "x$ACTUAL_SHARE_INFO" == "x" ; then
 		log_info "Publish «$DIRECTORY» via a Samba share named «$SHARE_NAME»"
-		net usershare add "$SHARE_NAME" "$DIRECTORY" "$SHARE_NAME" everyone:R guest_ok=y || log_error "Could not create samba share «$SHARE_NAME»"
+		net usershare add "$SHARE_NAME" "$DIRECTORY" "$SHARE_NAME" everyone:R guest_ok=y || handle_error 2 "Could not create samba share «$SHARE_NAME»"
 	else
 		ACTUAL_SHARE_PATH="$(echo "$ACTUAL_SHARE_INFO" | properties_find path)"
 		ACTUAL_SHARE_ACL="$(echo "$ACTUAL_SHARE_INFO" | properties_find usershare_acl)"
@@ -112,9 +121,13 @@ function makeDirectoryPublic() {
 		chmod g+r,o+r "$DIRECTORY"
 	fi
 
-	if command_exists net ; then
-		publicDirectoryWithSamba "$DIRECTORY"
-	fi
+	[ ${SHARE_WITH_SAMBA:-1} -ne 0 ] && {
+		if command_exists net ; then
+			publicDirectoryWithSamba "$DIRECTORY"
+		else
+			handle_error 2 "Cannot publish with samba, command unavailable"
+		fi
+	}
 }
 
 function cleanFilename() {
@@ -154,7 +167,9 @@ function createLinkInBin() {
 	local FILENAME="$(basename "$SOURCE")"
 	local BIN_LINK="$BIN_DIR/$(cleanFilename "$FILENAME")"
 
-	createLink "$BIN_LINK" "$SOURCE"
+	createLink "$BIN_LINK" "$SOURCE" && [ ! -e "$BIN_LINK" ] && {
+		log_warn "Link '$BIN_LINK' is broken"
+	}
 }
 
 
@@ -167,11 +182,14 @@ fi
 
 
 
-log_debug "EXECUTABLE_SOURCE_DIR='$EXECUTABLE_SOURCE_DIR'"
-log_debug "EXECUTABLE_LIST='$EXECUTABLE_LIST'"
-log_debug "BIN_DIR='$BIN_DIR'"
-log_debug "LINK_LIST='$LINK_LIST'"
 
+
+
+log_debug "EXECUTABLE_SOURCE_DIR='${EXECUTABLE_SOURCE_DIR:-undefined}'"
+log_debug "EXECUTABLE_LIST='${EXECUTABLE_LIST:-undefined}'"
+log_debug "BIN_DIR='${BIN_DIR:-undefined}'"
+log_debug "LINK_LIST='${LINK_LIST:-undefined}'"
+log_debug "SHARE_WITH_SAMBA=${SHARE_WITH_SAMBA:-undefined}"
 
 
 
@@ -196,29 +214,40 @@ else
 	log_info "File '$HOME/.config/user-dirs.dirs' doesn't exists or is not readable, hence No XDG directories will be created"
 fi
 
-log_debug "Create custom symbolic links"
-while read l ; do
-	regex_for_where="s/^\(.*\)->\(.*\)$/\1/"
-	regex_for_target="s/^\(.*\)->\(.*\)$/\2/"
+[ ! -z ${LINK_LIST+x} ] && {
+	log_debug "Create custom symbolic links"
+	while read l ; do
 
-	where="$(echo "$l" | sed "$regex_for_where" )"
-	target="$(echo "$l" | sed "$regex_for_target" )"
+		line_isEmpty "$l" && continue
 
-	if test "x$target" == "x" -o "x$where" == "x" ; then
-		log_warn "Invalid link configuration : '$l'"
-	else
-		createLink "$where" "$target"
-	fi
-done <<< "$LINK_LIST"
+		regex_for_where="s/^\(.*\)->\(.*\)$/\1/"
+		regex_for_target="s/^\(.*\)->\(.*\)$/\2/"
 
-log_debug "Create executables symbolic links in ~/bin"
-if [ ! -d "$BIN_DIR" ] ; then
-	mkdir "$BIN_DIR"
-fi
-if [ -d "$BIN_DIR" ] ; then
-	while read f ; do
-		createLinkInBin "$EXECUTABLE_SOURCE_DIR/$f"
-	done <<< "${EXECUTABLE_LIST}"
-fi
+		where="$(echo "$l" | sed "$regex_for_where" )"
+		target="$(echo "$l" | sed "$regex_for_target" )"
 
+		if test "x$target" == "x" -o "x$where" == "x" ; then
+			log_warn "Invalid link configuration : '$l'"
+		else
+			createLink "$where" "$target"
+		fi
+	done <<< "$LINK_LIST"
+}
+
+[ ! -z ${BIN_DIR+x} ] && {
+	[ ! -d "$BIN_DIR" ] && {
+		log_debug "Create bin directory '$BIN_DIR'"
+		mkdir "$BIN_DIR" || handle_error 2 "Failed to create bin directory '$BIN_DIR'"
+	}
+	[ -d "$BIN_DIR" ] && {
+		[ ! -z ${EXECUTABLE_LIST+x} ] && [ ! -z ${EXECUTABLE_SOURCE_DIR+x} ] && {
+			log_debug "Create executables symbolic links in bin directory"
+			while read f ; do
+				createLinkInBin "$EXECUTABLE_SOURCE_DIR/$f"
+			done <<< "${EXECUTABLE_LIST}"
+		} 
+	} 
+}
+
+exit $exit_code
 
