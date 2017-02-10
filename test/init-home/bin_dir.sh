@@ -9,9 +9,8 @@ test_root_dir="${root_dir}/test"
 # Just to be safe if 'setUp' fails its job
 export HOME=/tmp/tmp/tmp
 
-oneTimeSetUp() {
-	export MDU_LOG_LEVEL=debug
-}
+#oneTimeSetUp() {
+#}
 
 
 setUp() {

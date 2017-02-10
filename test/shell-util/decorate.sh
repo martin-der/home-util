@@ -8,7 +8,6 @@ test_root_dir="${root_dir}/test"
 
 oneTimeSetUp() {
 	. "${root_dir}/shell-util.sh" || exit 1
-	export MDU_LOG_LEVEL=info
 	RESOURCES_DIR="${root_dir}/resources"
 }
 
