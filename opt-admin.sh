@@ -1,4 +1,5 @@
 #!/bin/bash
+#@mdu-helper-capable
 
 
 source "$(dirname "$0")/shell-util.sh" 2>/dev/null || source shell-util  || exit 1
