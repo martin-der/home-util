@@ -247,7 +247,7 @@ function decorate_n()  {
 		echo -n "$post"
 	} || {
 		echo -e -n "$previousDecoration"
-		 echo -n "$text"
+		echo -n "$text"
 	}
 }
 
@@ -265,20 +265,31 @@ function line_isEmpty() {
 
 # properties
 
-# Param 1  : key
-# StdInput : text to be searched in 
-function find_property {
-	KEY="$1"
-	while read l ; do
-		line_isComment_withSharp "$l" && continue
-		line_isEmpty "$l" && continue
-		KEY_FOUND="$(line_KeyValue_getKey "$l")"
+function _mdu_properties_value_from_line() {
+	local line="$1"
+	local key="$2"
+	line_isComment_withSharp "$line" && return 1
+	line_isEmpty "$line" && return 1
+	local KEY_FOUND="$(line_KeyValue_getKey "$line")"
+	[ "x$key" == "x$KEY_FOUND" ] && {
+		echo "$(line_KeyValue_getValue "$line")"
+		return 0
+	}
+	return 1
+}
 
-		if test "x$KEY" = "x$KEY_FOUND" ; then
-			VALUE="$(line_KeyValue_getValue "$l")"
-			echo "$VALUE"
-			return 0
-		fi
+# Param 1  : key
+# StdInput : text to be searched in
+function find_property {
+	[ -z ${2+x} ] && {
+		while read l ; do
+			_mdu_properties_value_from_line "$l" "$1" && return 0
+		done
+		return 1
+	}
+
+	echo "$2" | while read l ; do
+		_mdu_properties_value_from_line "$l" "$1" && return 0
 	done
 	return 1
 }
