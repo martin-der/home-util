@@ -2,6 +2,17 @@
 
 
 
+[ $# -eq 1 ] && {
+	[ "x#@mdu-helper-capable" == "x$(cat "$1" | sed -e '2q' -e '2d' -e '/^#!\/.*\/bash/d')" ] && {
+		echo "Capable"
+		exit 0
+	} || {
+		echo "Not Capable"
+		exit 1
+	}
+}
+
+
 [ "x$_mdu_CH_completion_running" == "x1" ] && return 0
 
 mdu_CH_exit=0
@@ -263,7 +274,8 @@ _mdu_CH_show_helper_help() {
 	echo "- listVerbs"
 	echo "- getVerbArguments <verb>"
 	echo "- completeType <type> <verb> [<previous_arg>...]"
-} 
+}
+
 
 [[ $_ != $0 ]] || { _mdu_CH_show_helper_help ; exit 20 ; }
 
