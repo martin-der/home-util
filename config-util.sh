@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source "$(dirname "$0")/shell-util.sh" 2>/dev/null || source shell-util  || exit 1
+source "$(dirname "${BASH_SOURCE[0]}")/shell-util.sh" 2>/dev/null || source shell-util  || exit 1
 
 # param 1 : key
 # param 2 : value
@@ -11,14 +11,15 @@ function convertConfigKeyAndExportToEnvVariableIfExists() {
 	local KEY="$1"
 	local VALUE="$2"
 	local KEY_TO_ENV_LIST="$3"
-	local PREFIX="$4"
-	local ENV_NAME="$(properties_find "$KEY" <<< "$KEY_TO_ENV_LIST" )"
+	local PREFIX="${4:-}"
+	local env_name
+	env_name="$(find_property "$KEY" <<< "$KEY_TO_ENV_LIST" )"
 	local result=$?
-	log_debug "ENV_NAME = '$ENV_NAME'"
+	log_debug "env_name = '$env_name'"
 	if [ $result -eq 0 ] ; then
-		ENV_NAME="$PREFIX$ENV_NAME"
-		log_debug "export '$ENV_NAME'='$VALUE'"
-		export "$ENV_NAME"="$VALUE"
+		env_name="$PREFIX$env_name"
+		log_debug "export '$env_name'='$VALUE'"
+		export "$env_name"="$VALUE"
 	fi
 	return $result
 }
