@@ -21,7 +21,8 @@ directory.project.dev=PROJECTS_DEV_DIR
 link.executable.sourceDirectory=EXECUTABLE_SOURCE_DIR
 link.executable.elements=EXECUTABLE_LIST
 link.elements=LINK_LIST
-share.samba.enabled=SHARE_WITH_SAMBA"
+share.samba.enabled=SHARE_WITH_SAMBA
+share.name=SHARE_NAME"
 
 
 exit_code=0
@@ -73,15 +74,15 @@ function createXDGDirectory() {
 }
 
 function publicDirectoryWithSamba {
-	DIRECTORY=$1
+	local DIRECTORY=$1
 
 	if test "x$USER" = "x" ; then
 		handle_error 1 "Cannot create samba share without 'USER' variable defined"
 		return 1
 	fi
 
-	SHARE_NAME="$USER - Documents"
-	ACTUAL_SHARE_INFO="$(net usershare info "$SHARE_NAME")"
+	local SHARE_NAME="$USER - Documents"
+	local ACTUAL_SHARE_INFO="$(net usershare info "$SHARE_NAME")"
 	if test $? -ne 0 ; then
 		log_warn "Samba server utilities don't seem to be available"
 		return 2
@@ -92,10 +93,10 @@ function publicDirectoryWithSamba {
 		log_info "Publish «$DIRECTORY» via a Samba share named «$SHARE_NAME»"
 		net usershare add "$SHARE_NAME" "$DIRECTORY" "$SHARE_NAME" everyone:R guest_ok=y || handle_error 2 "Could not create samba share «$SHARE_NAME»"
 	else
-		ACTUAL_SHARE_PATH="$(echo "$ACTUAL_SHARE_INFO" | properties_find path)"
-		ACTUAL_SHARE_ACL="$(echo "$ACTUAL_SHARE_INFO" | properties_find usershare_acl)"
-		ACTUAL_SHARE_GUESTOK="$(echo "$ACTUAL_SHARE_INFO" | properties_find guest_ok)"
-		same_share=1
+		local ACTUAL_SHARE_PATH="$(echo "$ACTUAL_SHARE_INFO" | properties_find path)"
+		local ACTUAL_SHARE_ACL="$(echo "$ACTUAL_SHARE_INFO" | properties_find usershare_acl)"
+		local ACTUAL_SHARE_GUESTOK="$(echo "$ACTUAL_SHARE_INFO" | properties_find guest_ok)"
+		local same_share=1
 		if test "x$DIRECTORY" != "x$ACTUAL_SHARE_PATH"; then
 			same_share=0
 		fi
@@ -190,6 +191,7 @@ log_debug "EXECUTABLE_LIST='${EXECUTABLE_LIST:-undefined}'"
 log_debug "BIN_DIR='${BIN_DIR:-undefined}'"
 log_debug "LINK_LIST='${LINK_LIST:-undefined}'"
 log_debug "SHARE_WITH_SAMBA=${SHARE_WITH_SAMBA:-undefined}"
+log_debug "SHARE_NAME='${SHARE_WITH_SAMBA:-undefined}'"
 
 
 
