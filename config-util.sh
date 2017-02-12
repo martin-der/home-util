@@ -24,3 +24,7 @@ function convertConfigKeyAndExportToEnvVariableIfExists() {
 	return $result
 }
 
+function printVariable() {
+	[ -z ${!1+x} ] && echo "(-)${1}" || echo "(+)${1}:'${!1}'"
+}
+
