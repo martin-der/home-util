@@ -182,18 +182,12 @@ else
 fi
 
 
-
-
-
-
-log_debug "EXECUTABLE_SOURCE_DIR='${EXECUTABLE_SOURCE_DIR:-undefined}'"
-log_debug "EXECUTABLE_LIST='${EXECUTABLE_LIST:-undefined}'"
-log_debug "BIN_DIR='${BIN_DIR:-undefined}'"
-log_debug "LINK_LIST='${LINK_LIST:-undefined}'"
-log_debug "SHARE_WITH_SAMBA=${SHARE_WITH_SAMBA:-undefined}"
-log_debug "SHARE_NAME='${SHARE_WITH_SAMBA:-undefined}'"
-
-
+log_debug "$(printVariable EXECUTABLE_SOURCE_DIR)"
+log_debug "$(printVariable EXECUTABLE_LIST)"
+log_debug "$(printVariable BIN_DIR)"
+log_debug "$(printVariable LINK_LIST)"
+log_debug "$(printVariable SHARE_WITH_SAMBA)"
+log_debug "$(printVariable SHARE_NAME)"
 
 
 if [ -f "$HOME/.config/user-dirs.dirs" -a -r "$HOME/.config/user-dirs.dirs" ] ; then
