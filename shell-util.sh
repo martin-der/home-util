@@ -30,11 +30,9 @@ DEFAULT_LOG_LEVEL=$LOG_LEVEL_WARN
 
 DRY_MODE=0
 
-TAG=""
 
 MDU_HUMAN_MODE=${MDU_HUMAN_MODE:-1}
 MDU_NO_COLOR=${MDU_NO_COLOR:-0}
-MDU_LOG_TAG=${MDU_LOG_TAG:-}
 
 
 if test "x$MDU_HUMAN_MODE" != x
@@ -54,13 +52,9 @@ fi
 
 
 
-if test "x$MDU_LOG_TAG" = x; then
-	TAG="$MDU_LOG_TAG"
-fi
-
 
 function _mdu_getLogLevel {
-	local level=${MDU_LOG_LEVEL:-$LOG_LEVEL}
+	local level=${MDU_LOG_LEVEL:-${LOG_LEVEL:-default}}
 	[ "x$level" = xDEBUG -o "x$level" = xdebug ] && return $LOG_LEVEL_DEBUG
 	[ "x$level" = xINFO -o "x$level" = xinfo ] && return $LOG_LEVEL_INFO
 	[ "x$level" = xWARN -o "x$level" = xwarn ] && return $LOG_LEVEL_WARN
@@ -97,8 +91,9 @@ ICON_DEBUG="${GREEN_BOLD}[#]${COLOR_RESET}"
 # print script prefix for 'non human' output
 # Param 1 : String severity
 function echo_script_prefix() {
-		echo -n "[$1] "
-		test "x$TAG" != "x" && echo -n "$TAG "
+	echo -n "[$1] "
+	local tag="${MDU_LOG_TAG:-}"
+	[ "x$tag" != "x" ] && echo -n "$tag "
 }
 
 function log_debug() {
