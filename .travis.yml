@@ -6,6 +6,7 @@ before_script:
 script:
     - bash test/shell-util/decorate.sh
     - bash test/shell-util/properties.sh
+    - bash test/shell-util/log.sh
     - bash test/opt-admin/application.sh
     - bash test/init-home/xdg.sh
     - bash test/init-home/bin_dir.sh
