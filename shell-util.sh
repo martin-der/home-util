@@ -60,7 +60,7 @@ fi
 
 
 function _mdu_getLogLevel {
-	local level=${MDU_LOG_LEVEL:-$LOG_LEVEL}
+	local level=${MDU_LOG_LEVEL:-${LOG_LEVEL:-default}}
 	[ "x$level" = xDEBUG -o "x$level" = xdebug ] && return $LOG_LEVEL_DEBUG
 	[ "x$level" = xINFO -o "x$level" = xinfo ] && return $LOG_LEVEL_INFO
 	[ "x$level" = xWARN -o "x$level" = xwarn ] && return $LOG_LEVEL_WARN
