@@ -8,5 +8,7 @@ script:
     - bash test/shell-util/properties.sh
     - bash test/shell-util/log.sh
     - bash test/opt-admin/application.sh
+    - bash test/config-util/variable.sh
+    - bash test/config-util/read.sh
     - bash test/init-home/xdg.sh
     - bash test/init-home/bin_dir.sh

@@ -56,21 +56,6 @@ fiiibuuur.status=STATE"
 	assertNotSame "Var name for key 'plain.test.password' has not been found" 0 $?
 }
 
-testPrintVariable() {
-	local foobar text
-
-	foobar="try again"
-	text=$(printVariable foobar)
-	assertEquals "(+)foobar:'try again'" "$text"
-	foobar=" try    one more    time    "
-	text=$(printVariable foobar)
-	assertEquals "(+)foobar:' try    one more    time    '" "$text"
-}
-testPrintUndefinedVariable() {
-	printVariable foobar
-	local text=$(printVariable foobar)
-	assertEquals "(-)foobar" "$text"
-}
 
 . "$test_root_dir/shunit2-2.0.3/src/shell/shunit2"
 [ $__shunit_testsFailed -gt 0 ] && exit 5 || exit 0

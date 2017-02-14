@@ -28,3 +28,20 @@ function printVariable() {
 	[ -z ${!1+x} ] && echo "(-)${1}" || echo "(+)${1}:'${!1}'"
 }
 
+function convertVariable() {
+	local value="$2"
+	[ "x$value" == "x" ] && return 1
+	local tyype="$1"
+	
+	case "$tyype" in
+		boolean|bool)
+			case "$value" in
+				"true"|"yes"|1) echo 1 ; return 0 ;;
+				"false"|"no"|0) echo 0 ; return 0 ;;
+			esac
+			;;
+	esac
+	return 1
+}
+
+
