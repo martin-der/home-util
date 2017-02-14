@@ -118,7 +118,7 @@ function log_info() {
 		echo_script_prefix INFO
 	else
 		echo -e -n "$ICON_INFO "
-	fi	
+	fi
 	echo "$@"
 }
 
@@ -157,7 +157,6 @@ function log_error()  {
 mdu_getTextDecoration() {
 	local prefix="_mdu_text_decoration__"
 	local i="${prefix}$1"
-	#[ -z ${i} ] && 
 	echo -n -e "${!i-}"
 }
 mdu_setTextDecoration() {
@@ -168,7 +167,7 @@ mdu_setTextDecoration() {
 mdu_isSetTextDecoration() {
 	local prefix="_mdu_text_decoration__"
 	local i="${prefix}$1"
-	[ -z ${i} ] && return 1 || return 0
+	[ -z ${!i+x} ] && return 1 || return 0
 }
 mdu_unsetTextDecoration() {
 	local prefix="_mdu_text_decoration__"
@@ -188,7 +187,7 @@ function _echoDecorationValue() {
 		mdu_getTextDecoration "$1"
 		return 0
 	}
-	case "$1" in 
+	case "$1" in
 		"red") echo -e -n "$RED" ;;
 		"green") echo -e -n "$GREEN" ;;
 		"blue") echo -e -n "$BLUE" ;;
@@ -252,10 +251,10 @@ function escaped_for_regex {
 
 
 function line_isComment_withSharp() {
-   echo "$1" | grep -Eq '^[ 	]*#' && return 0 || return 1
+	echo "$1" | grep -Eq '^[ 	]*#' && return 0 || return 1
 }
 function line_isEmpty() {
-   echo "$1" | grep -Eq '^[ 	]*$' && return 0 || return 1
+	echo "$1" | grep -Eq '^[ 	]*$' && return 0 || return 1
 }
 
 # properties
@@ -288,17 +287,16 @@ function find_property {
 	done
 	return 1
 }
-# Deprecated : use find_property
 function properties_find {
 	find_property $@
 	return $?
 }
 
 function line_KeyValue_getKey() {
-   echo "$1" | sed 's/^[ 	]*\([^ 	=]*\)[ 	]*=\(.*\)/\1/'
+	echo "$1" | sed 's/^[ 	]*\([^ 	=]*\)[ 	]*=\(.*\)/\1/'
 }
 function line_KeyValue_getValue() {
-   echo "$1" | sed 's/^[ 	]*\([^ 	=]*\)[ 	]*=\(.*\)/\2/'
+	echo "$1" | sed 's/^[ 	]*\([^ 	=]*\)[ 	]*=\(.*\)/\2/'
 }
 
 

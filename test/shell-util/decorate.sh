@@ -19,12 +19,18 @@ testSetThenGetTextDecoration() {
 }
 testSetThenGetThenRemoveTextDecoration() {
 	local foobar_decoration
+
 	mdu_setTextDecoration foobar2 blue_and_transparent
 	foobar_decoration=$(mdu_getTextDecoration foobar2)
 	assertEquals blue_and_transparent "$foobar_decoration"
+	mdu_isSetTextDecoration foobar2
+	assertEquals 0 $?
+
 	mdu_unsetTextDecoration foobar2
 	foobar_decoration=$(mdu_getTextDecoration foobar2)
 	assertEquals "" "$foobar_decoration"
+	mdu_isSetTextDecoration foobar2
+	assertNotSame 0 $?
 }
 
 #testSingleDecoration() {
