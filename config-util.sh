@@ -12,24 +12,30 @@ function convertConfigKeyAndExportToEnvVariableIfExists() {
 	local VALUE="$2"
 	local KEY_TO_ENV_LIST="$3"
 	local PREFIX="${4:-}"
-	local env_name
+	local env_name env_type
+
 	env_name="$(find_property "$KEY" <<< "$KEY_TO_ENV_LIST" )"
-	#env_name="$(mdu_variable_getName "$env_name")"
-	local result=$?
+	[ $? -ne 0 ] && return 1
+
+	env_type="$(mdu_variable_getType "$env_name")"
+	env_name="$(mdu_variable_getName "$env_name")"
 	log_debug "env_name = '$env_name'"
-	if [ $result -eq 0 ] ; then
-		env_name="$PREFIX$env_name"
-		log_debug "export '$env_name'='$VALUE'"
-		export "$env_name"="$VALUE"
-	fi
-	return $result
+	env_name="$PREFIX$env_name"
+	log_debug "env_type='$env_type'"
+	[ "x$env_type" != "x" ] && {
+		VALUE="$(convertVariable "$env_type" "$VALUE")"
+		[ $? -ne 0 ] && return 2
+	}
+	log_debug "export '$env_name'='$VALUE'"
+	export "$env_name"="$VALUE"
+	return 0
 }
 
 mdu_variable_getName() {
-	sed 's#^\(.\+\)\(\:.\+\)\\\?$#\1#' <<< "$1"
+	sed 's#^\([^:]\+\)\(:.\+\)\?$#\1#' <<< "$1"
 }
 mdu_variable_getType() {
-	sed 's#^<\(.\+\)\(\:\(.\+\)\)\\\?>$\|^\[<\(.\+\)\(\:\(.\+\)\)\\\?>\]$#\3\6#' <<< "$2"
+	sed 's#^\([^:]\+\)\(:\(.\+\)\)\?$#\3#' <<< "$1"
 }
 
 
@@ -42,6 +48,7 @@ function convertVariable() {
 	[ "x$value" == "x" ] && return 1
 	local tyype="$1"
 
+
 	case "$tyype" in
 		boolean|bool)
 			case "$value" in
@@ -49,6 +56,7 @@ function convertVariable() {
 				"false"|"no"|0) echo 0 ; return 0 ;;
 			esac
 			;;
+		string) echo "$value" ; return 0 ;;
 	esac
 	return 1
 }

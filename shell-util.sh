@@ -251,10 +251,10 @@ function escaped_for_regex {
 
 
 function line_isComment_withSharp() {
-	echo "$1" | grep -Eq '^[ 	]*#' && return 0 || return 1
+	grep -Eq '^[ 	]*#' <<< "$1" && return 0 || return 1
 }
 function line_isEmpty() {
-	echo "$1" | grep -Eq '^[ 	]*$' && return 0 || return 1
+	grep -Eq '^[ 	]*$' <<< "$1" && return 0 || return 1
 }
 
 # properties
@@ -282,12 +282,16 @@ function find_property {
 		return 1
 	}
 
-	echo "$2" | while read l ; do
+	while read l ; do
 		_mdu_properties_value_from_line "$l" "$1" && return 0
-	done
+	done <<< "$2"
 	return 1
 }
 function properties_find {
+	find_property $@
+	return $?
+}
+function properties_findTyped {
 	find_property $@
 	return $?
 }
