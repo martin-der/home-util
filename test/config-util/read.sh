@@ -94,7 +94,7 @@ passwd=PASSWORD
 fiiibuuur.status=STATE"
 
 	convertConfigKeyAndExportToEnvVariableIfExists "plain.test.password" "23456" "$properties_2_var"
-	assertNotSame "Var name for key 'plain.test.password' has not been found" 0 $?
+	assertEquals "Var name for key 'plain.test.password' has not been found" 1 $?
 }
 
 
