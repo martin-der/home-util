@@ -21,8 +21,9 @@ directory.project.dev=PROJECTS_DEV_DIR
 link.executable.sourceDirectory=EXECUTABLE_SOURCE_DIR
 link.executable.elements=EXECUTABLE_LIST
 link.elements=LINK_LIST
-share.samba.enabled=SHARE_WITH_SAMBA
-share.name=SHARE_NAME"
+share.name=SHARE_NAME
+share.publicDirectory.enabled=SHARE_PUBLIC_DIRECTORY:boolean
+share.samba.enabled=SHARE_WITH_SAMBA:boolean"
 
 
 exit_code=0
