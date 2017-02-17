@@ -157,6 +157,7 @@ _mdu_CH_init_builder_helper() {
 
 	local used_params=0
 
+	_complete_options=
 
 	[ ! -z ${1+x} -a "x$1" == "xhelp" ] || return
 	shift	
