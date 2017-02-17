@@ -63,7 +63,7 @@ ___get_information() {
 
 _dump_man() {
 	local name=$_mdu_CH_application
-	local summary=$(___get_information summary)
+	local summary=$(___get_information summary "" "")
 	echo ".TH $name 1 \"$(date +"%d %b %Y")\" \"version 1.0\""
 	echo ".SH NAME"
 	echo "$name - $summary"
@@ -84,7 +84,7 @@ _dump_man() {
 			}
 		done
 	done
-	local detail=$(___get_information detail)
+	local detail=$(___get_information detail "" "")
 	[ "x$detail" != "x" ] && {
 		echo ".SH DESCRIPTION"
 		echo "$detail"
@@ -230,8 +230,8 @@ _mdu_CH_print_help() {
 			summary="Show help about <${_mdu_CH_verb_locution}>"
 		} || {
 			arguments=$(___get_verb_arguments "$verb")
-			summary=$(___get_information summary "$verb")
-			detail=$(___get_information detail "$verb")
+			summary=$(___get_information summary "$verb" "")
+			detail=$(___get_information detail "$verb" "")
 		}
 
 		local usedTypes
