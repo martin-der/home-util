@@ -1,7 +1,6 @@
 #!/bin/bash
 #@mdu-helper-capable
 
-
 source "$(dirname "$0")/shell-util.sh" 2>/dev/null || source shell-util  || exit 1
 source "$(dirname "$0")/completion-helper.sh" 2>/dev/null || source completion-helper  || exit 1
 
@@ -144,19 +143,6 @@ _mdu_CH_init_builder_helper "listActions" "getActionArguments" "getInformation" 
 function printHelp() {
 	_mdu_CH_print_help $@
 }
-
-# $1 Argument
-# $2 Argument name
-# $3 [Optionnal] Argument position
-function dieIfArgumentMissing() {
-	test "x$1" == "x" && {
-		MSG="Argument '$2' expected"
-		test "x$3" != "x" && MSG="$MSG at pos $3"
-		log_error "$MSG"
-		exit 1
-	}
-} 
-
 
 function checkApplicationExists() {
 	APPLICATION="$1"
@@ -332,6 +318,19 @@ function setAlternative() {
 	log_info "Application '$APPLICATION' now uses '$ALTERNATIVE' alternative"
 }
 
+
+
+function listApplications() {
+	APPS_DIR_escaped="$(escaped_for_regex "$APPS_DIR")"
+	find "${APPS_DIR}" -maxdepth 1 -type d -name '*.d' | while read appdir ; do
+		sed "s#^${APPS_DIR_escaped}/\(.*\)\.d\$#\1#" <<< "$appdir"
+	done
+}
+
+[ $mdu_CH_exit -eq 1 ] && {
+	exit 0
+}
+
 function installAlternative() {
 	APPLICATION="$1"
 	SOURCE="$2"
@@ -394,15 +393,16 @@ function uninstallAlternative() {
 	log_info "Alternative '$ALTERNATIVE' (in '$DESTINATION') for application '$APPLICATION' was uninstalled"
 }
 
-function listApplications() {
-	APPS_DIR_escaped="$(escaped_for_regex "$APPS_DIR")"
-	find "${APPS_DIR}" -maxdepth 1 -type d -name '*.d' | while read appdir ; do
-		sed "s#^${APPS_DIR_escaped}/\(.*\)\.d\$#\1#" <<< "$appdir"
-	done
-}
-
-[ $mdu_CH_exit -eq 1 ] && {
-	return $?
+# $1 Argument
+# $2 Argument name
+# $3 [Optionnal] Argument position
+function dieIfArgumentMissing() {
+	test "x$1" == "x" && {
+		MSG="Argument '$2' expected"
+		test "x$3" != "x" && MSG="$MSG at pos $3"
+		log_error "$MSG"
+		exit 1
+	}
 }
 
 function createApplication() {
