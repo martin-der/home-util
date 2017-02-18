@@ -1,8 +1,7 @@
 #!/bin/bash
 
 
-
-[ $# -eq 1 ] && {
+[ "x${BASH_SOURCE[0]}" == "x${0}" ] && [ $# -eq 1 ] && {
 	[ "x#@mdu-helper-capable" == "x$(cat "$1" | sed -e '2q' -e '2d' -e '/^#!\/.*\/bash/d')" ] && {
 		echo "Capable"
 		exit 0
@@ -57,20 +56,20 @@ ___get_verb_arguments() {
 	return $?
 }
 ___get_information() {
-	"$_mdu_CH_get_information_CB" $@
+	"$_mdu_CH_get_information_CB" "${1:-}" "${2:-}" "${3:-}"
 	return $?
 }
 
 _dump_man() {
 	local name=$_mdu_CH_application
-	local summary=$(___get_information summary "" "")
+	local summary=$(___get_information summary)
 	echo ".TH $name 1 \"$(date +"%d %b %Y")\" \"version 1.0\""
 	echo ".SH NAME"
 	echo "$name - $summary"
 	echo ".SH SYNOPSIS"
 	local first=1
 	___list_verbs | while read verb ; do
-		[ $first -eq 1 ] && first=0 || echo ".br" 
+		[ $first -eq 1 ] && first=0 || echo ".br"
 		argumentsRaw=$(___get_verb_arguments "$verb")
 		echo ".B $name"
 		echo "$verb"
@@ -78,13 +77,13 @@ _dump_man() {
 			local argumentName="$(_getArgumentName "$argument")"
 			#echo -n ".Op "
 			_isArgumentOptionnal "$argument" && {
-				echo "[${argumentName}]" 
+				echo "[${argumentName}]"
 			} || {
-				echo "${argumentName}" 
+				echo "${argumentName}"
 			}
 		done
 	done
-	local detail=$(___get_information detail "" "")
+	local detail=$(___get_information detail)
 	[ "x$detail" != "x" ] && {
 		echo ".SH DESCRIPTION"
 		echo "$detail"
@@ -94,12 +93,12 @@ _dump_man() {
 _perform_completion() {
 
 	_mdu_CH_completion_running=1
-	_mdu_CH_application="${COMP_WORDS[0]}"	
+	_mdu_CH_application="${COMP_WORDS[0]}"
 
 	. "$_mdu_CH_application"
-	
-	local cur prev                                                                                                                                                                               
-	COMPREPLY=()                                                                                                                                                                                 
+
+	local cur prev
+	COMPREPLY=()
 	cur="${COMP_WORDS[COMP_CWORD]}"
 
 	local verb verbs arguments customValues
@@ -157,15 +156,15 @@ _mdu_CH_init_builder_helper() {
 
 	local used_params=0
 
-	_complete_options=
+	local _complete_options=
 
 	[ ! -z ${1+x} -a "x$1" == "xhelp" ] || return
-	shift	
+	shift
 
 	[ -z ${1+x} ] && return 0
 
 	[ "$1" == "--dump-man" ] && {
-		_dump_man	
+		_dump_man
 		exit 0
 	}
 
@@ -180,7 +179,8 @@ _mdu_CH_init_builder_helper() {
 	}
 
 	[ "$1" == "--helper-complete" ] && {
-		complete ${_complete_options} -F _perform_completion "$_mdu_CH_application"
+		local application_name="$(basename "$_mdu_CH_application")"
+		complete ${_complete_options} -F _perform_completion "$application_name"
 		mdu_CH_exit=1
 		export mdu_CH_exit
 		return 0
@@ -193,8 +193,8 @@ _print_paragraph()  {
 
 	local format=1
 	[ $format -eq 1 ] && {
-		local FMT_CNT_paragraphe_title="\033[1;37m"                                                                                                                                                                            
- 		#local FMT_CNT_paragraphe_title="\033[0;37m" 
+		local FMT_CNT_paragraphe_title="\033[1;37m"
+		#local FMT_CNT_paragraphe_title="\033[0;37m"
 		#local FMT_CNT_paragraphe_title="\033[1;32m"
 		local FMT_CNT_reset="\033[0;0m"
 	}
@@ -204,7 +204,7 @@ _print_paragraph()  {
 	while read l ; do
 		echo "${emPrefix}${l}"
 	done
-		
+
 }
 
 _mdu_CH_print_help() {
@@ -212,10 +212,12 @@ _mdu_CH_print_help() {
 	local prefixUsage="Usage"
 	local prefixSummary="Summary"
 	local prefixDetail="Detail"
+	local prefixParameters="Parameters"
+	local prefixParametersTypes="Parameter's Types"
 	local prefixActions="Available actions"
 
 	if [ $# == 0 ] ; then
-	
+
 		_print_paragraph "${prefixUsage}" <<< "$_mdu_CH_application <action> [<parameter>...]"
 
 		___list_verbs | sort | _print_paragraph "$prefixActions"
@@ -230,51 +232,104 @@ _mdu_CH_print_help() {
 			summary="Show help about <${_mdu_CH_verb_locution}>"
 		} || {
 			arguments=$(___get_verb_arguments "$verb")
-			summary=$(___get_information summary "$verb" "")
-			detail=$(___get_information detail "$verb" "")
+			summary=$(___get_information "summary" "$verb" "verb")
+			detail=$(___get_information "detail" "$verb" "verb")
 		}
 
-		local usedTypes
+		local argumentsArray=($arguments)
 
-		declare -A usedTypes
-		for argument in "${argumentsArray[@]}"; do
-			argumentType="$(_getArgumentName "${argument}")"
-			if [ ! "${usedTypes[$argumentType]}" ] ; then
-				result+=("$argumentType")
-				seen[$argumentType]=1
-			fi
-		done
-
-		argumentsArray=($arguments)
 		(
 			echo -e -n "$_mdu_CH_application $verb"
-			for argument in "${argumentsArray[@]}"; do
-				argumentName="$(_getArgumentName "${argument}")"
-				_isArgumentOptionnal "${argument}" && {
-					echo -e -n " [<${argumentName}>]" 
-				} || {
-					echo -e -n " <${argumentName}>" 
-				}
-			done
+			[ "x$arguments" != "x"  ] && {
+				for argument in "${argumentsArray[@]}"; do
+					argumentName="$(_getArgumentName "${argument}")"
+					_isArgumentOptionnal "${argument}" && {
+						echo -e -n " [<${argumentName}>]"
+					} || {
+						echo -e -n " <${argumentName}>"
+					}
+				done
+			}
 			echo
 		) | _print_paragraph "${prefixUsage}"
 
-		[ "x$summary" != "x" ] &&  _print_paragraph "${prefixSummary}" <<< "$summary"
-
-		[ "x$summary" != "x" ] &&  _print_paragraph "{parameters}" <<< "${usedTypes[*]}"
+		[ "x$summary" != "x" ] && _print_paragraph "${prefixSummary}" <<< "$summary"
 
 		[ "x$detail" != "x" ] && _print_paragraph "${prefixDetail}" <<< "$detail"
-		
+
+		local argumentType argumentName
+		# Workaround bug where empty an array is considered as undeclared
+		local usedTypes=("--")
+
+		local maxArgumentLen=0
+		local maxTypeLen=0
+		local len
+		[ "x$arguments" != "x"  ] && {
+			for argument in "${argumentsArray[@]}"; do
+				argumentName="$(_getArgumentName "${argument}")"
+				len=${#argumentName}
+				[ $len -gt $maxArgumentLen ] && maxArgumentLen=$len
+				argumentType="$(_getArgumentType "${argument}")"
+				len=${#argumentType}
+				[ $len -gt $maxTypeLen ] && maxTypeLen=$len
+			done
+
+			for argument in "${argumentsArray[@]}"; do
+				argumentName="$(_getArgumentName "${argument}")"
+				argumentType="$(_getArgumentType "${argument}")"
+				local seen=0
+				for s in "${usedTypes[@]}"; do [[ "$s" == "$argumentType" ]] && { seen=1 ; break ; } done
+				[ $seen -eq 1 ] && continue
+				usedTypes+=("$argumentType")
+			done
+		}
+
+		[ ${#argumentsArray[@]} -gt 0 ] && {
+			(
+				for argument in "${argumentsArray[@]}"; do
+					argumentName="$(_getArgumentName "${argument}")"
+					argumentType="$(_getArgumentType "${argument}")"
+					local typeSummary="$(___get_information "summary" "$argumentType" "type" )"
+					[ "x$typeSummary" == "x" ] && typeSummary="$argumentType" || typeSummary="$typeSummary ( type '$argumentType' )"
+					printf "%-${maxArgumentLen}s : %s\n" "$argumentName" "$typeSummary"
+				done
+			) | _print_paragraph "${prefixParameters}"
+
+			
+			[ ${#usedTypes[@]} -gt 0 ] && {
+				(
+					for tyype in "${usedTypes[@]}"; do
+						local summary="$(___get_information "summary" "$tyype" "type" )"
+						local detail="$(___get_information "detail" "$tyype" "type" )"
+						[ "x$summary" == "x" -a "x$detail" = "x" ] && continue
+						[ "x$summary" == "x" ] && echo "${tyype} :" || echo "${tyype} : $summary"
+						[ "x$detail" != "x" ] && {
+							local emPrefix="|   "
+							while read l ; do
+								echo "${emPrefix}${l}"
+							done <<< "$detail"
+						}
+
+					done
+				) | _print_paragraph "${prefixParametersTypes}"
+			}
+		}
+
 	fi
 }
 
 _mdu_CH_show_helper_help() {
-	echo "This script is meant to be sourced, not executed"
-	echo "Caller must provide four callbacks:"
+	echo "Sourced | When this script is sourced"
+	echo "caller must provide four callbacks:"
 	echo "- getInformation <info> [<verb>]"
 	echo "- listVerbs"
 	echo "- getVerbArguments <verb>"
 	echo "- completeType <type> <verb> [<previous_arg>...]"
+	echo "Executed | When this script is executed"
+	echo "it accepts one parameter:"
+	echo "- the path of a script"
+	#echo "If the script given has parameter can "
+
 }
 
 
