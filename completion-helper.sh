@@ -259,7 +259,7 @@ _mdu_CH_print_help() {
 
 		local argumentType argumentName
 		# Workaround bug where empty an array is considered as undeclared
-		local usedTypes=("--")
+		local usedTypes=("-_-")
 
 		local maxArgumentLen=0
 		local maxTypeLen=0
@@ -295,23 +295,24 @@ _mdu_CH_print_help() {
 				done
 			) | _print_paragraph "${prefixParameters}"
 
-			
-			[ ${#usedTypes[@]} -gt 0 ] && {
-				(
-					for tyype in "${usedTypes[@]}"; do
-						local summary="$(___get_information "summary" "$tyype" "type" )"
-						local detail="$(___get_information "detail" "$tyype" "type" )"
-						[ "x$summary" == "x" -a "x$detail" = "x" ] && continue
-						[ "x$summary" == "x" ] && echo "${tyype} :" || echo "${tyype} : $summary"
-						[ "x$detail" != "x" ] && {
-							local emPrefix="|   "
-							while read l ; do
-								echo "${emPrefix}${l}"
-							done <<< "$detail"
-						}
+			local types_information="$(
+				for tyype in "${usedTypes[@]}"; do
+					[ "x$tyype" == "x-_-" ] && continue
+					local summary="$(___get_information "summary" "$tyype" "type" )"
+					local detail="$(___get_information "detail" "$tyype" "type" )"
+					[ "x$summary" == "x" -a "x$detail" = "x" ] && continue
+					[ "x$summary" == "x" ] && echo "${tyype} :" || echo "${tyype} : $summary"
+					[ "x$detail" != "x" ] && {
+						local emPrefix="|   "
+						while read l ; do
+							echo "${emPrefix}${l}"
+						done <<< "$detail"
+					}
 
-					done
-				) | _print_paragraph "${prefixParametersTypes}"
+				done
+			)"
+			[ "x$types_information" != "x" ] && {
+				_print_paragraph "${prefixParametersTypes}" <<< "$types_information"
 			}
 		}
 
