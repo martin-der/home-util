@@ -47,7 +47,7 @@ function completeType() {
 	shift
 	action="$1"
 	shift
-	case $argumentType in 
+	case $argumentType in
 		"$ARGTYPE_APPLICATION")
 			listApplications ;;
 		"$ARGTYPE_ALTERNATIVE")
@@ -81,7 +81,7 @@ function getInformation() {
 	local name="$2"
 	local what="$3"
 	local action parameterType
-	
+
 	[ "x$what" == "x" ] && {
 		[ "x$info" == "xsummary" ] && echo "Installation of 'optionnal' packages made easy"
 		[ "x$info" == "xdetail" ] && echo "${_mdu_CH_application} eases the installation of optionnal package ( usually found under '/opt/' )"
@@ -91,14 +91,14 @@ function getInformation() {
 	[ "x$what" == "xtype" ] && {
 		case "$name" in
 			${ARGTYPE_APPLICATION})
-				[ "x$info" == "xsummary" ] && echo "Name of an application" 
+				[ "x$info" == "xsummary" ] && echo "Name of an application"
 				[ "x$info" == "xdetail" ] && {
 					echo "This is the name of a application. Applications are stored in the folder given par the environement variable 'MDU_OPT_DIRECTORY'"
 					echo "The command '$ACTION_APPLICATIONS' can also list the existing applications."
 				}
 				;;
 			${ARGTYPE_ALTERNATIVE})
-				[ "x$info" == "xsummary" ] && echo "Name of an alternative" 
+				[ "x$info" == "xsummary" ] && echo "Name of an alternative"
 				[ "x$info" == "xdetail" ] && {
 					echo "This is the name of an alternative as it can be found in the folder of the application."
 					echo "The command '$ACTION_APPLICATION_SHOW_ALTERNATIVE' can also list the alternatives for a application."
@@ -215,7 +215,7 @@ function extract {
 		return 1
 	}
 
-	log_debug "command is : $commandPrefix $1"  
+	log_debug "command is : $commandPrefix $1"
 	$DRYDO $commandPrefix "$1" > /dev/null || {
 		log_error "Error while extracting archive"
 		return 1
@@ -224,24 +224,24 @@ function extract {
 	return 0
 }
 function extractCommandPrefix {
-        case $1 in
-          *.tar.bz2) echo "tar xvjf" ;;
-          *.tar.gz) echo "tar xvzf" ;;
-          *.tar.xz) echo "tar xvJf" ;;
-          *.lzma) echo "unlzma" ;;
-          *.bz2) echo "bunzip2" ;;
-          *.rar) echo "unrar x -ad" ;;
-          *.gz) echo "gunzip" ;;
-          *.tar) echo "tar xvf" ;;
-          *.tbz2) echo "tar xvjf" ;;
-          *.tgz) echo "tar xvzf" ;;
-          *.zip) echo "unzip" ;;
-          *.Z) echo "uncompress" ;;
-          *.7z) echo "7z x" ;;
-          *.xz) echo "unxz" ;;
-          *.exe) echo "cabextract" ;;
-          *) return 1 ;;
-        esac
+	case $1 in
+		*.tar.bz2) echo "tar xvjf" ;;
+		*.tar.gz) echo "tar xvzf" ;;
+		*.tar.xz) echo "tar xvJf" ;;
+		*.lzma) echo "unlzma" ;;
+		*.bz2) echo "bunzip2" ;;
+		*.rar) echo "unrar x -ad" ;;
+		*.gz) echo "gunzip" ;;
+		*.tar) echo "tar xvf" ;;
+		*.tbz2) echo "tar xvjf" ;;
+		*.tgz) echo "tar xvzf" ;;
+		*.zip) echo "unzip" ;;
+		*.Z) echo "uncompress" ;;
+		*.7z) echo "7z x" ;;
+		*.xz) echo "unxz" ;;
+		*.exe) echo "cabextract" ;;
+		*) return 1 ;;
+	esac
 	return 0
 }
 
@@ -295,7 +295,7 @@ function showAlternative() {
 
 	log_debug "Check link '$ALTERNATIVE_LINK' for alternative"
 	if test -L "$ALTERNATIVE_LINK" ; then
-		
+
 		ALTERNATIVE="$(readlink -f "$ALTERNATIVE_LINK")"
 		#ALTERNATIVE_LINK="$(realpath "${APPS_DIR}/${APPLICATION}")"
 
@@ -313,7 +313,7 @@ function showAlternative() {
 			log_warn "Application '$APPLICATION' uses a invalid alternative : link '$ALTERNATIVE_LINK'->'$ALTERNATIVE' is broken"
 		fi
 	fi
-	
+
 	log_info "There is no alternative set for application '$APPLICATION'"
 	return 1
 }
@@ -327,7 +327,7 @@ function setAlternative() {
 
 	$DRYDO rm -f "${ALTERNATIVE_LINK}" || exit $ERROR_EXECUTION_FAILED
 	$DRYDO ln -s "${ALT_THING}" "${ALTERNATIVE_LINK}" || exit $ERROR_EXECUTION_FAILED
-	
+
 	log_info "Application '$APPLICATION' now uses '$ALTERNATIVE' alternative"
 }
 
@@ -351,14 +351,14 @@ function installAlternative() {
 
 	APP_DIR="${APPS_DIR}/${APPLICATION}.d"
 	SOURCE_NAME="$(basename "$SOURCE")"
-	
+
 	DESTINATION="${APP_DIR}/${ALTERNATIVE_NAME-${SOURCE_NAME}}"
 
 	TMP_DIR=`mktemp -d`
 	trap "rm -rf $TMP_DIR" EXIT
 	log_debug "Working in $TMP_DIR"
 
-	if test -f "$SOURCE" ; then 
+	if test -f "$SOURCE" ; then
 
 		log_debug "Install destination is '$DESTINATION'"
 
@@ -381,17 +381,17 @@ function installAlternative() {
 		)
 
 		log_info "Alternative '$SOURCE' for application '$APPLICATION' successfully installed in '$DESTINATION'"
-	elif test -d "$SOURCE" ; then 
+	elif test -d "$SOURCE" ; then
 
 		log_debug "Copying folder from '$SOURCE' to '$DESTINATION'"
 		$DRYDO cp -r "$SOURCE" "$DESTINATION" || exit $ERROR_EXECUTION_FAILED
- 
+
 		log_info "Alternative '$SOURCE' for application '$APPLICATION' successfully installed in '$DESTINATION'"
 	else
 		log_error "Does not exist or is not a file or directory : '$SOURCE'"
 		exit 100
 	fi
-	
+
 }
 function uninstallAlternative() {
 	APPLICATION="$1"
@@ -402,7 +402,7 @@ function uninstallAlternative() {
 
 
 	$DRYDO rm -rf "$DESTINATION" || exit $ERROR_EXECUTION_FAILED
-	
+
 	log_info "Alternative '$ALTERNATIVE' (in '$DESTINATION') for application '$APPLICATION' was uninstalled"
 }
 
