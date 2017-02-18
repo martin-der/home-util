@@ -341,7 +341,7 @@ function listApplications() {
 }
 
 [ $mdu_CH_exit -eq 1 ] && {
-	exit 0
+	return 0
 }
 
 function installAlternative() {
