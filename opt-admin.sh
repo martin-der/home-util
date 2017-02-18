@@ -1,8 +1,8 @@
 #!/bin/bash
 #@mdu-helper-capable
 
-source "$(dirname "$0")/shell-util.sh" 2>/dev/null || source shell-util  || exit 1
-source "$(dirname "$0")/completion-helper.sh" 2>/dev/null || source completion-helper  || exit 1
+source "$(dirname "$0")/shell-util.sh" 2>/dev/null || source shell-util || exit 1
+source "$(dirname "$0")/completion-helper.sh" 2>/dev/null || source completion-helper || exit 1
 
 set -u
 
@@ -12,8 +12,6 @@ else
 	APPS_DIR="$MDU_OPT_DIRECTORY"
 fi
 
-
-log_info "Opt directory = '$APPS_DIR'"
 
 ACTION_HELP="help"
 ACTION_APPLICATIONS="applications"
@@ -94,11 +92,17 @@ function getInformation() {
 		case "$name" in
 			${ARGTYPE_APPLICATION})
 				[ "x$info" == "xsummary" ] && echo "Name of an application" 
-				[ "x$info" == "xdetail" ] && echo ""
+				[ "x$info" == "xdetail" ] && {
+					echo "This is the name of a application. Applications are stored in the folder given par the environement variable 'MDU_OPT_DIRECTORY'"
+					echo "The command '$ACTION_APPLICATIONS' can also list the existing applications."
+				}
 				;;
 			${ARGTYPE_ALTERNATIVE})
 				[ "x$info" == "xsummary" ] && echo "Name of an alternative" 
-				[ "x$info" == "xdetail" ] && echo "Name of an alternative as it can be found in the folder of the application"
+				[ "x$info" == "xdetail" ] && {
+					echo "This is the name of an alternative as it can be found in the folder of the application."
+					echo "The command '$ACTION_APPLICATION_SHOW_ALTERNATIVE' can also list the alternatives for a application."
+				}
 				;;
 		esac
 		return 0
@@ -106,8 +110,14 @@ function getInformation() {
 
 	[ "x$what" == "xverb" ] && {
 		case "$name" in
+			$ACTION_APPLICATIONS)
+				[ "x$info" == "xsummary" ] && echo "List applications"
+				;;
+			$ACTION_APPLICATION_ALTERNATIVES)
+				[ "x$info" == "xsummary" ] && echo "List installed alternatives for an application"
+				;;
 			$ACTION_APPLICATION_CREATE)
-				[ "x$info" == "xsummary" ] && echo "Create a new application" 
+				[ "x$info" == "xsummary" ] && echo "Create a new application"
 				;;
 			$ACTION_APPLICATION_INSTALL_ALTERNATIVE)
 				[ "x$info" == "xsummary" ] && echo "Install a new alternative for the given application." \
@@ -121,10 +131,13 @@ function getInformation() {
 				[ "x$info" == "xsummary" ] && echo "Remove an alternative for an application"
 				;;
 			$ACTION_APPLICATION_SHOW_ALTERNATIVE)
-				[ "x$info" == "xsummary" ] && echo "Choose currently selection alternative for an application" 
+				[ "x$info" == "xsummary" ] && echo "Show currently selected alternative for an application"
+				[ "x$info" == "xdetail" ] && {
+					echo "return 0 only if an alternative if selected"
+				}
 				;;
 			$ACTION_APPLICATION_CHOOSE_ALTERNATIVE)
-				[ "x$info" == "xsummary" ] && echo "Choose an alternative for an application" 
+				[ "x$info" == "xsummary" ] && echo "Choose an alternative for an application"
 				;;
 			*)
 				return 1 ;;
@@ -473,7 +486,12 @@ dieIfArgumentMissing "$ACTION" "Action" 1
 
 if test "x$ACTION" == "x$ACTION_HELP" ; then
 	printHelp $@
-elif test "x$ACTION" == "x$ACTION_APPLICATIONS" ; then
+	exit 0
+fi
+
+log_info "Opt directory = '$APPS_DIR'"
+
+if test "x$ACTION" == "x$ACTION_APPLICATIONS" ; then
 	listApplications
 elif test "x$ACTION" == "x$ACTION_APPLICATION_CREATE" ; then
 	createApplication $@
