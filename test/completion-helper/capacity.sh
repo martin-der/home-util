@@ -36,6 +36,7 @@ testIdentifyNotCapableNotExistingScript() {
 	assertEquals "" "$response"
 }
 testIdentifyNotCapableNotReadableScript() {
+	# TODO : move not_readable_file in temp directory so we don't have to modify a tracked file
 	chmod u-r "${test_root_dir}/resources/not_readable_file.sh"
 	local response
 	response="$(bash "${root_dir}/completion-helper.sh" "${test_root_dir}/resources/not_readable_file.sh")"
