@@ -2,7 +2,7 @@
 
 
 [ "x${BASH_SOURCE[0]}" == "x${0}" ] && [ $# -eq 1 ] && {
-	[ -e "$1" ] || {
+	[ -e "$1" ] && [ -r "$1" ] || {
 		echo "'$1' does not exist or is not readable" >&2
 		exit 1
 	}

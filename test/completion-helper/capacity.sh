@@ -35,6 +35,15 @@ testIdentifyNotCapableNotExistingScript() {
 	assertNotSame 0 $?
 	assertEquals "" "$response"
 }
+testIdentifyNotCapableNotReadableScript() {
+	chmod u-r "${test_root_dir}/resources/not_readable_file.sh"
+	local response
+	response="$(bash "${root_dir}/completion-helper.sh" "${test_root_dir}/resources/not_readable_file.sh")"
+	assertNotSame 0 $?
+	assertEquals "" "$response"
+	chmod u+r "${test_root_dir}/resources/not_readable_file.sh"
+}
+
 
 
 
