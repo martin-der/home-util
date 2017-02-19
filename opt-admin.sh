@@ -4,7 +4,6 @@
 source "$(dirname "$0")/shell-util.sh" 2>/dev/null || source shell-util || exit 1
 source "$(dirname "$0")/completion-helper.sh" 2>/dev/null || source completion-helper || exit 1
 
-set -u
 
 if [ -z ${MDU_OPT_DIRECTORY+x} ] ; then
 	APPS_DIR="/opt"
