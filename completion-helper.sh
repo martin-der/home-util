@@ -2,6 +2,10 @@
 
 
 [ "x${BASH_SOURCE[0]}" == "x${0}" ] && [ $# -eq 1 ] && {
+	[ -e "$1" ] || {
+		echo "'$1' does not exist or is not readable" >&2
+		exit 1
+	}
 	[ "x#@mdu-helper-capable" == "x$(cat "$1" | sed -e '2q' -e '2d' -e '/^#!\/.*\/bash/d')" ] && {
 		echo "Capable"
 		exit 0
@@ -156,7 +160,6 @@ _mdu_CH_init_builder_helper() {
 
 	local used_params=0
 
-	local _complete_options=
 
 	[ ! -z ${1+x} -a "x$1" == "xhelp" ] || return
 	shift
@@ -179,6 +182,7 @@ _mdu_CH_init_builder_helper() {
 	}
 
 	[ "$1" == "--helper-complete" ] && {
+		local _complete_options=
 		local application_name="$(basename "$_mdu_CH_application")"
 		complete ${_complete_options} -F _perform_completion "$application_name"
 		mdu_CH_exit=1
