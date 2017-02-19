@@ -279,7 +279,7 @@ function listAlternatives() {
 	APP_DIR="${APPS_DIR}/${APPLICATION}.d"
 	APP_DIR_SLASH="${APP_DIR}/"
 	prefix_length="${#APP_DIR_SLASH}"
-	find "${APP_DIR}" -mindepth 1 -maxdepth 1 -type d -o -type f | while read alternative ; do
+	find "${APP_DIR}" -mindepth 1 -maxdepth 1 -type d -o -type f 2>/dev/null | while read alternative ; do
 		echo ${alternative:${prefix_length}}
 	done
 }
@@ -334,7 +334,7 @@ function setAlternative() {
 
 function listApplications() {
 	APPS_DIR_escaped="$(escaped_for_regex "$APPS_DIR")"
-	find "${APPS_DIR}" -maxdepth 1 -type d -name '*.d' | while read appdir ; do
+	find "${APPS_DIR}" -maxdepth 1 -type d -name '*.d' 2>/dev/null | while read appdir ; do
 		sed "s#^${APPS_DIR_escaped}/\(.*\)\.d\$#\1#" <<< "$appdir"
 	done
 }
