@@ -1,10 +1,14 @@
 #!/bin/bash
 
 
-[ "x${BASH_SOURCE[0]}" == "x${0}" ] && [ $# -eq 1 ] && {
+[ "x${BASH_SOURCE[0]}" == "x${0}" ] && {
+	[ $# -ne 1 ] && {
+		echo "Exactly one argument is expected"
+		exit 2
+	}
 	[ -e "$1" ] && [ -r "$1" ] || {
 		echo "'$1' does not exist or is not readable" >&2
-		exit 1
+		exit 2
 	}
 	[ "x#@mdu-helper-capable" == "x$(cat "$1" | sed -e '2q' -e '2d' -e '/^#!\/.*\/bash/d')" ] && {
 		echo "Capable"
@@ -41,14 +45,39 @@ _reply_common_completion() {
 }
 
 _isArgumentOptionnal() {
-	echo "$1" | grep "^\[.*\]$" >/dev/null
+	grep "^\[.*\]$" <<< "$1" >/dev/null
+}
+_isArgumentRepeatable() {
+	grep "^\[.*\.\.\.\]$\|^.*\.\.\.$" <<< "$1" >/dev/null
+}
+_getArgumentFistCouple() {
+	sed "s#^\(<[^>]\+>\).*\$#\1#" <<< "$1"
+}
+_getArgumentFistCoupleFollow() {
+	sed "s#^<[^>]\+>\(.*\)\$#\1#" <<< "$1"
+}
+_getArgumentCore() {
+	sed "s#^\[\([^\.]\+\)\(\.\.\.\)\\?\]\$\|^\([^\.]\+\)\(\.\.\.\)\\?\$#\1\3#" <<< "$1"
 }
 _getArgumentName() {
-	echo "$1" | sed 's#^<\(.\+\)\(\:.\+\)\\\?>$\|^\[<\(.\+\)\(\:.\+\)\\\?>\]$#\1\3#'
+	sed "s#^<\([^:]\+\)\(:.\+\)\\?>\$#\1#" <<< "$1"
 }
 _getArgumentType() {
-	echo "$1" | sed 's#^<\(.\+\)\(\:\(.\+\)\)\\\?>$\|^\[<\(.\+\)\(\:\(.\+\)\)\\\?>\]$#\3\6#'
+	sed "s#^<\([^:]\+\):\(.\+\)\\?>\$#\2#" <<< "$1"
 }
+
+
+#core="$(_getArgumentCore "$1")" 
+#echo "- core : '$core'"
+#echo "- first couple :"
+#_getArgumentFistCouple "$core"
+#echo "- first couple follow :"
+#_getArgumentFistCoupleFollow "$core"
+#echo "- name :"
+#_getArgumentName "$core"
+#echo "- type :"
+#_getArgumentType "$core"
+#exit 0
 
 
 ___list_verbs() {
@@ -80,10 +109,10 @@ _dump_man() {
 		for argument in ${argumentsRaw}; do
 			local argumentName="$(_getArgumentName "$argument")"
 			#echo -n ".Op "
-			_isArgumentOptionnal "$argument" && {
-				echo "[${argumentName}]"
+			_isArgumentOptionnal "${argument}" && {
+				_isArgumentRepeatable "${argument}" && echo "[${argumentName}]" || echo "[${argumentName}...]"
 			} || {
-				echo "${argumentName}"
+				_isArgumentRepeatable "${argument}" && echo "${argumentName}" || echo "${argumentName}..."
 			}
 		done
 	done
@@ -94,10 +123,11 @@ _dump_man() {
 	}
 }
 
-_perform_completion() {
+_mdu_auto_completion() {
 
 	_mdu_CH_completion_running=1
-	_mdu_CH_application="${COMP_WORDS[0]}"
+	#_mdu_CH_application="${COMP_WORDS[0]}"
+	_mdu_CH_application="${1##*/}"
 
 	. "$_mdu_CH_application"
 
@@ -184,7 +214,7 @@ _mdu_CH_init_builder_helper() {
 	[ "$1" == "--helper-complete" ] && {
 		local _complete_options=
 		local application_name="$(basename "$_mdu_CH_application")"
-		complete ${_complete_options} -F _perform_completion "$application_name"
+		complete ${_complete_options} -F _mdu_auto_completion "$application_name"
 		mdu_CH_exit=1
 		export mdu_CH_exit
 		return 0
@@ -220,6 +250,8 @@ _mdu_CH_print_help() {
 	local prefixParametersTypes="Parameter's Types"
 	local prefixActions="Available actions"
 
+	local argumentCore argumentType argumentName
+
 	if [ $# == 0 ] ; then
 
 		_print_paragraph "${prefixUsage}" <<< "$_mdu_CH_application <action> [<parameter>...]"
@@ -246,10 +278,13 @@ _mdu_CH_print_help() {
 			echo -e -n "$_mdu_CH_application $verb"
 			[ "x$arguments" != "x"  ] && {
 				for argument in "${argumentsArray[@]}"; do
-					argumentName="$(_getArgumentName "${argument}")"
+					argumentCore="$(_getArgumentCore "${argument}")"
+					argumentName="$(_getArgumentName "${argumentCore}")"
 					_isArgumentOptionnal "${argument}" && {
+						_isArgumentRepeatable "${argument}" && echo "[${argumentName}]" || echo "[${argumentName}...]"
 						echo -e -n " [<${argumentName}>]"
 					} || {
+						_isArgumentRepeatable "${argument}" && echo "[${argumentName}]" || echo "[${argumentName}...]"
 						echo -e -n " <${argumentName}>"
 					}
 				done
@@ -261,8 +296,7 @@ _mdu_CH_print_help() {
 
 		[ "x$detail" != "x" ] && _print_paragraph "${prefixDetail}" <<< "$detail"
 
-		local argumentType argumentName
-		# Workaround bug where empty an array is considered as undeclared
+		# Workaround a bug where empty an array is considered as undeclared
 		local usedTypes=("-_-")
 
 		local maxArgumentLen=0
@@ -270,17 +304,13 @@ _mdu_CH_print_help() {
 		local len
 		[ "x$arguments" != "x"  ] && {
 			for argument in "${argumentsArray[@]}"; do
-				argumentName="$(_getArgumentName "${argument}")"
+				argumentCore="$(_getArgumentCore "${argument}")"
+				argumentName="$(_getArgumentName "${argumentCore}")"
 				len=${#argumentName}
 				[ $len -gt $maxArgumentLen ] && maxArgumentLen=$len
-				argumentType="$(_getArgumentType "${argument}")"
+				argumentType="$(_getArgumentType "${argumentCore}")"
 				len=${#argumentType}
 				[ $len -gt $maxTypeLen ] && maxTypeLen=$len
-			done
-
-			for argument in "${argumentsArray[@]}"; do
-				argumentName="$(_getArgumentName "${argument}")"
-				argumentType="$(_getArgumentType "${argument}")"
 				local seen=0
 				for s in "${usedTypes[@]}"; do [[ "$s" == "$argumentType" ]] && { seen=1 ; break ; } done
 				[ $seen -eq 1 ] && continue
@@ -291,8 +321,9 @@ _mdu_CH_print_help() {
 		[ ${#argumentsArray[@]} -gt 0 ] && {
 			(
 				for argument in "${argumentsArray[@]}"; do
-					argumentName="$(_getArgumentName "${argument}")"
-					argumentType="$(_getArgumentType "${argument}")"
+					argumentCore="$(_getArgumentCore "${argument}")"
+					argumentName="$(_getArgumentName "${argumentCore}")"
+					argumentType="$(_getArgumentType "${argumentCore}")"
 					local typeSummary="$(___get_information "summary" "$argumentType" "type" )"
 					[ "x$typeSummary" == "x" ] && typeSummary="$argumentType" || typeSummary="$typeSummary ( type '$argumentType' )"
 					printf "%-${maxArgumentLen}s : %s\n" "$argumentName" "$typeSummary"
@@ -319,7 +350,6 @@ _mdu_CH_print_help() {
 				_print_paragraph "${prefixParametersTypes}" <<< "$types_information"
 			}
 		}
-
 	fi
 }
 
@@ -333,8 +363,8 @@ _mdu_CH_show_helper_help() {
 	echo "Executed | When this script is executed"
 	echo "it accepts one parameter:"
 	echo "- the path of a script"
-	#echo "If the script given has parameter can "
-
+	echo "return 0 and echo 'Capable' if the script given has parameter can do automatic completion"
+	echo "return non 0 and echo 'Not Capable' otherwise"
 }
 
 
