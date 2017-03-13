@@ -1,27 +1,18 @@
-group 'net.tetrakoopa'
-version '1.0-SNAPSHOT'
 
-
-task runTests(type:Exec) {
-	workingDir '../'
-	commandLine './test/runall.sh'
-
-	//store the output instead of printing to the console:
-	//standardOutput = new ByteArrayOutputStream()
-
-	//extension method stopTomcat.output() can be used to obtain the output:
-	/*ext.output = {
-		return standardOutput.toString()
-	}*/
-}
 
 def homeutilProjectDir = "${project.projectDir}/.."
 
-task runTestsForXXX() {
+def trimWD = {
+	it.startsWith(homeutilProjectDir) ? it.substring(homeutilProjectDir.size()) : it
+}
+
+task runTests(type: Test) {
 
 	def sourceDir = 'script'
 	file("$sourceDir").eachFile { testDir ->
 		testDir.eachFile { file ->
+			def filename = trimWD("$file")
+			println "Testing $filename"
 			exec {
 				workingDir homeutilProjectDir
 				commandLine 'bash', "$file"
@@ -31,7 +22,7 @@ task runTestsForXXX() {
 }
 
 tasks.withType(Test) {
-	runtests
+	runTests
 }
 
 
