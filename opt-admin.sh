@@ -4,12 +4,28 @@
 source "$(dirname "$0")/shell-util.sh" 2>/dev/null || source shell-util || exit 1
 source "$(dirname "$0")/completion-helper.sh" 2>/dev/null || source completion-helper || exit 1
 
-
 if [ -z ${MDU_OPT_DIRECTORY+x} ] ; then
-	APPS_DIR="/opt"
+	OPT_DIR="/opt"
 else
-	APPS_DIR="$MDU_OPT_DIRECTORY"
+	OPT_DIR="$MDU_OPT_DIRECTORY"
 fi
+if [ -z ${MDU_OPT_PKG_DIRECTORY+x} ] ; then
+	APPS_DIR="${OPT_DIR}/pkg"
+else
+	APPS_DIR="$MDU_OPT_PKG_DIRECTORY"
+fi
+if [ -z ${MDU_OPT_BIN_DIRECTORY+x} ] ; then
+	BIN_DIR="${OPT_DIR}/bin"
+else
+	BIN_DIR="$MDU_OPT_BIN_DIRECTORY"
+fi
+if [ -z ${MDU_OPT_ICON_DIRECTORY+x} ] ; then
+	ICON_DIR="${OPT_DIR}/share/icons"
+else
+	ICON_DIR="$MDU_OPT_ICON_DIRECTORY"
+fi
+
+
 
 
 ACTION_HELP="help"
@@ -20,9 +36,15 @@ ACTION_APPLICATION_SHOW_ALTERNATIVE="show"
 ACTION_APPLICATION_CHOOSE_ALTERNATIVE="choose"
 ACTION_APPLICATION_INSTALL_ALTERNATIVE="install"
 ACTION_APPLICATION_UNINSTALL_ALTERNATIVE="uninstall"
+ACTION_APPLICATION_ATTRIBUTES="attributes"
+ACTION_APPLICATION_ATTRIBUTE="attribute"
+ACTION_APPLICATION_GENERATE="generate"
 
 ARGTYPE_APPLICATION="application"
 ARGTYPE_ALTERNATIVE="alternative"
+ARGTYPE_ATTRIBUTE="attribute"
+ARGTYPE_GENERABLE="generable"
+ARGTYPE_XDG_CATEGORIES="xdg-category"
 
 
 ERROR_NO_SUCH_ACTION=3
@@ -51,6 +73,12 @@ function completeType() {
 			listApplications ;;
 		"$ARGTYPE_ALTERNATIVE")
 			listAlternatives $@ ;;
+		"$ARGTYPE_ATTRIBUTE")
+			listAttributes $@ ;;
+		"$ARGTYPE_GENERABLE")
+			listGenerables $@ ;;
+		"$ARGTYPE_XDG_CATEGORIES")
+			listXDGCategories ;;
 		*)
 			return 1 ;;
 	esac
@@ -69,6 +97,10 @@ function getActionArguments() {
 			echo "<application:${ARGTYPE_APPLICATION}> <alternative:${ARGTYPE_ALTERNATIVE}>" ;;
 		$ACTION_APPLICATION_CHOOSE_ALTERNATIVE)
 			echo "<application:${ARGTYPE_APPLICATION}> <alternative:${ARGTYPE_ALTERNATIVE}>" ;;
+		$ACTION_APPLICATION_ATTRIBUTE)
+			echo "<application:${ARGTYPE_APPLICATION}> [<attribute:${ARGTYPE_ATTRIBUTE}>=<path:file>...]" ;;
+		$ACTION_APPLICATION_GENERATE)
+			echo "<application:${ARGTYPE_APPLICATION}> <attribute:${ARGTYPE_GENERABLE}>" ;;
 		*)
 			return 1 ;;
 	esac
@@ -92,7 +124,7 @@ function getInformation() {
 			${ARGTYPE_APPLICATION})
 				[ "x$info" == "xsummary" ] && echo "Name of an application"
 				[ "x$info" == "xdetail" ] && {
-					echo "This is the name of a application. Applications are stored in the folder given par the environement variable 'MDU_OPT_DIRECTORY'"
+					echo "This is the name of a application. Applications are stored in the folder given by the environment variable 'MDU_OPT_PKG_DIRECTORY'"
 					echo "The command '$ACTION_APPLICATIONS' can also list the existing applications."
 				}
 				;;
@@ -103,6 +135,21 @@ function getInformation() {
 					echo "The command '$ACTION_APPLICATION_SHOW_ALTERNATIVE' can also list the alternatives for a application."
 				}
 				;;
+			${ARGTYPE_ATTRIBUTE})
+				[ "x$info" == "xsummary" ] && echo "Name of an attribute"
+				[ "x$info" == "xdetail" ] && {
+					echo "Attributes describe some informations related to an application such as the main binary or shell script,"
+					echo "an icon for the application."
+				}
+				;;
+			${ARGTYPE_GENERABLE})
+				[ "x$info" == "xsummary" ] && echo "Type of a generable content"
+				[ "x$info" == "xdetail" ] && {
+					echo "application-desktop"
+					echo ""
+				}
+				;;
+
 		esac
 		return 0
 	}
@@ -137,6 +184,19 @@ function getInformation() {
 				;;
 			$ACTION_APPLICATION_CHOOSE_ALTERNATIVE)
 				[ "x$info" == "xsummary" ] && echo "Choose an alternative for an application"
+				;;
+			$ACTION_APPLICATION_ATTRIBUTES)
+				[ "x$info" == "xsummary" ] && echo "List attributes than can be setted for an application"
+				;;
+			$ACTION_APPLICATION_ATTRIBUTE)
+				[ "x$info" == "xsummary" ] && echo "Show or set attributes for an application"
+				[ "x$info" == "xdetail" ] && {
+					echo "Without argument this command shows all attributes."
+					echo "To set one or more attributes, add as many argument as needed like this : attribute1=value1 attribute2=value2"
+				}
+				;;
+			$ACTION_APPLICATION_GENERATE)
+				[ "x$info" == "xsummary" ] && echo "Generate something for the application"
 				;;
 			*)
 				return 1 ;;
@@ -222,27 +282,7 @@ function extract {
 
 	return 0
 }
-function extractCommandPrefix {
-	case $1 in
-		*.tar.bz2) echo "tar xvjf" ;;
-		*.tar.gz) echo "tar xvzf" ;;
-		*.tar.xz) echo "tar xvJf" ;;
-		*.lzma) echo "unlzma" ;;
-		*.bz2) echo "bunzip2" ;;
-		*.rar) echo "unrar x -ad" ;;
-		*.gz) echo "gunzip" ;;
-		*.tar) echo "tar xvf" ;;
-		*.tbz2) echo "tar xvjf" ;;
-		*.tgz) echo "tar xvzf" ;;
-		*.zip) echo "unzip" ;;
-		*.Z) echo "uncompress" ;;
-		*.7z) echo "7z x" ;;
-		*.xz) echo "unxz" ;;
-		*.exe) echo "cabextract" ;;
-		*) return 1 ;;
-	esac
-	return 0
-}
+
 
 function checkApplicationNameIsValid() {
 	echo "$1" | grep -q '^.*\.d$' > /dev/null  && {
@@ -275,33 +315,33 @@ function createApplicationDooo() {
 }
 
 function listAlternatives() {
-	APPLICATION="$1"
-	APP_DIR="${APPS_DIR}/${APPLICATION}.d"
-	APP_DIR_SLASH="${APP_DIR}/"
-	prefix_length="${#APP_DIR_SLASH}"
+	local APPLICATION="$1"
+	local APP_DIR="${APPS_DIR}/${APPLICATION}.d"
+	local APP_DIR_SLASH="${APP_DIR}/"
+	local prefix_length="${#APP_DIR_SLASH}"
 	find "${APP_DIR}" -mindepth 1 -maxdepth 1 -type d -o -type f 2>/dev/null | while read alternative ; do
 		echo ${alternative:${prefix_length}}
 	done
 }
 
 function showAlternative() {
-	APPLICATION="$1"
+	local APPLICATION="$1"
 
-	APP_DIR="${APPS_DIR}/${APPLICATION}.d"
-	APP_DIR_escaped="$(escaped_for_regex "$APP_DIR")"
+	local APP_DIR="${APPS_DIR}/${APPLICATION}.d"
+	local APP_DIR_escaped="$(escaped_for_regex "$APP_DIR")"
 
-	ALTERNATIVE_LINK="${APPS_DIR}/${APPLICATION}"
+	local ALTERNATIVE_LINK="${APPS_DIR}/${APPLICATION}"
 
 	log_debug "Check link '$ALTERNATIVE_LINK' for alternative"
 	if test -L "$ALTERNATIVE_LINK" ; then
 
-		ALTERNATIVE="$(readlink -f "$ALTERNATIVE_LINK")"
+		local ALTERNATIVE="$(readlink -f "$ALTERNATIVE_LINK")"
 		#ALTERNATIVE_LINK="$(realpath "${APPS_DIR}/${APPLICATION}")"
 
 
 		if test -e "$ALTERNATIVE" ; then
 
-			ALTERNATIVE_NAME="$(basename "$ALTERNATIVE")"
+			local ALTERNATIVE_NAME="$(basename "$ALTERNATIVE")"
 
 			echo "$ALTERNATIVE_NAME"
 
@@ -337,6 +377,28 @@ function listApplications() {
 	find "${APPS_DIR}" -maxdepth 1 -type d -name '*.d' 2>/dev/null | while read appdir ; do
 		sed "s#^${APPS_DIR_escaped}/\(.*\)\.d\$#\1#" <<< "$appdir"
 	done
+}
+
+function listAttributeSuffixes() {
+	local ATTRIBUTE="$1"
+	case "$ATTRIBUTE" in
+		"icon")
+			echo "svg png"
+			return 0
+			;;
+	esac
+	return 1
+}
+function listAttributes() {
+	echo "icon executable"
+}
+
+function listGenerables() {
+	echo "application-desktop"
+}
+
+function listXDGCategories() {
+	echo "AudioVideo Audio Video Development Education Game Graphics Network Office Science Settings System Utility"
 }
 
 [ $mdu_CH_exit -eq 1 ] && {
@@ -399,10 +461,30 @@ function uninstallAlternative() {
 	APP_DIR="${APPS_DIR}/${APPLICATION}.d"
 	DESTINATION="${APP_DIR}/${ALTERNATIVE}"
 
-
 	$DRYDO rm -rf "$DESTINATION" || exit $ERROR_EXECUTION_FAILED
 
 	log_info "Alternative '$ALTERNATIVE' (in '$DESTINATION') for application '$APPLICATION' was uninstalled"
+}
+
+function dumpApplicationDesktop() {
+	local APPLICATION="$1"
+	local name="$APPLICATION"
+	local icon executable categories
+	icon="$(getAttributeValue "$APPLICATION" "icon")" || { log_warn "Application has no icon defined" ; }
+	executable="$(getAttributeValue "$APPLICATION" "executable")" || { log_error "Application has no executable defined" ; return 2 ; }
+	categories="Graphics;"
+	startupWMClass=""
+
+	echo "#!/usr/bin/env xdg-open"
+	echo "[Desktop Entry]"
+	echo "Version=1.0"
+	echo "Terminal=false"
+	echo "Type=Application"
+	echo "Name=${name}"
+	echo "Exec=${executable}"
+	[ "x${icon}" != "x" ] && echo "Icon=${icon}"
+	[ "x${categories}" != "x" ] && echo "Categories=${categories}"
+	[ "x${startupWMClass}" != "x" ] && echo "StartupWMClass=${startupWMClass}"
 }
 
 # $1 Argument
@@ -418,7 +500,7 @@ function dieIfArgumentMissing() {
 }
 
 function createApplication() {
-	APPLICATION="$1"
+	local APPLICATION="$1"
 
 	dieIfArgumentMissing "$APPLICATION" "Application" 2
 	checkApplicationDoesntExistOrDie "$APPLICATION"
@@ -428,7 +510,7 @@ function createApplication() {
 }
 
 function listApplicationAlternatives() {
-	APPLICATION="$1"
+	local APPLICATION="$1"
 
 	dieIfArgumentMissing "$APPLICATION" "Application" 2
 	checkApplicationExistsOrDie "$APPLICATION"
@@ -437,15 +519,15 @@ function listApplicationAlternatives() {
 }
 
 function showApplicationAlternative() {
-	APPLICATION="$1"
+	local APPLICATION="$1"
 	dieIfArgumentMissing "$APPLICATION" "Application" 2
 	checkApplicationExistsOrDie "$APPLICATION"
 
 	showAlternative "$APPLICATION"
 }
 function chooseApplicationAlternative() {
-	APPLICATION="$1"
-	ALTERNATIVE="$2"
+	local APPLICATION="$1"
+	local ALTERNATIVE="$2"
 
 	dieIfArgumentMissing "$APPLICATION" "Application" 2
 	checkApplicationExistsOrDie "$APPLICATION"
@@ -481,6 +563,83 @@ function uninstallApplicationAlternative() {
 	uninstallAlternative "$APPLICATION" "$ALTERNATIVE"
 }
 
+function getAttributeLink() {
+	local APPLICATION="$1"
+	local ATTRIBUTE="$2"
+	local dir
+
+	case "$ATTRIBUTE" in
+		"icon")
+			dir="$ICON_DIR"
+			;;
+		"executable")
+			dir="$BIN_DIR"
+			;;
+		*)
+			return 1
+			;;
+	esac
+
+	echo "${dir}/${APPLICATION}"
+}
+
+function getAttributeValue() {
+	local APPLICATION="$1"
+	local ATTRIBUTE="$2"
+	local link suffixes suffixe
+	link="$(getAttributeLink "$APPLICATION" "$ATTRIBUTE")" || return 1
+	suffixes="$(listAttributeSuffixes "$ATTRIBUTE")" && {
+		local suffixed_link
+		for suffixe in ${suffixes} ; do
+			suffixed_link="${link}.${suffixe}"
+			[ -L "${suffixed_link}" ] && {
+				echo "${suffixed_link}"
+				return 0
+			}
+		done
+		return 2
+	} || {
+		[ -L "$link" ] || return 2
+		echo "$link"
+	}
+}
+function showAttributeValue() {
+	local APPLICATION="$1"
+	local ATTRIBUTE="$2"
+	local value
+	value="$(getAttributeValue "${APPLICATION}" "${ATTRIBUTE}")"
+	[ $? -eq 0 ] && echo "$ATTRIBUTE='$value'"
+}
+function listAttributesValues() {
+	local APPLICATION="$1"
+
+}
+function getSetAttributes() {
+	local APPLICATION="$1"
+	dieIfArgumentMissing "$APPLICATION" "Application" 2
+	shift
+
+	[ $# -eq 0 ] && {
+		for attribute in $(listAttributes); do
+			showAttributeValue "$APPLICATION" "$attribute"
+		done
+		exit 0
+	}
+
+	echo "Not implemented yet" >&2
+	exit 2 
+}
+
+function generate() {
+	local APPLICATION="$1"
+	dieIfArgumentMissing "$APPLICATION" "Application" 2
+	local GENERABLE="$2"
+	dieIfArgumentMissing "$GENERABLE" "Generable" 3
+
+	dumpApplicationDesktop "$APPLICATION" "$GENERABLE"
+}
+
+
 dieIfArgumentMissing "$ACTION" "Action" 1
 
 if test "x$ACTION" == "x$ACTION_HELP" ; then
@@ -488,7 +647,9 @@ if test "x$ACTION" == "x$ACTION_HELP" ; then
 	exit 0
 fi
 
-log_info "Opt directory = '$APPS_DIR'"
+log_info "Apps directory = '$APPS_DIR'"
+log_info "Bin directory = '$BIN_DIR'"
+log_info "Icon directory = '$ICON_DIR'"
 
 if test "x$ACTION" == "x$ACTION_APPLICATIONS" ; then
 	listApplications
@@ -504,6 +665,12 @@ elif test "x$ACTION" == "x$ACTION_APPLICATION_INSTALL_ALTERNATIVE" ; then
 	installApplicationAlternative $@
 elif test "x$ACTION" == "x$ACTION_APPLICATION_UNINSTALL_ALTERNATIVE" ; then
 	uninstallApplicationAlternative $@
+elif test "x$ACTION" == "x$ACTION_APPLICATION_ATTRIBUTES" ; then
+	listAttributes
+elif test "x$ACTION" == "x$ACTION_APPLICATION_ATTRIBUTE" ; then
+	getSetAttributes $@
+elif test "x$ACTION" == "x$ACTION_APPLICATION_GENERATE" ; then
+	generate $@
 else
 	log_error "No such action '$ACTION'"
 	printHelp >&2

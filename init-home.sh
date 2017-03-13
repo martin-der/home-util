@@ -60,7 +60,7 @@ function parseConfig() {
 
 
 function createXDGDirectory() {
-	result=0
+	local result=0
 	NAME=$1
 	XDG_DIR="$2"
 	if test ! -e "$XDG_DIR" ; then
@@ -135,7 +135,7 @@ function makeDirectoryPublic() {
 function cleanFilename() {
 	cleaned_filename="$(echo "$1" | sed 's#^\(.*\)\.sh$#\1#')"
 	echo "$cleaned_filename"
-	if test "x$new" == "x$1" ; then
+	if test "x$cleaned_filename" == "x$1" ; then
 		return 0
 	else
 		return 1

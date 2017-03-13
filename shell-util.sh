@@ -77,6 +77,28 @@ function _mdu_getLogLevel {
 }
 
 
+_mdu_loaded_scripts=()
+
+function _mdu_load_source_once() {
+	local real="$(readlink -f "$1")"
+	for loaded in "${_mdu_loaded_scripts[@]}"; do [[ "$loaded" == "$real" ]] && return 0; done
+	source "$1" && {
+		_mdu_loaded_scripts+=("$real")
+		return 0
+	}
+	return 1
+}
+function load_source() {
+	local file="$1"
+	_mdu_load_source_once "$file" && return 0
+	for script in "${BASH_SOURCE[@]}" ; do
+		file="$(basename "$script")/$1"
+		_mdu_load_source_once "$file" && return 0
+		file="$(readlink -f "$script")"
+		file="$(basename "$file")/$1"
+		_mdu_load_source_once "$file" && return 0
+	done
+}
 
 
 #

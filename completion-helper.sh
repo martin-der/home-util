@@ -20,7 +20,7 @@
 }
 
 
-[ "x$_mdu_CH_completion_running" == "x1" ] && return 0
+[ "x${_mdu_CH_completion_running-}" == "x1" ] && return 0
 
 mdu_CH_exit=0
 _mdu_CH_completion_running=0
@@ -129,7 +129,8 @@ _mdu_auto_completion() {
 	#_mdu_CH_application="${COMP_WORDS[0]}"
 	_mdu_CH_application="${1##*/}"
 
-	. "$_mdu_CH_application"
+	#. "$_mdu_CH_application"
+	. "${1}"
 
 	local cur prev
 	COMPREPLY=()
@@ -187,9 +188,6 @@ _mdu_CH_init_builder_helper() {
 
 	_mdu_CH_set_callbacks $@
 	shift 4
-
-	local used_params=0
-
 
 	[ ! -z ${1+x} -a "x$1" == "xhelp" ] || return
 	shift

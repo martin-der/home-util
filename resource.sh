@@ -3,30 +3,55 @@
 source "$(dirname "$0")/shell-util.sh" 2>/dev/null || source shell-util || exit 1
 
 
-function getResource() {
+function fetchResource() {
 	local RESOURCE="$1"
 	local DESTINATION="$2"
 
-	grep -e '^https?:ftp|' "$RESOURCE"
+	grep -e '^https\?\|^ftp:' "$RESOURCE" && {
+		download "$RESOURCE" "$DESTINATION" || return $?
+		return 0
+	}
+	grep -e '^git:' && {
+		git clone "$RESOURCE" "$DESTINATION" || return $?
+		return 0
+	}
+	grep -e '^ssh:' && {
+		scp "$RESOURCE" "$DESTINATION" || return $?
+		return 0
+	}
 
 }
 
 function download() {
 	local SOURCE="$1"
 	local DESTINATION="$2"
-	which wget && {
-		wget "$SOURCE" -O "$DESTINATION" && return 1
+	which wget >/dev/null 2>&1 && {
+		wget "$SOURCE" -O "$DESTINATION" || return 2
 		return 0
 	}
 	wich curl && {
-		curl -o "$DESTINATION" "$SOURCE" 
+		curl -o "$DESTINATION" "$SOURCE" || return 2
 		return 0
 	}
-	echo "No command available for downloading" >&2
-	return 2
+	log_error "No command available for downloading"
+	return 1
 }
 
 function extractArchive {
+	local commandPrefix="$(extractArchiveCommand "$1")" || {
+		log_error "Unknown archive type"
+		return 1
+	}
+
+	$DRYDO $commandPrefix "$1" > /dev/null || {
+		log_error "Error while extracting archive"
+		return 2
+	}
+
+	return 0
+}
+
+function extractArchiveCommand {
 	case $1 in
 		*.tar.bz2) echo "tar xvjf" ;;
 		*.tar.gz) echo "tar xvzf" ;;
