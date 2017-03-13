@@ -1,8 +1,7 @@
 #!/bin/bash
 
-#test_root_dir="$HOME/dev/prog/home-util/test"
 pushd "$(dirname "$0")" > /dev/null
-root_dir="$(pwd -P)/../.."
+root_dir="$(pwd -P)/../../.."
 popd > /dev/null
 test_root_dir="${root_dir}/test"
 

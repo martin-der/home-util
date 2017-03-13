@@ -4,12 +4,12 @@ before_script:
     - curl -L "http://downloads.sourceforge.net/shunit2/shunit2-2.0.3.tgz" | tar zx -C test
 
 script:
-    - bash test/shell-util/decorate.sh
-    - bash test/shell-util/properties.sh
-    - bash test/shell-util/log.sh
-    - bash test/opt-admin/application.sh
-    - bash test/config-util/variable.sh
-    - bash test/config-util/read.sh
-    - bash test/init-home/xdg.sh
-    - bash test/init-home/bin_dir.sh
-    - bash test/completion-helper/capacity.sh
+    - bash test/script/shell-util/decorate.sh
+    - bash test/script/shell-util/properties.sh
+    - bash test/script/shell-util/log.sh
+    - bash test/script/opt-admin/application.sh
+    - bash test/script/config-util/variable.sh
+    - bash test/script/config-util/read.sh
+    - bash test/script/init-home/xdg.sh
+    - bash test/script/init-home/bin_dir.sh
+    - bash test/script/completion-helper/capacity.sh

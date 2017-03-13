@@ -1,9 +1,11 @@
 #!/bin/bash
 #@mdu-helper-capable
 
+source "$(dirname "$0")/../../../completion-helper.sh" || exit 1
+
 
 function listActions() {
-	echo "fetch bark sleep call learn"
+	echo "fetch bark sleep smell call learn"
 }
 
 
@@ -14,7 +16,7 @@ function completeType() {
 	shift
 	case $argumentType in
 		"dog_name")
-			echo "bill woufy snoopy" ;;
+			echo "bill rex rintintin strongheart snoopy" ;;
 		"thing")
 			echo "ball news-paper kitty bottle";;
 		*)
@@ -38,8 +40,10 @@ function getActionArguments() {
 	return 0
 }
 function getInformation() {
+	:
+}
 
 
-_mdu_CH_init_builder_helper "listActions" "getActionArguments" "getInformation" "completeType" "$ACTION" $@
+_mdu_CH_init_builder_helper "listActions" "getActionArguments" "getInformation" "completeType" $@
 
 
