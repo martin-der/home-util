@@ -1,0 +1,8 @@
+group 'net.tetrakoopa'
+version '1.0-SNAPSHOT'
+
+
+/*
+subprojects {
+	def homeutilProject = project.projectDir
+}*/
