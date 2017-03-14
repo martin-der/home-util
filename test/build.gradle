@@ -2,27 +2,70 @@
 
 def homeutilProjectDir = "${project.projectDir}/.."
 
-def trimWD = {
-	it.startsWith(homeutilProjectDir) ? it.substring(homeutilProjectDir.size()) : it
+def trimStart = {
+	def start = "${project.projectDir}"
+	it.startsWith(start) ? it.substring(start.size()) : it
 }
 
-task runTests(type: Test) {
+def sourceDir = 'script'
+def allSuccesful = true
 
-	def sourceDir = 'script'
-	file("$sourceDir").eachFile { testDir ->
-		testDir.eachFile { file ->
-			def filename = trimWD("$file")
-			println "Testing $filename"
-			exec {
-				workingDir homeutilProjectDir
-				commandLine 'bash', "$file"
+class CommandTestTask extends DefaultTask {
+
+	@Input
+	String script
+
+	@TaskAction
+	def executeTest() {
+		println "[ Testing $filename ]"
+		task performTest(type: Exec) {
+			//workingDir homeutilProjectDir
+			commandLine 'bash', "$script"
+			ignoreExitValue true
+			doLast {
+				if(execResult != 0) {
+					allSuccesful = false
+				}
 			}
 		}
 	}
 }
 
+
+task testAllScripts() {
+
+	doLast {
+		println "All successful = $allSuccesful"
+	}
+}
+
+def sourceDirectory = file("$sourceDir")
+sourceDirectory.eachFileRecurse(groovy.io.FileType.FILES) {
+	script ->
+	if(script.name.endsWith('.sh')) {
+
+		def trimmedStart = "${project.projectDir}/script/"
+		def filename = "$script".startsWith(trimmedStart) ? "$script".substring(trimmedStart.size()) : "$file"
+		println "[ $filename ]"
+		task "performTest_$filename" (type: Exec) {
+			workingDir homeutilProjectDir
+			commandLine 'bash', "$script"
+			ignoreExitValue false
+			doLast {
+				println "[Testing '$filename']"
+				if(execResult != 0) {
+					allSuccesful = false
+				}
+			}
+		}
+
+		testAllScripts.dependsOn("performTest_$filename")
+	}
+}
+
+
 tasks.withType(Test) {
-	runTests
+	testAllScripts
 }
 
 
