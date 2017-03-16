@@ -3,6 +3,7 @@
 
 source "$(dirname "$0")/shell-util.sh" 2>/dev/null || source shell-util || exit 1
 source "$(dirname "$0")/completion-helper.sh" 2>/dev/null || source completion-helper || exit 1
+source "$(dirname "$0")/resource.sh" 2>/dev/null || source resource || exit 1
 
 if [ -z ${MDU_OPT_DIRECTORY+x} ] ; then
 	OPT_DIR="/opt"
@@ -269,13 +270,13 @@ function checkApplicationAlternativeDoesntExistOrDie() {
 
 
 function extract {
-	commandPrefix="$(extractCommandPrefix "$1")" || {
+	local commandPrefix="$(extractArchiveCommand "$1")" || {
 		log_error "Unknown archive type"
 		return 1
 	}
 
 	log_debug "command is : $commandPrefix $1"
-	$DRYDO $commandPrefix "$1" > /dev/null || {
+	${DRYDO} ${commandPrefix} "$1" > /dev/null || {
 		log_error "Error while extracting archive"
 		return 1
 	}

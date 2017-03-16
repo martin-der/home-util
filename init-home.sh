@@ -8,7 +8,7 @@ source "$(dirname "$0")/shell-util.sh" 2>/dev/null || source shell-util  || exit
 source "$(dirname "$0")/config-util.sh" 2>/dev/null || source config-util  || exit 1
 
 
-if test "x$USER" = "x" ; then
+if test "x${USER+}" = "x" ; then
 	log_warn "Environment variable 'USER' is empty or undefined"
 fi
 
@@ -71,13 +71,13 @@ function createXDGDirectory() {
 			log_info "XDG «$NAME» exists but it's not a directory"
 		fi
 	fi
-	return $result
+	return ${result}
 }
 
 function publicDirectoryWithSamba {
 	local DIRECTORY=$1
 
-	if test "x$USER" = "x" ; then
+	if test "x${USER+}" = "x" ; then
 		handle_error 1 "Cannot create samba share without 'USER' variable defined"
 		return 1
 	fi
@@ -195,7 +195,7 @@ if [ -f "$HOME/.config/user-dirs.dirs" -a -r "$HOME/.config/user-dirs.dirs" ] ; 
 	log_debug "Create XDG Directories"
 	while read l ; do
 		line_isComment_withSharp "$l" && continue
-		line_isEmpty "$l" && continue↲
+		line_isEmpty "$l" && continue
 		KEY="$(line_KeyValue_getKey "$l")"
 		VALUE="$(line_KeyValue_getValue "$l")"
 		VALUE="$(echo "$VALUE" | sed 's/^\"\(.*\)\"$/\1/')"

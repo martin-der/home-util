@@ -14,7 +14,7 @@ export HOME=/tmp/tmp/tmp
 
 
 setUp() {
-	TMP_DIR=`mktemp -d`
+	TMP_DIR=`mktemp -d` || return 2
 	export HOME="${TMP_DIR}/home"
 	export USER=johndoe
 	mkdir -p "$HOME/.config/mdu" || return 2
@@ -23,7 +23,7 @@ setUp() {
 }
 tearDown() {
 	echo "Content of home"
-	find "$HOME"  ! -exec ls -dl '{}' \;
+	find "$HOME" -exec ls -dlgr '{}' \;
 	rm -rf "$TMP_DIR"
 }
 

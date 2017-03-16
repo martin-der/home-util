@@ -24,7 +24,7 @@ tearDown() {
 testCreateApplication() {
 	./opt-admin.sh create foo-app
 	assertEquals 0 $?
-	assertTrue "Directory '$MDU_OPT_DIRECTORY/foo-app.d' has been created" "[ -d \"$MDU_OPT_DIRECTORY/foo-app.d\" ]"
+	assertTrue "Directory '$MDU_OPT_DIRECTORY/pkg/foo-app.d' has been created" "[ -d \"$MDU_OPT_DIRECTORY/pkg/foo-app.d\" ]"
 }
 
 
@@ -46,7 +46,7 @@ testInstallAlternativeFromTarGz() {
 	assertEquals 0 $?
 	./opt-admin.sh install foo-app "$RESOURCES_DIR/foobix.tar.gz"
 	assertEquals 0 $?
-	output="$("$TMP_DIR/foo-app.d/foobix/bin/foobix")"
+	output="$("$TMP_DIR/pkg/foo-app.d/foobix/bin/foobix")"
 	assertEquals 0 $?
 	assertEquals "Result of foobix is 'foobax'" "foobax" "$output"
 }
@@ -55,7 +55,7 @@ testInstallNamedAlternativeFromTarGz() {
 	assertEquals 0 $?
 	./opt-admin.sh install foo-app "$RESOURCES_DIR/foobix.tar.gz" foobix-v0
 	assertEquals 0 $?
-	output="$("$TMP_DIR/foo-app.d/foobix-v0/bin/foobix")"
+	output="$("$TMP_DIR/pkg/foo-app.d/foobix-v0/bin/foobix")"
 	assertEquals 0 $?
 	assertEquals "Result of foobix is 'foobax'" "foobax" "$output"
 }
@@ -65,7 +65,7 @@ testInstallAlternativeFromZip() {
 	assertEquals 0 $?
 	./opt-admin.sh install foo-app "$RESOURCES_DIR/foobix.zip"
 	assertEquals 0 $?
-	output="$(grep "Known bugs" "$TMP_DIR/foo-app.d/foobix/README.md")"
+	output="$(grep "Known bugs" "$TMP_DIR/pkg/foo-app.d/foobix/README.md")"
 	assertEquals 0 $?
 	assertEquals "foobix's readme contains 'Known Bugs'" "## Known bugs" "$output"
 }
@@ -75,7 +75,7 @@ testInstallAlternativeFromDirectory() {
 	assertEquals 0 $?
 	./opt-admin.sh install foo-app "$RESOURCES_DIR/foobix"
 	assertEquals 0 $?
-	output="$("$TMP_DIR/foo-app.d/foobix/bin/foobix")"
+	output="$("$TMP_DIR/pkg/foo-app.d/foobix/bin/foobix")"
 	assertEquals 0 $?
 	assertEquals "Result of foobix is 'foobax'" "foobax" "$output"
 }
@@ -84,7 +84,7 @@ testInstallNamedAlternativeFromDirectory() {
 	assertEquals 0 $?
 	./opt-admin.sh install foo-app "$RESOURCES_DIR/foobix" foobix-v0
 	assertEquals 0 $?
-	output="$("$TMP_DIR/foo-app.d/foobix-v0/bin/foobix")"
+	output="$("$TMP_DIR/pkg/foo-app.d/foobix-v0/bin/foobix")"
 	assertEquals 0 $?
 	assertEquals "Result of foobix is 'foobax'" "foobax" "$output"
 }
