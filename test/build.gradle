@@ -10,29 +10,9 @@ def trimStart = {
 def sourceDir = 'script'
 def allSuccesful = true
 
-class CommandTestTask extends DefaultTask {
-
-	@Input
-	String script
-
-	@TaskAction
-	def executeTest() {
-		println "[ Testing $filename ]"
-		task performTest(type: Exec) {
-			//workingDir homeutilProjectDir
-			commandLine 'bash', "$script"
-			ignoreExitValue true
-			doLast {
-				if(execResult != 0) {
-					allSuccesful = false
-				}
-			}
-		}
-	}
-}
 
 
-task testAllScripts() {
+task testAllScripts(type: Test) {
 
 	doLast {
 		println "All successful = $allSuccesful"
@@ -46,7 +26,7 @@ sourceDirectory.eachFileRecurse(groovy.io.FileType.FILES) {
 
 		def trimmedStart = "${project.projectDir}/script/"
 		def filename = "$script".startsWith(trimmedStart) ? "$script".substring(trimmedStart.size()) : "$file"
-		println "[ $filename ]"
+
 		task "performTest_$filename" (type: Exec) {
 			workingDir homeutilProjectDir
 			commandLine 'bash', "$script"
