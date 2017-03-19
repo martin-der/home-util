@@ -4,9 +4,10 @@ before_script:
     - curl -L "http://downloads.sourceforge.net/shunit2/shunit2-2.0.3.tgz" | tar zx -C test
 
 script:
+    - bash test/script/shell-util/log.sh
+    - bash test/script/shell-util/sourcing.sh
     - bash test/script/shell-util/decorate.sh
     - bash test/script/shell-util/properties.sh
-    - bash test/script/shell-util/log.sh
     - bash test/script/opt-admin/application.sh
     - bash test/script/config-util/variable.sh
     - bash test/script/config-util/read.sh

@@ -50,6 +50,26 @@ Used by pretty much all scripts
 
 ------
 
+### MDU_SOURCE_OPTIONS
+
+A list of characters controlling the way sourcing is done
+
+* when encountering an already sourced script
+  * 1 : don't include it again
+  * n : include it again
+
+
+Use by shell-util > load_script,load_script_once
+
+
+defaults to
+
+```shell
+MDU_SOURCE_OPTION=1
+```
+
+------
+
 ### MDU_BUP_DIRECTORY
 
 ```shell

@@ -1,21 +1,6 @@
 #!/bin/bash
 
 
-GREEN="\033[0;32m"
-GREEN_BOLD="\033[1;32m"
-YELLOW="\033[0;33m"
-YELLOW_BOLD="\033[1;33m"
-RED="\033[0;31m"
-RED_BOLD="\033[1;31m"
-BLUE="\033[0;34m"
-BLUE_BOLD="\033[1;34m"
-#WHITE="\033[1;37m\]"
-#GRAY_LIGHT="\033[0;37m"
-COLOR_RESET="\033[0;0m"
-FONT_STYLE_BOLD="\033[1m"
-FONT_STYLE_ITALIC="\033[3m"
-FONT_STYLE_UNDERLINE="\033[4m"
-FONT_STYLE_STRIKE="\033[9m"
 
 LOG_LEVEL_DEBUG=4
 LOG_LEVEL_INFO=3
@@ -24,9 +9,7 @@ LOG_LEVEL_ERROR=1
 LOG_LEVEL_NONE=0
 
 
-DEFAULT_NO_COLOR=0
-DEFAULT_HUMAN_MODE=1
-DEFAULT_LOG_LEVEL=$LOG_LEVEL_WARN
+DEFAULT_LOG_LEVEL=${LOG_LEVEL_WARN}
 
 DRY_MODE=0
 
@@ -35,36 +18,7 @@ MDU_HUMAN_MODE=${MDU_HUMAN_MODE:-1}
 MDU_NO_COLOR=${MDU_NO_COLOR:-0}
 
 
-if test "x$MDU_HUMAN_MODE" != x
-then
-	HUMAN_MODE="$MDU_HUMAN_MODE"
-else
-	HUMAN_MODE=$DEFAULT_HUMAN_MODE
-fi
-
-if test "x$MDU_NO_COLOR" != x
-then
-	NO_COLOR="$MDU_NO_COLOR"
-else
-	NO_COLOR=$DEFAULT_NO_COLOR
-fi
-
-
-
-
-
-function _mdu_getLogLevel {
-	local level=${MDU_LOG_LEVEL:-${LOG_LEVEL:-default}}
-	[ "x$level" = xDEBUG -o "x$level" = xdebug ] && return $LOG_LEVEL_DEBUG
-	[ "x$level" = xINFO -o "x$level" = xinfo ] && return $LOG_LEVEL_INFO
-	[ "x$level" = xWARN -o "x$level" = xwarn ] && return $LOG_LEVEL_WARN
-	[ "x$level" = xERROR -o "x$level" = xerror ] && return $LOG_LEVEL_ERROR
-	[ "x$level" = xNONE -o "x$level" = xnone ] && return $LOG_LEVEL_NONE
-	return $DEFAULT_LOG_LEVEL
-}
-
-
-[ $NO_COLOR -eq 0 ] || {
+[ ${MDU_NO_COLOR} -ne 0 ] && {
 	GREEN=""
 	GREEN_BOLD=""
 	YELLOW=""
@@ -73,42 +27,169 @@ function _mdu_getLogLevel {
 	RED_BOLD=""
 	BLUE=""
 	BLUE_BOLD=""
+	#WHITE=""
+	#GRAY_LIGHT=""
 	COLOR_RESET=""
+	FONT_STYLE_BOLD=""
+	FONT_STYLE_ITALIC=""
+	FONT_STYLE_UNDERLINE=""
+	FONT_STYLE_STRIKE=""
+} || {
+	GREEN="\033[0;32m"
+	GREEN_BOLD="\033[1;32m"
+	YELLOW="\033[0;33m"
+	YELLOW_BOLD="\033[1;33m"
+	RED="\033[0;31m"
+	RED_BOLD="\033[1;31m"
+	BLUE="\033[0;34m"
+	BLUE_BOLD="\033[1;34m"
+	#WHITE="\033[1;37m\]"
+	#GRAY_LIGHT="\033[0;37m"
+	COLOR_RESET="\033[0;0m"
+	FONT_STYLE_BOLD="\033[1m"
+	FONT_STYLE_ITALIC="\033[3m"
+	FONT_STYLE_UNDERLINE="\033[4m"
+	FONT_STYLE_STRIKE="\033[9m"
 }
 
 
-_mdu_loaded_scripts=()
 
-function _mdu_load_source_once() {
-	local real="$(readlink -f "$1")"
-	for loaded in "${_mdu_loaded_scripts[@]}"; do [[ "$loaded" == "$real" ]] && return 0; done
-	source "$1" && {
-		_mdu_loaded_scripts+=("$real")
+
+# ---------------------- #
+#                        #
+#        Include         #
+#                        #
+# ---------------------- #
+
+_mdu_loaded_scripts=( "." )
+
+#
+# Load source
+#	param 1/0 : once
+#	param <name> : script name
+#
+function _mdu_source_if_exists() {
+	[ -r "$2" ] && {
+		local linked="$(readlink -f "$2")"
+		log_debug " Found '$2' in '$linked' (once:$1)"
+		[ $1 -ne 0 ] && {
+			log_debug "  Sourced ? (${_mdu_loaded_scripts[*]})"
+			for loaded in "${_mdu_loaded_scripts[@]}"; do
+				[[ "$loaded" == "$linked" ]] && {
+					log_debug "  Already loaded" ;
+					return 0;
+				}
+			done
+		}
+		#log_debug "  Sourcing '$2'"
+		_mdu_loaded_scripts+=("$linked")
+		#log_debug "   \\-> Sourced : (${_mdu_loaded_scripts[*]})"
+		source "$2"
+		local result=$?
+		[ ${result} -eq 0 ] || log_error "Error sourcing '$2' : returned $?"
 		return 0
 	}
 	return 1
 }
-function load_source() {
-	local file="$1"
-	_mdu_load_source_once "$file" && return 0
-	for script in "${BASH_SOURCE[@]}" ; do
-		file="$(basename "$script")/$1"
-		_mdu_load_source_once "$file" && return 0
-		file="$(readlink -f "$script")"
-		file="$(basename "$file")/$1"
-		_mdu_load_source_once "$file" && return 0
+
+
+#
+# Load source
+#	param 1/0 : [O]nce
+#	param 1/0 : [A]round [L]inked
+#	param <name>
+#	param ... : [W]ith [S]uffixes
+#
+function _mdu_load_source_O_AL_WS() {
+	local only_once around_linked script suffixed linked_script
+	only_once=$1
+	around_linked=$2
+	shift 2
+	script=$1
+	shift
+	log_debug "Try '$script'..."
+	_mdu_source_if_exists ${only_once} "$script" && return $?
+	#[ -h "$script" ] && {
+	#	linked_script="$(readlink -f "$script")" || continue
+	#	linked_script="$(dirname "$target_file")/$1"
+	#	_mdu_source_if_exists ${only_once} "$linked_script" && return 0
+	#}
+	for suffix in "$@" ; do
+		suffixed="${script}.${suffix}"
+		log_debug "Try '$suffixed'..."
+		_mdu_source_if_exists ${only_once} "$suffixed" && return 0
 	done
+	return 1
+}
+
+function _mdu_load_source() {
+
+	local only_once=1
+	local around_callers=0
+	local around_linked=0
+	local o="${MDU_SOURCE_OPTIONS:-1lC}$1"
+	for (( i=0; i<${#o}; i++ )); do
+		local ov="${o:$i:1}"
+		[ ${ov} == 1 ] && { only_once=1 ; continue ; }
+		[ ${ov} == n ] && { only_once=0 ; continue ; }
+		[ ${ov} == c ] && { around_callers=1 ; continue ; }
+		[ ${ov} == C ] && { around_callers=0 ; continue ; }
+		[ ${ov} == l ] && { around_linked=1 ; continue ; }
+		[ ${ov} == L ] && { around_linked=0 ; continue ; }
+	done
+	shift
+
+	local sourced_file request
+	request="$1"
+	shift
+	[ "x${request:0:1}" != "x/" ] && {
+		[ ${around_callers} -eq 0 ] && {
+			#log_debug "Looking from '${BASH_SOURCE[2]}'"
+			#printf '  - %s\n' "${BASH_SOURCE[@]}"
+			sourced_file="$(dirname "${BASH_SOURCE[2]}")/$request"
+			_mdu_load_source_O_AL_WS ${only_once} ${around_linked} "$sourced_file" $@ && return 0 || log_debug "'$request' not found as '$sourced_file'"
+		#} || {
+		#	for script in "${BASH_SOURCE[@]}" ; do
+		#		sourced_file="$(dirname "$script")/$request"
+		#		_mdu_load_source_O_AL_WS ${only_once} ${around_linked} "$sourced_file" $@ && return 0 || log_debug "'$request' not found as '$sourced_file' from '$(basename "$script")'"
+		#	done
+		}
+	}
+	_mdu_load_source_O_AL_WS ${only_once} ${around_linked} "$request" $@ && return 0
+
+	log_error "Error sourcing '$request' : not found"
+	return 1
 }
 
 
-#
-# Logging
-#
+function load_source_once() {
+	_mdu_load_source 1 $@
+}
+function load_source() {
+	_mdu_load_source "" $@
+}
+
+
+# ---------------------- #
+#                        #
+#        Logging         #
+#                        #
+# ---------------------- #
 
 ICON_WARN="${YELLOW_BOLD}/!\\\\${COLOR_RESET}"
 ICON_ERROR="${RED_BOLD}/!\\\\${COLOR_RESET}"
 ICON_INFO="${BLUE_BOLD}(*)${COLOR_RESET}"
 ICON_DEBUG="${GREEN_BOLD}[#]${COLOR_RESET}"
+
+function _mdu_getLogLevel {
+	local level=${MDU_LOG_LEVEL:-${LOG_LEVEL:-default}}
+	[ "x$level" = xDEBUG -o "x$level" = xdebug ] && return ${LOG_LEVEL_DEBUG}
+	[ "x$level" = xINFO -o "x$level" = xinfo ] && return ${LOG_LEVEL_INFO}
+	[ "x$level" = xWARN -o "x$level" = xwarn ] && return ${LOG_LEVEL_WARN}
+	[ "x$level" = xERROR -o "x$level" = xerror ] && return ${LOG_LEVEL_ERROR}
+	[ "x$level" = xNONE -o "x$level" = xnone ] && return ${LOG_LEVEL_NONE}
+	return ${DEFAULT_LOG_LEVEL}
+}
 
 # print script prefix for 'non human' output
 # Param 1 : String severity
@@ -121,9 +202,9 @@ function echo_script_prefix() {
 function log_debug() {
 	_mdu_getLogLevel
 	local level=$?
-	test $LOG_LEVEL_DEBUG -gt $level && return 0
-	local human_mode="$HUMAN_MODE"
-	if [ $human_mode -eq 0 ] ; then
+	test ${LOG_LEVEL_DEBUG} -gt ${level} && return 0
+	local human_mode=${MDU_HUMAN_MODE}
+	if [ ${human_mode} -eq 0 ] ; then
 		echo_script_prefix DEBUG
 	else
 		echo -e -n "$ICON_DEBUG "
@@ -134,9 +215,9 @@ function log_debug() {
 function log_info() {
 	_mdu_getLogLevel
 	local level=$?
-	test $LOG_LEVEL_INFO -gt $level && return 0
-	local human_mode="$HUMAN_MODE"
-	if [ $human_mode -eq 0 ] ; then
+	test ${LOG_LEVEL_INFO} -gt ${level} && return 0
+	local human_mode=${MDU_HUMAN_MODE}
+	if [ ${human_mode} -eq 0 ] ; then
 		echo_script_prefix INFO
 	else
 		echo -e -n "$ICON_INFO "
@@ -147,9 +228,9 @@ function log_info() {
 function log_warn() {
 	_mdu_getLogLevel
 	local level=$?
-	test $LOG_LEVEL_WARN -gt $level && return 0
-	local human_mode="$HUMAN_MODE"
-	if [ $human_mode -eq 0 ] ; then
+	test ${LOG_LEVEL_WARN} -gt ${level} && return 0
+	local human_mode=${MDU_HUMAN_MODE}
+	if [ ${human_mode} -eq 0 ] ; then
 		echo_script_prefix WARN >&2
 	else
 		echo -e -n "$ICON_WARN " >&2
@@ -160,9 +241,9 @@ function log_warn() {
 function log_error()  {
 	_mdu_getLogLevel
 	local level=$?
-	test $LOG_LEVEL_ERROR -gt $level && return 0
-	local human_mode="$HUMAN_MODE"
-	if [ $human_mode -eq 0 ] ; then
+	test ${LOG_LEVEL_ERROR} -gt ${level} && return 0
+	local human_mode=${MDU_HUMAN_MODE}
+	if [ ${human_mode} -eq 0 ] ; then
 		echo_script_prefix ERROR >&2
 	else
 		echo -e -n "$ICON_ERROR " >&2
@@ -171,10 +252,11 @@ function log_error()  {
 }
 
 
-#
-# string util
-#
-
+# ---------------------- #
+#                        #
+#      String util       #
+#                        #
+# ---------------------- #
 
 mdu_getTextDecoration() {
 	local prefix="_mdu_text_decoration__"
@@ -326,12 +408,14 @@ function line_KeyValue_getValue() {
 }
 
 
-#
-# Misc
-#
+# ---------------------- #
+#                        #
+#          Misc          #
+#                        #
+# ---------------------- #
 
 function command_exists() {
-	command -v "$1" >/dev/null 2>&1
+	which "$1" >/dev/null 2>&1
 	return $?
 }
 
