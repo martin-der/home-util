@@ -49,7 +49,7 @@ testIncludeScriptNotFound() {
 	local result expected
 	expected="[ERROR] Error sourcing '$TMP_DIR/what' : not found"
 	result="$(load_source "$TMP_DIR/what" sh 2>&1)"
-	assertNotSame 0 $?
+	assertEquals 254 $?
 	assertEquals "$expected" "$result"
 }
 testInnerIncludeScriptNotFound() {
@@ -57,7 +57,7 @@ testInnerIncludeScriptNotFound() {
 	expected="[ERROR] Error sourcing 'holy-grail' : not found
 [ERROR] Error sourcing '$TMP_DIR/journey.sh' : returned 1"
 	result="$(load_source "$TMP_DIR/journey" sh 2>&1)"
-	assertEquals 0 $?
+	assertEquals 1 $?
 	assertEquals "$expected" "$result"
 }
 

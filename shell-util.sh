@@ -67,6 +67,7 @@ _mdu_loaded_scripts=( "." )
 # Load source
 #	param 1/0 : once
 #	param <name> : script name
+#	return same as @see load_source
 #
 function _mdu_source_if_exists() {
 	[ -r "$2" ] && {
@@ -75,10 +76,7 @@ function _mdu_source_if_exists() {
 		[ $1 -ne 0 ] && {
 			log_debug "  Sourced ? (${_mdu_loaded_scripts[*]})"
 			for loaded in "${_mdu_loaded_scripts[@]}"; do
-				[[ "$loaded" == "$linked" ]] && {
-					log_debug "  Already loaded" ;
-					return 0;
-				}
+				[ "$loaded" == "$linked" ] && return 0;
 			done
 		}
 		#log_debug "  Sourcing '$2'"
@@ -86,10 +84,12 @@ function _mdu_source_if_exists() {
 		#log_debug "   \\-> Sourced : (${_mdu_loaded_scripts[*]})"
 		source "$2"
 		local result=$?
-		[ ${result} -eq 0 ] || log_error "Error sourcing '$2' : returned $?"
-		return 0
+		[ ${result} -eq 0 ] && return 0
+		log_error "Error sourcing '$2' : returned $?"
+		[ ${result} -eq 254 ] && return 253
+		return ${result}
 	}
-	return 1
+	return 254
 }
 
 
@@ -101,14 +101,17 @@ function _mdu_source_if_exists() {
 #	param ... : [W]ith [S]uffixes
 #
 function _mdu_load_source_O_AL_WS() {
-	local only_once around_linked script suffixed linked_script
+	local result only_once around_linked script suffixed linked_script
 	only_once=$1
 	around_linked=$2
 	shift 2
 	script=$1
 	shift
 	log_debug "Try '$script'..."
-	_mdu_source_if_exists ${only_once} "$script" && return $?
+	_mdu_source_if_exists ${only_once} "$script"
+	result=$?
+	[ $result -ne 254 ] && return $result
+
 	#[ -h "$script" ] && {
 	#	linked_script="$(readlink -f "$script")" || continue
 	#	linked_script="$(dirname "$target_file")/$1"
@@ -116,10 +119,15 @@ function _mdu_load_source_O_AL_WS() {
 	#}
 	for suffix in "$@" ; do
 		suffixed="${script}.${suffix}"
-		log_debug "Try '$suffixed'..."
-		_mdu_source_if_exists ${only_once} "$suffixed" && return 0
+		log_debug "Try suffixed '$suffixed'..."
+		_mdu_source_if_exists ${only_once} "$suffixed"
+		result=$?
+		[ $result -ne 254 ] && {
+			log_debug "  '$suffixed' returned $result"
+			return $result
+		}
 	done
-	return 1
+	return 254
 }
 
 function _mdu_load_source() {
@@ -147,7 +155,11 @@ function _mdu_load_source() {
 			#log_debug "Looking from '${BASH_SOURCE[2]}'"
 			#printf '  - %s\n' "${BASH_SOURCE[@]}"
 			sourced_file="$(dirname "${BASH_SOURCE[2]}")/$request"
-			_mdu_load_source_O_AL_WS ${only_once} ${around_linked} "$sourced_file" $@ && return 0 || log_debug "'$request' not found as '$sourced_file'"
+			_mdu_load_source_O_AL_WS ${only_once} ${around_linked} "$sourced_file" $@
+			result=$?
+			[ ${result} -ne 254 ] && return ${result}
+
+			log_debug "'$request' not found as '$sourced_file'"
 		#} || {
 		#	for script in "${BASH_SOURCE[@]}" ; do
 		#		sourced_file="$(dirname "$script")/$request"
@@ -155,18 +167,29 @@ function _mdu_load_source() {
 		#	done
 		}
 	}
-	_mdu_load_source_O_AL_WS ${only_once} ${around_linked} "$request" $@ && return 0
-
-	log_error "Error sourcing '$request' : not found"
-	return 1
+	_mdu_load_source_O_AL_WS ${only_once} ${around_linked} "$request" $@
+	result=$?
+	[ ${result} -eq 0 ] && return 0
+	[ ${result} -eq 254 ] &&  {
+		log_error "Error sourcing '$request' : not found"
+		return 254
+	}
+	return ${result}
 }
 
-
-function load_source_once() {
-	_mdu_load_source 1 $@
-}
+# @param $1 : script to source
+# @param ... : extra suffixes to try loading against
+# @return
+#     - 254            : if script was not found or couldn't be read
+#     - 0              : if script was sourced without error
+#     - [1-253] or 255 : if script returned an error ( if error code was 254, then 253 is returned instead )
+#
 function load_source() {
 	_mdu_load_source "" $@
+}
+# Same as 'load_source' but make sure to load script only once
+function load_source_once() {
+	_mdu_load_source 1 $@
 }
 
 
