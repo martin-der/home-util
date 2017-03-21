@@ -14,7 +14,8 @@ oneTimeSetUp() {
 
 testSetThenGetTextDecoration() {
 	mdu_setTextDecoration foobar blue_and_shiny
-	local foobar_decoration=$(mdu_getTextDecoration foobar)
+	local foobar_decoration
+	foobar_decoration=$(mdu_getTextDecoration foobar)
 	assertEquals blue_and_shiny "$foobar_decoration"
 }
 testSetThenGetThenRemoveTextDecoration() {

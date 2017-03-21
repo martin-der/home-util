@@ -7,6 +7,7 @@ test_root_dir="${root_dir}/test"
 
 
 oneTimeSetUp() {
+	export MDU_LOG_LEVEL=debug
 	. "${root_dir}/shell-util.sh" || exit 1
 	RESOURCES_DIR="${test_root_dir}/resources"
 }

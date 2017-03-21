@@ -101,10 +101,9 @@ function _mdu_source_if_exists() {
 #	param ... : [W]ith [S]uffixes
 #
 function _mdu_load_source_O_AL_WS() {
-	local result only_once around_linked script suffixed linked_script
+	local result only_once script suffixed linked_script
 	only_once=$1
-	around_linked=$2
-	shift 2
+	shift
 	script=$1
 	shift
 	log_debug "Try '$script'..."
@@ -132,9 +131,10 @@ function _mdu_load_source_O_AL_WS() {
 
 function _mdu_load_source() {
 
-	local only_once=1
-	local around_callers=0
-	local around_linked=0
+	local only_once around_linked around_callers
+	only_once=1
+	around_linked=1
+	around_callers=0
 	local o="${MDU_SOURCE_OPTIONS:-1lC}$1"
 	for (( i=0; i<${#o}; i++ )); do
 		local ov="${o:$i:1}"
@@ -147,27 +147,40 @@ function _mdu_load_source() {
 	done
 	shift
 
-	local sourced_file request
+	local sourced_file request parent
 	request="$1"
 	shift
 	[ "x${request:0:1}" != "x/" ] && {
-		[ ${around_callers} -eq 0 ] && {
-			#log_debug "Looking from '${BASH_SOURCE[2]}'"
-			#printf '  - %s\n' "${BASH_SOURCE[@]}"
-			sourced_file="$(dirname "${BASH_SOURCE[2]}")/$request"
-			_mdu_load_source_O_AL_WS ${only_once} ${around_linked} "$sourced_file" $@
+		#log_debug "Looking from '${BASH_SOURCE[2]}'"
+		#printf '  - %s\n' "${BASH_SOURCE[@]}"
+		sourced_file="$(dirname "${BASH_SOURCE[2]}")/$request"
+		_mdu_load_source_O_AL_WS ${only_once} "$sourced_file" $@
+		result=$?
+		[ ${result} -ne 254 ] && return ${result}
+		log_debug "'$request' not found as '$sourced_file'"
+
+		[ ${around_linked}  -ne 0 ] && {
+			sourced_file="$(dirname "$(readlink "${BASH_SOURCE[3]}")")/$request"
+			_mdu_load_source_O_AL_WS ${only_once} "$sourced_file" $@
 			result=$?
 			[ ${result} -ne 254 ] && return ${result}
+			log_debug "'$request' not found as \"near link\" '$sourced_file'"
 
-			log_debug "'$request' not found as '$sourced_file'"
-		#} || {
-		#	for script in "${BASH_SOURCE[@]}" ; do
-		#		sourced_file="$(dirname "$script")/$request"
-		#		_mdu_load_source_O_AL_WS ${only_once} ${around_linked} "$sourced_file" $@ && return 0 || log_debug "'$request' not found as '$sourced_file' from '$(basename "$script")'"
-		#	done
+			#local parent count=${#BASH_SOURCE[@]}
+			#[ $count -gt 3 ] && {
+			#	sourced_file="$(dirname "${BASH_SOURCE[2]}")/$request"
+			#	parent=${#BASH_SOURCE[3]}
+			#}
+			#parent_source_index=3
+			#for (( index=3 ; index<count ; index++ )) ; do
+			#	script=parent
+			#	sourced_file="$(dirname "$script")/$request"
+			#	_mdu_load_source_O_AL_WS ${only_once} "$sourced_file" $@ && return 0 || log_debug "'$request' not found as '$sourced_file' from '$(basename "$script")'"
+			#	parent_source_index=$(($parent_source_index+1))
+			#done
 		}
 	}
-	_mdu_load_source_O_AL_WS ${only_once} ${around_linked} "$request" $@
+	_mdu_load_source_O_AL_WS ${only_once} "$request" $@
 	result=$?
 	[ ${result} -eq 0 ] && return 0
 	[ ${result} -eq 254 ] &&  {
