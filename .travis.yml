@@ -3,6 +3,10 @@ language: bash
 before_script:
     - curl -L "http://downloads.sourceforge.net/shunit2/shunit2-2.0.3.tgz" | tar zx -C test
 
+branches:
+    except:
+        - feature/WIP_.*
+
 script:
     - bash test/script/shell-util/log.sh
     - bash test/script/shell-util/sourcing.sh
