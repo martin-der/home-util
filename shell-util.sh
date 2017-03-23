@@ -11,7 +11,6 @@ LOG_LEVEL_NONE=0
 
 DEFAULT_LOG_LEVEL=${LOG_LEVEL_WARN}
 
-DRY_MODE=0
 
 
 MDU_HUMAN_MODE=${MDU_HUMAN_MODE:-1}
@@ -96,12 +95,11 @@ function _mdu_source_if_exists() {
 #
 # Load source
 #	param 1/0 : [O]nce
-#	param 1/0 : [A]round [L]inked
 #	param <name>
 #	param ... : [W]ith [S]uffixes
 #
-function _mdu_load_source_O_AL_WS() {
-	local result only_once script suffixed linked_script
+function _mdu_load_source_O_WS() {
+	local result only_once script suffixed
 	only_once=$1
 	shift
 	script=$1
@@ -111,11 +109,6 @@ function _mdu_load_source_O_AL_WS() {
 	result=$?
 	[ $result -ne 254 ] && return $result
 
-	#[ -h "$script" ] && {
-	#	linked_script="$(readlink -f "$script")" || continue
-	#	linked_script="$(dirname "$target_file")/$1"
-	#	_mdu_source_if_exists ${only_once} "$linked_script" && return 0
-	#}
 	for suffix in "$@" ; do
 		suffixed="${script}.${suffix}"
 		log_debug "Try suffixed '$suffixed'..."
@@ -151,39 +144,29 @@ function _mdu_load_source() {
 	request="$1"
 	shift
 	[ "x${request:0:1}" != "x/" ] && {
-		#log_debug "Looking from '${BASH_SOURCE[2]}'"
-		#printf '  - %s\n' "${BASH_SOURCE[@]}"
+		[ ${around_linked}  -ne 0 ] && {
+			local parent="${BASH_SOURCE[2]}"
+			[ -h "$parent" ] && {
+				sourced_file="$(dirname "$(readlink -m "${parent}")")/$request"
+				_mdu_load_source_O_WS ${only_once} "$sourced_file" $@
+				result=$?
+				[ ${result} -ne 254 ] && return ${result}
+				#log_debug "'$request' not found as \"near link\" '$sourced_file' ( parent '$parent' => '$(readlink "${parent}")' )"
+			}
+		}
+
 		sourced_file="$(dirname "${BASH_SOURCE[2]}")/$request"
-		_mdu_load_source_O_AL_WS ${only_once} "$sourced_file" $@
+		_mdu_load_source_O_WS ${only_once} "$sourced_file" $@
 		result=$?
 		[ ${result} -ne 254 ] && return ${result}
-		log_debug "'$request' not found as '$sourced_file'"
+		#log_debug "'$request' not found as '$sourced_file'"
 
-		[ ${around_linked}  -ne 0 ] && {
-			sourced_file="$(dirname "$(readlink "${BASH_SOURCE[3]}")")/$request"
-			_mdu_load_source_O_AL_WS ${only_once} "$sourced_file" $@
-			result=$?
-			[ ${result} -ne 254 ] && return ${result}
-			log_debug "'$request' not found as \"near link\" '$sourced_file'"
-
-			#local parent count=${#BASH_SOURCE[@]}
-			#[ $count -gt 3 ] && {
-			#	sourced_file="$(dirname "${BASH_SOURCE[2]}")/$request"
-			#	parent=${#BASH_SOURCE[3]}
-			#}
-			#parent_source_index=3
-			#for (( index=3 ; index<count ; index++ )) ; do
-			#	script=parent
-			#	sourced_file="$(dirname "$script")/$request"
-			#	_mdu_load_source_O_AL_WS ${only_once} "$sourced_file" $@ && return 0 || log_debug "'$request' not found as '$sourced_file' from '$(basename "$script")'"
-			#	parent_source_index=$(($parent_source_index+1))
-			#done
-		}
 	}
-	_mdu_load_source_O_AL_WS ${only_once} "$request" $@
+	_mdu_load_source_O_WS ${only_once} "$request" $@
 	result=$?
 	[ ${result} -eq 0 ] && return 0
 	[ ${result} -eq 254 ] &&  {
+		#log_debug "'$request' not found directly as '$request'"
 		log_error "Error sourcing '$request' : not found"
 		return 254
 	}

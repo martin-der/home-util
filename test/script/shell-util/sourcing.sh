@@ -9,7 +9,7 @@ test_root_dir="${root_dir}/test"
 oneTimeSetUp() {
 	export MDU_HUMAN_MODE=0
 	export MDU_NO_COLOR=1
-	export MDU_LOG_LEVEL=debug
+	export MDU_LOG_LEVEL=warn
 	. "${root_dir}/shell-util.sh" || exit 1
 	RESOURCES_DIR="${test_root_dir}/resources"
 
@@ -30,7 +30,7 @@ tearDown() {
 }
 
 
-ZZtestRecursiveInclude() {
+testRecursiveInclude() {
 	local result expected
 	expected="A spoon in the drawer 1
 A soup in the drawer 2
@@ -46,14 +46,14 @@ That was a nice meal"
 	assertEquals "$expected" "$result"
 }
 
-ZZtestIncludeScriptNotFound() {
+testIncludeScriptNotFound() {
 	local result expected
 	expected="[ERROR] Error sourcing '$TMP_DIR/what' : not found"
 	result="$(load_source "$TMP_DIR/what" sh 2>&1)"
 	assertEquals 254 $?
 	assertEquals "$expected" "$result"
 }
-ZZtestInnerIncludeScriptNotFound() {
+testInnerIncludeScriptNotFound() {
 	local result expected
 	expected="[ERROR] Error sourcing 'holy-grail' : not found
 [ERROR] Error sourcing '$TMP_DIR/journey.sh' : returned 1"
@@ -62,7 +62,7 @@ ZZtestInnerIncludeScriptNotFound() {
 	assertEquals "$expected" "$result"
 }
 
-ZZtestRecursiveIncludeOnce() {
+testRecursiveIncludeOnce() {
 	local result expected
 	expected="A spoon in the drawer 1
 A soup in the drawer 2
@@ -79,7 +79,7 @@ That was a nice meal"
 
 testIncludeLinkedFirstThenRealScript() {
 	local result expected
-	expected="A rotten apple in the kitchen
+	expected="A yellow apple in the drawer 1
 An orange in the drawer 1
 A banana in the kitchen
 A fruit basket in the drawer 1"
