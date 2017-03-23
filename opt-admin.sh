@@ -2,8 +2,9 @@
 #@mdu-helper-capable
 
 source "$(dirname "$0")/shell-util.sh" 2>/dev/null || source shell-util || exit 1
-source "$(dirname "$0")/completion-helper.sh" 2>/dev/null || source completion-helper || exit 1
-source "$(dirname "$0")/resource.sh" 2>/dev/null || source resource || exit 1
+load_source_once completion-helper sh || exit 1
+load_source_once resource sh || exit 1
+
 
 if [ -z ${MDU_OPT_DIRECTORY+x} ] ; then
 	OPT_DIR="/opt"

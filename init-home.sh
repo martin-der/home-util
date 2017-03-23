@@ -5,7 +5,7 @@ export TAG
 
 
 source "$(dirname "$0")/shell-util.sh" 2>/dev/null || source shell-util  || exit 1
-source "$(dirname "$0")/config-util.sh" 2>/dev/null || source config-util  || exit 1
+load_source_once config-util sh || exit 1
 
 
 if test "x${USER+}" = "x" ; then
