@@ -339,6 +339,7 @@ function decorate()  {
 	echo
 }
 function decorate_n()  {
+	#read bacground status : echo -e "\e]11;?\a"
 	local text="$1"
 	local previousDecoration="$2"
 
