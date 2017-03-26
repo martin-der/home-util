@@ -146,13 +146,14 @@ function _mdu_load_source() {
 	[ "x${request:0:1}" != "x/" ] && {
 		[ ${around_linked}  -ne 0 ] && {
 			local parent="${BASH_SOURCE[2]}"
-			[ -h "$parent" ] && {
+			while [ -h "$parent" ] ; do
 				sourced_file="$(dirname "$(readlink -m "${parent}")")/$request"
 				_mdu_load_source_O_WS ${only_once} "$sourced_file" $@
 				result=$?
 				[ ${result} -ne 254 ] && return ${result}
 				#log_debug "'$request' not found as \"near link\" '$sourced_file' ( parent '$parent' => '$(readlink "${parent}")' )"
-			}
+				parent="$sourced_file"
+			done
 		}
 
 		sourced_file="$(dirname "${BASH_SOURCE[2]}")/$request"
@@ -194,6 +195,12 @@ function load_source_once() {
 #        Logging         #
 #                        #
 # ---------------------- #
+
+# From MAN pages :
+# This  variable  can be used with BASH_LINENO and BASH_SOURCE.
+# Each element of FUNCNAME has corresponding elements in BASH_LINENO and BASH_SOURCE to describe the call stack.
+# For instance, ${FUNCNAME[$i]} was called from the file ${BASH_SOURCE[$i+1]} at line number ${BASH_LINENO[$i]}.
+# The caller builtin displays the current call stack using this information.
 
 ICON_WARN="${YELLOW_BOLD}/!\\\\${COLOR_RESET}"
 ICON_ERROR="${RED_BOLD}/!\\\\${COLOR_RESET}"
@@ -280,12 +287,16 @@ function log_error()  {
 mdu_getTextDecoration() {
 	local prefix="_mdu_text_decoration__"
 	local i="${prefix}$1"
-	echo -n -e "${!i-}"
+	[ -z ${!i+x} ] && return 1 || {
+		echo -n -e "${!i-}"
+		return 0
+	}
 }
 mdu_setTextDecoration() {
 	local prefix="_mdu_text_decoration__"
 	local i="${prefix}$1"
-	read -d"\0" "$i" <<<"$2"
+	#read -d"\0" "$i" <<<"$2"
+	read -r "$i" <<<"$2"
 }
 mdu_isSetTextDecoration() {
 	local prefix="_mdu_text_decoration__"
@@ -341,12 +352,13 @@ function decorate_n()  {
 	post=$(_decorationFirstGroup "$text" 4)
 
 	[ "x$key" != "x$text" ] && {
+		#log_debug "decorationFirstGroup '$pre|$key|$content|$post'"
 		echo -n "$pre"
 		local decoration=$(_echoDecorationValue "$key")
 		echo -e -n "$decoration"
 		echo -e -n "$content"
-		echo -e -n "AAA$previousDecoration"
-		decorate_n "$post" "BBB$previousDecoration"
+		echo -e -n "$previousDecoration"
+		decorate_n "$post" "$previousDecoration"
 		return
 	}
 
@@ -356,16 +368,17 @@ function decorate_n()  {
 	post=$(_decorationBiggestGroup "$text" 4)
 
 	[ "x$key" != "x$text" ] && {
+		#log_debug "decorationBiggestGroup '$pre|$key|$content|$post'"
 		echo -n "$pre"
 		local decoration=$(_echoDecorationValue "$key")
 		echo -e -n "$decoration"
 		decorate_n "$content" "$decoration"
 		echo -e -n "$previousDecoration"
 		echo -n "$post"
-	} || {
-		echo -e -n "$previousDecoration"
-		echo -n "$text"
+		return
 	}
+
+	echo -n "$text"
 }
 
 function escaped_for_regex {
