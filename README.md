@@ -32,7 +32,9 @@ $HOME/fun-music->$HOME/music/genre/misc
 
 ## environment variables
 
-### MDU_LOG_LEVEL ( LOG_LEVEL )
+### Logging related varialbes
+
+#### MDU_LOG_LEVEL ( or LOG_LEVEL )
 
 Set the level of logging. Can be one of
 
@@ -46,7 +48,11 @@ Set the level of logging. Can be one of
 MDU_LOG_LEVEL=info
 ```
 
-Used by pretty much all scripts
+#### MDU_LOG_STDOUT and MDU_LOG_STDERR
+
+If `MDU_LOG_STDOUT` is set and not empty, debug and info output are redirected to the file defined by `$MDU_LOG_STDOUT`.
+
+If `MDU_LOG_STDERR` is set and not empty, warning and error output are redirected to the file defined by `$MDU_LOG_STDERR`.
 
 ------
 
