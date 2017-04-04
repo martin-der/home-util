@@ -54,11 +54,15 @@ task selfExtractingArchive( dependsOn: 'archiveZip') {
 
 	copy {
 		from zipTree(file("output/distrib/${distributedName}.zip"))
-		into 'output/unpacked'
+		into 'output/installer/unpacked'
+	}
+	copy {
+		from file('build/template/installer.sh')
+		into 'output/installer'
 	}
 
 	exec {
-		commandLine 'sh', 'build/tool/makeself/makeself.sh', './output/unpacked', "output/distrib/${distributedName}.run", "Home-Util", 'echo Done'
+		commandLine 'sh', 'build/tool/makeself/makeself.sh', './output/installer', "output/distrib/${distributedName}.run", "Home-Util", './installer.sh'
 	}
 
 }
