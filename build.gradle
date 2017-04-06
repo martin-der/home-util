@@ -1,5 +1,4 @@
 group 'net.tetrakoopa'
-version '1.0-SNAPSHOT'
 
 /*class MyDownload extends DefaultTask {
 
@@ -18,12 +17,23 @@ version '1.0-SNAPSHOT'
 	}
 }*/
 
+def getVersionName = { ->
+	def stdout = new ByteArrayOutputStream()
+	exec {
+		commandLine 'git', 'describe', '--tags'
+		standardOutput = stdout
+	}
+	return stdout.toString().trim()
+}
+
+version getVersionName
+
 def distributedName = "home-util-${project.version}"
 
 
-task wrapper(type: Wrapper) {
+/*task wrapper(type: Wrapper) {
 	gradleVersion = '3.4.1'
-}
+}*/
 
 task archiveZip(type: Zip) {
 
