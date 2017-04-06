@@ -36,33 +36,39 @@ task archiveZip(type: Zip) {
 
 task selfExtractingArchive( dependsOn: 'archiveZip') {
 
-	/*task downloadSomething(type: MyDownload) {
-		sourceUrl = 'https://raw.githubusercontent.com/megastep/makeself/master/makeself.sh'
-		target = file('build/makeself.sh')
-	}*/
+	doLast {
 
-	new File('build/tool/makeself').mkdirs()
-	// https://raw.githubusercontent.com/megastep/makeself/master/makeself.sh
-	def f = new File('build/tool/makeself/makeself.sh')
-	if (!f.exists()) {
-		new URL('https://raw.githubusercontent.com/megastep/makeself/master/makeself.sh').withInputStream{ i -> f.withOutputStream{ it << i }}
-	}
-	f = new File('build/tool/makeself/makeself-header.sh')
-	if (!f.exists()) {
-		new URL('https://raw.githubusercontent.com/megastep/makeself/master/makeself-header.sh').withInputStream{ i -> f.withOutputStream{ it << i }}
-	}
+		/*task downloadSomething(type: MyDownload) {
+			sourceUrl = 'https://raw.githubusercontent.com/megastep/makeself/master/makeself.sh'
+			target = file('build/makeself.sh')
+		}*/
 
-	copy {
-		from zipTree(file("output/distrib/${distributedName}.zip"))
-		into 'output/installer/unpacked'
-	}
-	copy {
-		from file('build/template/installer.sh')
-		into 'output/installer'
-	}
+		/*new File('build/tool/makeself').mkdirs()
+		// https://raw.githubusercontent.com/megastep/makeself/master/makeself.sh
+		def f = new File('build/tool/makeself/makeself.sh')
+		if (!f.exists()) {
+			new URL('https://raw.githubusercontent.com/megastep/makeself/master/makeself.sh').withInputStream{ i -> f.withOutputStream{ it << i }}
+		}
+		f = new File('build/tool/makeself/makeself-header.sh')
+		if (!f.exists()) {
+			new URL('https://raw.githubusercontent.com/megastep/makeself/master/makeself-header.sh').withInputStream{ i -> f.withOutputStream{ it << i }}
+		}*/
 
-	exec {
-		commandLine 'sh', 'build/tool/makeself/makeself.sh', './output/installer', "output/distrib/${distributedName}.run", "Home-Util", './installer.sh'
+		copy {
+			from zipTree(file("output/distrib/${distributedName}.zip"))
+			into 'output/installer/unpacked'
+		}
+		copy {
+			from file('build/template/install.sh')
+			into 'output/installer'
+		}
+
+		exec {
+			commandLine 'sh', 'build/tool/makeself/makeself.sh', './output/installer', "output/distrib/${distributedName}.run", "Home-Util", './install.sh'
+		}
+
 	}
 
 }
+
+

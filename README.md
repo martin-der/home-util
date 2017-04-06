@@ -30,9 +30,13 @@ $HOME/icons->/usr/share/icons\
 $HOME/fun-music->$HOME/music/genre/misc
 ```
 
-## environment variables
+## Running the script
 
-### Logging related varialbes
+wget http://sitehere.com/install.sh -O - | sh
+
+## Environment variables
+
+### Logging related variables
 
 #### MDU_LOG_LEVEL ( or LOG_LEVEL )
 
