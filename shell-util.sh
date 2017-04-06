@@ -231,13 +231,22 @@ function log_debug() {
 	test ${LOG_LEVEL_DEBUG} -gt ${level} && return 0
 	local human_mode=${MDU_HUMAN_MODE}
 	local output
-	[ "x${MDU_LOG_STDOUT:-}" != x ] && output="$MDU_LOG_STDOUT" || output="/proc/$$/fd/1"
-	if [ ${human_mode} -eq 0 ] ; then
-		echo_script_prefix DEBUG
-	else
-		echo -e -n "$ICON_DEBUG "
-	fi >> "$output"
-	echo "$@" >> "$output"
+	[ "x${MDU_LOG_STDOUT:-}" != x ] && {
+		output="$MDU_LOG_STDOUT"
+		if [ ${human_mode} -eq 0 ] ; then
+			echo_script_prefix DEBUG
+		else
+			echo -e -n "$ICON_DEBUG "
+		fi >> "$output"
+		echo "$@" >> "$output"
+	} || {
+		if [ ${human_mode} -eq 0 ] ; then
+			echo_script_prefix DEBUG
+		else
+			echo -e -n "$ICON_DEBUG "
+		fi
+		echo "$@"
+	}
 }
 
 function log_info() {
@@ -246,13 +255,22 @@ function log_info() {
 	test ${LOG_LEVEL_INFO} -gt ${level} && return 0
 	local human_mode=${MDU_HUMAN_MODE}
 	local output
-	[ "x${MDU_LOG_STDOUT:-}" != x ] && output="$MDU_LOG_STDOUT" || output="/proc/$$/fd/1"
-	if [ ${human_mode} -eq 0 ] ; then
-		echo_script_prefix INFO
-	else
-		echo -e -n "$ICON_INFO "
-	fi >> "$output"
-	echo "$@" >> "$output"
+	[ "x${MDU_LOG_STDOUT:-}" != x ] && {
+		output="$MDU_LOG_STDOUT"
+		if [ ${human_mode} -eq 0 ] ; then
+			echo_script_prefix INFO
+		else
+			echo -e -n "$ICON_INFO "
+		fi >> "$output"
+		echo "$@" >> "$output"
+	} || {
+		if [ ${human_mode} -eq 0 ] ; then
+			echo_script_prefix INFO
+		else
+			echo -e -n "$ICON_INFO "
+		fi
+		echo "$@"
+	}
 }
 
 function log_warn() {
@@ -261,13 +279,22 @@ function log_warn() {
 	test ${LOG_LEVEL_WARN} -gt ${level} && return 0
 	local human_mode=${MDU_HUMAN_MODE}
 	local output
-	[ "x${MDU_LOG_STDERR:-}" != x ] && output="$MDU_LOG_STDERR" || output="/proc/$$/fd/2"
-	if [ ${human_mode} -eq 0 ] ; then
-		echo_script_prefix WARN
-	else
-		echo -e -n "$ICON_WARN "
-	fi >> "$output"
-	echo "$@" >> "$output"
+	[ "x${MDU_LOG_STDERR:-}" != x ] && {
+		output="$MDU_LOG_STDERR"
+		if [ ${human_mode} -eq 0 ] ; then
+			echo_script_prefix WARN
+		else
+			echo -e -n "$ICON_WARN "
+		fi >> "$output"
+		echo "$@" >> "$output"
+	} || {
+		if [ ${human_mode} -eq 0 ] ; then
+			echo_script_prefix WARN
+		else
+			echo -e -n "$ICON_WARN "
+		fi >&2
+		echo "$@" >&2
+	}
 }
 
 function log_error()  {
@@ -276,13 +303,23 @@ function log_error()  {
 	test ${LOG_LEVEL_ERROR} -gt ${level} && return 0
 	local human_mode=${MDU_HUMAN_MODE}
 	local output
-	[ "x${MDU_LOG_STDERR:-}" != x ] && output="$MDU_LOG_STDERR" || output="/proc/$$/fd/2"
-	if [ ${human_mode} -eq 0 ] ; then
-		echo_script_prefix ERROR
-	else
-		echo -e -n "$ICON_ERROR "
-	fi >> "$output"
-	echo "$@" >> "$output"
+	[ "x${MDU_LOG_STDERR:-}" != x ] && {
+		output="$MDU_LOG_STDERR"
+		if [ ${human_mode} -eq 0 ] ; then
+			echo_script_prefix ERROR
+		else
+			echo -e -n "$ICON_ERROR "
+		fi >> "$output"
+		echo "$@" >> "$output"
+	} || {
+		if [ ${human_mode} -eq 0 ] ; then
+			echo_script_prefix ERROR
+		else
+			echo -e -n "$ICON_ERROR "
+		fi >&2
+		echo "$@" >&2
+	}
+	#output="$MDU_LOG_STDERR" || output="/proc/$$/fd/2"
 }
 
 
