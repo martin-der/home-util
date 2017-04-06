@@ -5,6 +5,7 @@ root_dir="$(pwd -P)/../../.."
 popd > /dev/null
 test_root_dir="${root_dir}/test"
 
+return 0
 
 oneTimeSetUp() {
 	export MDU_LOG_LEVEL=warn
