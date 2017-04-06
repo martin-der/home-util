@@ -1,5 +1,12 @@
 language: bash
 
+jdk:
+  - oraclejdk8
+
+gradle:
+  - oraclejdk8
+
+
 before_script:
     - curl -L "http://downloads.sourceforge.net/shunit2/shunit2-2.0.3.tgz" | tar zx -C test
 
@@ -29,4 +36,5 @@ script:
     - bash test/script/opt-admin/application.sh
     - bash test/script/init-home/xdg.sh
     - bash test/script/init-home/bin_dir.sh
-    - gradle archiveZip selfExtractingArchive
+    - bash test/script/timeout/timeout.sh
+    - ./gradlew archiveZip selfExtractingArchive
