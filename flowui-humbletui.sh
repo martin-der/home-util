@@ -16,6 +16,7 @@ source "$(readlink "$(dirname "$0")/shell-util.sh")" 2>/dev/null \
    MARK(){ echo -en "\e[7m";}
  UNMARK(){ echo -en "\e[27m";}
       R(){ CLEAR ;stty sane;echo -en "\ec\e[37;44m\e[J";};
+<<<<<<< f4f88b04d258bbe66b8c3bba53db7dc62fce41d8
            i=0; CLEAR; CIVIS;NULL=/dev/null
 
 __read_key() {
@@ -114,6 +115,53 @@ __draw_label_input() {
 __compute_layout() {
 	local components="$1" title="$2" header="$3" footer="$4"
 }
+=======
+   HEAD(){ DRAW
+           for each in $(seq 1 13);do
+           echo -e "   x                                          x"
+           done
+           WRITE;MARK;MOVE 1 5
+           echo -e "$1";UNMARK;}
+           i=0; CLEAR; CIVIS;NULL=/dev/null
+   FOOT(){ MARK;MOVE 13 5
+           printf "$1";UNMARK;}
+  ARROW(){ read -s -n3 key 2>/dev/null >&2
+           if [[ $key = $ESC[A ]];then echo up;fi
+           if [[ $key = $ESC[B ]];then echo dn;fi;}
+     M0(){ MOVE  4 120; echo -en "Login info";}
+     M1(){ MOVE  5 120; echo -en "Network";}
+     M2(){ MOVE  6 120; echo -en "Disk";}
+     M3(){ MOVE  7 120; echo -en "Routing";}
+     M4(){ MOVE  8 120; echo -en "Time";}
+     M5(){ MOVE  9 120; echo -en "ABOUT  ";}
+     M6(){ MOVE 10 120; echo -en "EXIT   ";}
+      LM=6
+   MENU(){ for each in $(seq 0 $LM);do M${each};done;}
+    POS(){ if [[ $cur == up ]];then ((i--));fi
+           if [[ $cur == dn ]];then ((i++));fi
+           if [[ $i -lt 0   ]];then i=$LM;fi
+           if [[ $i -gt $LM ]];then i=0;fi;}
+REFRESH(){ after=$((i+1)); before=$((i-1))
+           if [[ $before -lt 0  ]];then before=$LM;fi
+           if [[ $after -gt $LM ]];then after=0;fi
+           if [[ $j -lt $i      ]];then UNMARK;M$before;else UNMARK;M$after;fi
+           if [[ $after -eq 0 ]] || [ $before -eq $LM ];then
+           UNMARK; M$before; M$after;fi;j=$i;UNMARK;M$before;M$after;}
+   INIT(){ R;HEAD "$2";FOOT "$3";MENU;}
+     SC(){ REFRESH;MARK;$S;$b;cur=`ARROW`;}
+     ES(){ MARK;$e "ENTER = main menu ";$b;read;INIT;}
+
+#  while [[ "$O" != " " ]]; do case $i in
+#        0) S=M0;SC;if [[ $cur == "" ]];then R;$e "\n$(w        )\n";ES;fi;;
+#        1) S=M1;SC;if [[ $cur == "" ]];then R;$e "\n$(ifconfig )\n";ES;fi;;
+#        2) S=M2;SC;if [[ $cur == "" ]];then R;$e "\n$(df -h    )\n";ES;fi;;
+#        3) S=M3;SC;if [[ $cur == "" ]];then R;$e "\n$(route -n )\n";ES;fi;;
+#        4) S=M4;SC;if [[ $cur == "" ]];then R;$e "\n$(date     )\n";ES;fi;;
+#        5) S=M5;SC;if [[ $cur == "" ]];then R;$e "\n$($e by oTo)\n";ES;fi;;
+#        6) S=M6;SC;if [[ $cur == "" ]];then R;exit 0;fi;;
+# esac;POS;done
+
+>>>>>>> WIP Init flowui
 
 __draw() {
 
