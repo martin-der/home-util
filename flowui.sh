@@ -87,7 +87,15 @@ fui_sanitized_variable_key() {
 # param 2 input
 #
 fui_get_variable_key() {
-	fui_sanitized_variable_key "${__fui_output_prefix}__${__fui_RUN_page}__${1}__${2}"
+	fui_get_variable_key_for_page "${__fui_RUN_page}" "${1}" "${2}"
+}
+#
+# param 1 page
+# param 2 component
+# param 3 input
+#
+fui_get_variable_key_for_page() {
+	fui_sanitized_variable_key "${__fui_output_prefix}__${1}__${2}__${3}"
 }
 #
 # param 1 component
@@ -138,10 +146,19 @@ fui_get_variable() {
 # param 3 value
 #
 fui_set_variable() {
-	local component="$1" input="$2"
-	i="$(fui_get_variable_key "$component" "$input")"
+	fui_set_variable_for_page "${__fui_RUN_page}" "$1" "$2" "$3"
+}
+#
+# param 1 page
+# param 2 component
+# param 3 input
+# param 4 value
+#
+fui_set_variable_for_page() {
+	local page="$1" component="$2" input="$3"
+	i="$(fui_get_variable_key_for_page "$page" "$component" "$input")"
 	#read -d"\0" "$i" <<<"$3"
-	read -r "$i" <<<"$3"
+	read -r "$i" <<<"$4"
 }
 
 
