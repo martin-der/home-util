@@ -16,7 +16,6 @@ source "$(readlink "$(dirname "$0")/shell-util.sh")" 2>/dev/null \
    MARK(){ echo -en "\e[7m";}
  UNMARK(){ echo -en "\e[27m";}
       R(){ CLEAR ;stty sane;echo -en "\ec\e[37;44m\e[J";};
-<<<<<<< f4f88b04d258bbe66b8c3bba53db7dc62fce41d8
            i=0; CLEAR; CIVIS;NULL=/dev/null
 
 __read_key() {
@@ -115,7 +114,6 @@ __draw_label_input() {
 __compute_layout() {
 	local components="$1" title="$2" header="$3" footer="$4"
 }
-=======
    HEAD(){ DRAW
            for each in $(seq 1 13);do
            echo -e "   x                                          x"
@@ -123,45 +121,103 @@ __compute_layout() {
            WRITE;MARK;MOVE 1 5
            echo -e "$1";UNMARK;}
            i=0; CLEAR; CIVIS;NULL=/dev/null
-   FOOT(){ MARK;MOVE 13 5
-           printf "$1";UNMARK;}
-  ARROW(){ read -s -n3 key 2>/dev/null >&2
-           if [[ $key = $ESC[A ]];then echo up;fi
-           if [[ $key = $ESC[B ]];then echo dn;fi;}
-     M0(){ MOVE  4 120; echo -en "Login info";}
-     M1(){ MOVE  5 120; echo -en "Network";}
-     M2(){ MOVE  6 120; echo -en "Disk";}
-     M3(){ MOVE  7 120; echo -en "Routing";}
-     M4(){ MOVE  8 120; echo -en "Time";}
-     M5(){ MOVE  9 120; echo -en "ABOUT  ";}
-     M6(){ MOVE 10 120; echo -en "EXIT   ";}
-      LM=6
-   MENU(){ for each in $(seq 0 $LM);do M${each};done;}
-    POS(){ if [[ $cur == up ]];then ((i--));fi
-           if [[ $cur == dn ]];then ((i++));fi
-           if [[ $i -lt 0   ]];then i=$LM;fi
-           if [[ $i -gt $LM ]];then i=0;fi;}
-REFRESH(){ after=$((i+1)); before=$((i-1))
-           if [[ $before -lt 0  ]];then before=$LM;fi
-           if [[ $after -gt $LM ]];then after=0;fi
-           if [[ $j -lt $i      ]];then UNMARK;M$before;else UNMARK;M$after;fi
-           if [[ $after -eq 0 ]] || [ $before -eq $LM ];then
-           UNMARK; M$before; M$after;fi;j=$i;UNMARK;M$before;M$after;}
-   INIT(){ R;HEAD "$2";FOOT "$3";MENU;}
-     SC(){ REFRESH;MARK;$S;$b;cur=`ARROW`;}
-     ES(){ MARK;$e "ENTER = main menu ";$b;read;INIT;}
 
-#  while [[ "$O" != " " ]]; do case $i in
-#        0) S=M0;SC;if [[ $cur == "" ]];then R;$e "\n$(w        )\n";ES;fi;;
-#        1) S=M1;SC;if [[ $cur == "" ]];then R;$e "\n$(ifconfig )\n";ES;fi;;
-#        2) S=M2;SC;if [[ $cur == "" ]];then R;$e "\n$(df -h    )\n";ES;fi;;
-#        3) S=M3;SC;if [[ $cur == "" ]];then R;$e "\n$(route -n )\n";ES;fi;;
-#        4) S=M4;SC;if [[ $cur == "" ]];then R;$e "\n$(date     )\n";ES;fi;;
-#        5) S=M5;SC;if [[ $cur == "" ]];then R;$e "\n$($e by oTo)\n";ES;fi;;
-#        6) S=M6;SC;if [[ $cur == "" ]];then R;exit 0;fi;;
-# esac;POS;done
+__read_key() {
+	local key
+	read -s -n1 key 2>/dev/null >&2
+	if [[ $key = $ESC[A ]]; then echo up; return 0; fi
+	if [[ $key = $ESC[B ]]; then echo down; return 0; fi;
+	#if [[ $key = $ESC[B ]];then echo down;fi;
+	key="$(echo -e "$key" | hexdump -e '16/1 "%02x" "\n"')"
+	if [ $key = "0a" ]; then echo enter; return 0; fi;
+	[[ $key =~ ^(.*)0a$ ]] && key="${BASH_REMATCH[1]}"
+	echo -en "key = $key" >&2
+}
 
->>>>>>> WIP Init flowui
+__set_fg_color() {
+	printf '\e[0;%s8;2;%s;%s;%sm' "3" "$1" "$2" "$3"
+	#local bg=4
+	#printf "\x1b[${bg};2;${1};${2};${3}m\n"
+}
+__set_bg_color() {
+	printf '\e[0;%s8;2;%s;%s;%sm' "4" "$1" "$2" "$3"
+}
+
+
+__draw_r_at() {
+	MOVE $1 $2 ; for ((i=0; i<=$3; i++)); do echo -n "$4"; done
+}
+__draw_at() {
+	MOVE $1 $2 ; echo -en "$3"
+}
+__draw_label() {
+	local x="$2" y="$1" w="$3" f="$4" t="$5"
+	local s=0
+	[[ "$f" =~ s ]] && s=1
+	#[ $s -eq 1 ] && echo $(tput smul/rmul)
+	#[ $s -eq 1 ] && echo $(tput smso/rmso)
+	#[ $s -eq 1 ] && echo $(tput setf 0,1,2...7)
+
+	[ $s -eq 1 ] && __set_fg_color 0 255 0
+	__draw_at $y $(($x+$w-${#t})) "$t"
+	[ $s -eq 1 ] && __set_fg_color 255 255 255
+	__set_bg_color 0 0 0
+
+}
+
+__draw_input() {
+	local x="$2" y="$1" w="$3" f="$4" input="$5" vn="${6:-}"
+	local v
+	[[ "$input" =~ ^([^:]+):([^:]+)(:([^:]*))?(:(.*))?$ ]] && {
+		name="${BASH_REMATCH[1]}"
+		type="${BASH_REMATCH[2]}"
+		flag="${BASH_REMATCH[4]}"
+		validation="${BASH_REMATCH[6]}"
+		[[ "$type" =~ \[(.*)\] || "$type" =~ \[(.*)\]\* ]] && {
+		 enum="${BASH_REMATCH[1]}"
+		 [[ $type == *\* ]] && type="multiple-enum" || type="enum"
+		 IFS="|" read -ra values <<< "${enum}"
+		 fui_is_input_mandatory "$flag" && [ 0 -eq ${#values[@]} ] && { __print_error "Mandatory enum with no choice '$type'" ; IFS="$previous_IFS" ; return ${FUI_ERROR_INVALID_INPUT_DESC} ; }
+		}
+
+		local s=0
+		[[ "$f" =~ s ]] && s=1
+
+
+		v="${!vn}"
+
+		case "$type" in
+			string)
+				[ $s -eq 1 ] && __set_bg_color 20 60 20 || __set_bg_color 20 20 20
+				__draw_r_at $y $x $w " "
+				__draw_at $y $x "$v"
+				[ $s -eq 1 ] && __draw_at $y $(($x+${#v})) "█"
+				__set_bg_color 0 0 0
+			;;
+			boolean)
+				;;
+			integer)
+				;;
+			"multiple-enum")
+				;;
+			enum)
+				;;
+			*) __print_error "Unknown type '$type'" ; IFS="$previous_IFS" ; return ${FUI_ERROR_INVALID_COMPONENT_DESC} ;;
+		esac
+	} || {
+	  __draw_at $y $x "BI-$input"
+	}
+}
+
+__draw_label_input() {
+	local x="$2" y="$1" lw="$3" iw="$4" f="$5" label="$6" input="$7" vn="${8:-}"
+	__draw_label $y $x "$lw" "$f" "$label"
+	__draw_input $y $(($x+$lw+1)) "$iw" "$f" "$input" "$vn"
+}
+
+__compute_layout() {
+	local components="$1" title="$2" header="$3" footer="$4"
+}
 
 __draw() {
 
@@ -309,6 +365,42 @@ __fui_run_page_HUMBLETUI() {
 
 	CIVIS
 
+
+	#while :; do
+
+		__draw "$components" "$title" "$header" "$footer"
+
+		IFS=" "
+
+		page_done=0
+		key=
+
+		while [ $page_done -eq 0 ] ; do
+			key="$(__read_key)"
+
+			redraw_needed=
+
+			case "$key" in
+
+			up)
+				selected_input=$(($selected_input-1))
+				redraw_needed=screen
+				;;
+			down)
+				selected_input=$(($selected_input+1))
+				#[ selected_input ] &&
+				redraw_needed=screen
+				;;
+			enter)
+
+				#redraw_needed=screen
+				break;
+				;;
+
+			esac
+
+			[ "x$redraw_needed" = "xscreen" ] && __draw "$components" "$title" "$header" "$footer"
+		done
 
 	#while :; do
 
