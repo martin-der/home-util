@@ -29,6 +29,7 @@ shelter_care_i18n() {
 				"gender:[male]") echo "Male"; return 0 ;;
 				"gender:[female]") echo "Female"; return 0 ;;
 				"medical-care") echo "Require medical care"; return 0 ;;
+				"find-own-food") echo "Find own food"; return 0 ;;
 				"quantity") echo "Quantity"; return 0 ;;
 			esac
 			;;
@@ -114,7 +115,7 @@ shelter_care() {
 			case "$which" in
 				animal)
 					echo "name:string::[^ ]{2,}"
-					echo "species:[dog|cat|mouse|cow|snake]:m"
+					echo "species:[dog|cat|mouse|cow|snake|turtle]:m"
 					echo "gender:[male|female]:m"
 					echo "medical-care:boolean"
 					echo "find-own-food:boolean"
@@ -143,6 +144,8 @@ testReceiveAnimal() {
 
 [ "x${1:-}" == "xdemo" ] && {
 	oneTimeSetUp ;
+	fui_set_variable_for_page "get-animal" "animal" "name" "Caroline"
+	fui_set_variable_for_page "get-animal" "animal" "species" "turtle"
 	fui_run_page get-animal
 	fui_list_variables
 	exit 0 ;
