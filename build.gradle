@@ -39,7 +39,7 @@ task archiveZip(type: Zip) {
 
 	baseName = "home-util-${project.version}"
 
-	destinationDir = new File('output/distrib')
+	destinationDir = new File('output/distrib/final')
 
 	from fileTree('./').include('*.sh', '*.py', 'README.md')
 }
@@ -65,7 +65,7 @@ task selfExtractingArchive( dependsOn: 'archiveZip') {
 		}*/
 
 		copy {
-			from zipTree(file("output/distrib/${distributedName}.zip"))
+			from zipTree(file("output/distrib/final/${distributedName}.zip"))
 			into 'output/installer/unpacked'
 		}
 		copy {
@@ -73,9 +73,22 @@ task selfExtractingArchive( dependsOn: 'archiveZip') {
 			into 'output/installer'
 		}
 
-		exec {
+
+		/*exec {
 			commandLine 'sh', 'build/tool/makeself/makeself.sh', './output/installer', "output/distrib/${distributedName}.run", "Home-Util", './install.sh'
+		}*/
+		exec {
+			workingDir 'output'
+			commandLine 'shar', 'installer'
+			standardOutput = new FileOutputStream("$projectDir/output/distrib/${distributedName}.shar")
 		}
+
+		def shar = new File("output/distrib/final/${distributedName}.run")
+		if (shar.exists()) shar.delete()
+
+		shar.append(new File('build/template/install-pre.sh').text)
+		shar.append(new File("$projectDir/output/distrib/${distributedName}.shar").text.replaceAll('\nexit 0[\n]*$', "\n"))
+		shar.append(new File('build/template/install-post.sh').text)
 
 	}
 
