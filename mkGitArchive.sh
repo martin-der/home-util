@@ -1,12 +1,14 @@
 #!/bin/bash
 
-source "$(dirname "$0")/shell-util.sh" 2>/dev/null || source shell-util  || exit 1
+source "$(readlink "$(dirname "$0")/shell-util.sh")" 2>/dev/null \
+|| source "$(dirname "$0")/shell-util.sh" 2>/dev/null \
+|| source shell-util || exit 1
 
 
 PUSH_TO_ANDROID=0
 REMOTE_DEST=/sdcard/bup/
 
-
+DRY_MODE=1
 
 
 [ "x${MDU_BUP_DIRECTORY}" == "x" ] && {
