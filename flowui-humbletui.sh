@@ -15,19 +15,37 @@ source "$(readlink "$(dirname "$0")/shell-util.sh")" 2>/dev/null \
   WRITE(){ echo -en "\e(B";}
    MARK(){ echo -en "\e[7m";}
  UNMARK(){ echo -en "\e[27m";}
-      R(){ CLEAR ;stty sane;echo -en "\ec\e[37;44m\e[J";};
-           i=0; CLEAR; CIVIS;NULL=/dev/null
+      R(){ CLEAR ;stty sane;};
 
 __read_key() {
-	local key
-	read -s -n1 key 2>/dev/null >&2
-	if [[ $key = $ESC[A ]]; then echo up; return 0; fi
-	if [[ $key = $ESC[B ]]; then echo down; return 0; fi;
-	#if [[ $key = $ESC[B ]];then echo down;fi;
-	key="$(echo -e "$key" | hexdump -e '16/1 "%02x" "\n"')"
-	if [ $key = "0a" ]; then echo enter; return 0; fi;
-	[[ $key =~ ^(.*)0a$ ]] && key="${BASH_REMATCH[1]}"
-	echo -en "key = $key" >&2
+	local ky keey
+	while :; do
+		read -s -n1 ky 2>/dev/null >&2
+		#if [[ $key = $ESC[A ]]; then echo up; return 0; fi
+		#if [[ $key = $ESC[B ]]; then echo down; return 0; fi;
+		ky="$(echo -e "$ky" | hexdump -e '16/1 "%02x" "\n"')"
+		if [ $ky = "0a" ]; then echo enter; return 0; fi;
+		[[ $ky =~ ^(.*)0a\ *$ ]] && ky="${BASH_REMATCH[1]}"
+		keey="$keey$ky"
+		[[ $keey =~ ^1b ]] || {
+			case "$ky" in
+				7f) echo "backspace" ; return 0 ;;
+				09) echo "tab" ; return 0 ;;
+			esac
+		}
+		echo -en "key = $ky " >&2
+		[ "${#keey}" -gt 5 ] && break
+	done
+	case $keey in
+		1b5b41) echo up; return 0 ;;
+		1b5b42) echo down; return 0 ;;
+		1b5b43) echo right; return 0 ;;
+		1b5b44) echo left; return 0 ;;
+		1b5b33) echo delete; return 0 ;;
+	esac
+
+	echo -en "keey = $keey " >&2
+
 }
 
 __set_fg_color() {
@@ -233,9 +251,7 @@ __draw() {
 	local h="$(tput lines)"
 	local input_index component_index
 
-#  IFS="
-#" R "$title" "$header" "$footer"
-	CLEAR ;stty sane
+	echo -en "\ec"
 
 	tput civis
 
@@ -343,6 +359,46 @@ __draw() {
 
 }
 
+__get_selected_variable_key() {
+	fui_get_variable_key_by_indexes "$1" "$selected_component" "$selected_input"
+}
+
+__handle_key() {
+	local components="$1" key="$2"
+	local selected_variable selected_value
+
+	case "$key" in
+
+		up)
+			selected_input=$(($selected_input-1))
+			#redraw_needed=screen
+			;;
+		down)
+			selected_input=$(($selected_input+1))
+			#[ selected_input ] &&
+			redraw_needed=screen
+			;;
+		enter)
+			#redraw_needed=screen
+			#default_action=1;
+			;;
+		backspace|delete)
+			__draw_at 3 50 "modif $key"
+			selected_variable="$(__get_selected_variable_key "$components")"
+			__draw_at 1 50 "selected $selected_variable"
+			local selected_value="$(fui_get_variable_by_key "$selected_variable")"
+			[ ${#selected_value} -gt 0 ] && {
+				selected_value=${selected_value:0:$((${#selected_value}-1))}
+				fui_get_variable_by_key "$selected_variable" "$selected_value"
+				#redraw_needed=select-input-value
+			}
+			;;
+		*)
+			__draw_at 0 50 "[$key]" ;;
+
+	esac
+}
+
 #
 # @param 1 components
 # @param 2 title
@@ -354,7 +410,8 @@ __fui_run_page_HUMBLETUI() {
 
 	trap "__compute_layout \"$components\" \"$title\" \"$header\" \"$footer\" ;  __draw \"$components\" \"$title\" \"$header\" \"$footer\"" WINCH
 
-	local redraw_needed
+	local redraw_needed default_action
+	local key
 
 	selected_component=0
 	selected_input=0
@@ -365,6 +422,24 @@ __fui_run_page_HUMBLETUI() {
 
 	CIVIS
 
+	redraw_needed=
+	default_action=0
+
+	__draw "$components" "$title" "$header" "$footer"
+
+	IFS=" "
+
+	page_done=0
+
+	while [ $page_done -eq 0 ] ; do
+		key="$(__read_key)"
+		__handle_key "$components" "$key"
+
+		[ "x$redraw_needed" = "xscreen" ] && __draw "$components" "$title" "$header" "$footer"
+		[[ "x$redraw_needed" =~ ^xselect-input-value:(.*)$ ]] && {
+			__draw "$components" "${BASH_REMATCH[1]}"
+		}
+		__draw_at 5 50 "key $key"
 
 	#while :; do
 
@@ -394,42 +469,7 @@ __fui_run_page_HUMBLETUI() {
 			enter)
 
 				#redraw_needed=screen
-				break;
-				;;
-
-			esac
-
-			[ "x$redraw_needed" = "xscreen" ] && __draw "$components" "$title" "$header" "$footer"
-		done
-
-	#while :; do
-
-		__draw "$components" "$title" "$header" "$footer"
-
-		IFS=" "
-
-		page_done=0
-		key=
-
-		while [ $page_done -eq 0 ] ; do
-			key="$(__read_key)"
-
-			redraw_needed=
-
-			case "$key" in
-
-			up)
-				selected_input=$(($selected_input-1))
-				redraw_needed=screen
-				;;
-			down)
-				selected_input=$(($selected_input+1))
-				#[ selected_input ] &&
-				redraw_needed=screen
-				;;
-			enter)
-
-				#redraw_needed=screen
+				page_done=1
 				break;
 				;;
 

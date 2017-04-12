@@ -90,6 +90,37 @@ fui_get_variable_key() {
 	fui_get_variable_key_for_page "${__fui_RUN_page}" "${1}" "${2}"
 }
 #
+# param 1 components
+# param 2 component_index
+# param 2 input_index
+#
+fui_get_variable_key_by_indexes() {
+	local components="$1" for_component="$2" for_input="$3"
+	local component_index input_index
+	local component
+	component_index=0
+	for component_name in ${components} ; do
+
+		component=$(fui_get_component "$component_name" )
+
+		[ $for_component -eq $component_index ] && {
+			input_index=0
+			for input in ${component} ; do
+
+				[ $for_input -eq $input_index ] && {
+					[[ "$input" =~ ^([^:]+):([^:]+)(:([^:]*))?(:(.*))?$ ]] && {
+						name="${BASH_REMATCH[1]}"
+						fui_get_variable_key "$component_name" "$name"
+					}
+				}
+				input_index=$(($input_index+1))
+			done
+		}
+		component_index=$(($component_index+1))
+	done
+}
+
+#
 # param 1 page
 # param 2 component
 # param 3 input
@@ -126,7 +157,10 @@ fui_unset_variables() {
 fui_unset_variable() {
 	local component="$1" input="$2"
 	i="$(fui_get_variable_key "$component" "$input")"
-	unset "$i"
+	fui_unset_variable_by_key "$i"
+}
+fui_unset_variable_by_key() {
+	unset "$1"
 }
 #
 # param 1 component
@@ -134,7 +168,11 @@ fui_unset_variable() {
 #
 fui_get_variable() {
 	local component="$1" input="$2"
-	i="$(fui_get_variable_key "$component" "$input")"
+	fui_get_variable_by_key "$i"
+}
+fui_get_variable_by_key() {
+	local i
+	i="$1"
 	[ -z ${!i+x} ] && return 1 || {
 		echo -n -e "${!i-}"
 		return 0
@@ -157,8 +195,13 @@ fui_set_variable() {
 fui_set_variable_for_page() {
 	local page="$1" component="$2" input="$3"
 	i="$(fui_get_variable_key_for_page "$page" "$component" "$input")"
+	fui_set_variable_by_key "$i" "$4"
+}
+fui_set_variable_by_key() {
+	local i
+	i="$1"
 	#read -d"\0" "$i" <<<"$3"
-	read -r "$i" <<<"$4"
+	read -r "$i" <<<"$2"
 }
 
 
