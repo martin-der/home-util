@@ -238,14 +238,14 @@ function log_debug() {
 		else
 			echo -e -n "$ICON_DEBUG "
 		fi >> "$output"
-		echo "$@" >> "$output"
+		echo -e "$@" >> "$output"
 	} || {
 		if [ ${human_mode} -eq 0 ] ; then
 			echo_script_prefix DEBUG
 		else
 			echo -e -n "$ICON_DEBUG "
 		fi
-		echo "$@"
+		echo -e "$@"
 	}
 }
 
@@ -262,14 +262,14 @@ function log_info() {
 		else
 			echo -e -n "$ICON_INFO "
 		fi >> "$output"
-		echo "$@" >> "$output"
+		echo -e "$@" >> "$output"
 	} || {
 		if [ ${human_mode} -eq 0 ] ; then
 			echo_script_prefix INFO
 		else
 			echo -e -n "$ICON_INFO "
 		fi
-		echo "$@"
+		echo -e "$@"
 	}
 }
 
@@ -286,14 +286,14 @@ function log_warn() {
 		else
 			echo -e -n "$ICON_WARN "
 		fi >> "$output"
-		echo "$@" >> "$output"
+		echo -e "$@" >> "$output"
 	} || {
 		if [ ${human_mode} -eq 0 ] ; then
 			echo_script_prefix WARN
 		else
 			echo -e -n "$ICON_WARN "
 		fi >&2
-		echo "$@" >&2
+		echo -e "$@" >&2
 	}
 }
 
@@ -310,14 +310,14 @@ function log_error()  {
 		else
 			echo -e -n "$ICON_ERROR "
 		fi >> "$output"
-		echo "$@" >> "$output"
+		echo -e "$@" >> "$output"
 	} || {
 		if [ ${human_mode} -eq 0 ] ; then
 			echo_script_prefix ERROR
 		else
 			echo -e -n "$ICON_ERROR "
 		fi >&2
-		echo "$@" >&2
+		echo -e "$@" >&2
 	}
 	#output="$MDU_LOG_STDERR" || output="/proc/$$/fd/2"
 }
