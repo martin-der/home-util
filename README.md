@@ -32,7 +32,9 @@ $HOME/fun-music->$HOME/music/genre/misc
 
 ## Running the script
 
-wget http://sitehere.com/install.sh -O - | sh
+```bash
+wget https://github.com/martin-der/home-util/releases/download/v0.1-alpha/home-util-v0.1-alpha.run -O - | sh
+```
 
 ## Environment variables
 
