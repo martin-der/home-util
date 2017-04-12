@@ -55,9 +55,13 @@ print_install_locations() {
 }
 
 install_scripts() {
-   install_location="$1"
-   mkdir -p "${install_location}" || return 1
-   find ./ -maxdepth 1  \( -name '*.sh' -o -name '*.py' \) -exec cp '{}' "${install_location}/" \; || return 1
+	local install_location="$1"
+	local ftarget
+	mkdir -p "${install_location}" || return 1
+	while IFS=$'\n' read f ; do
+		ftarget="$(basename "$f")"
+   		cp "$f" "${install_location}/$ftarget" || return 1
+	done <<< "$( find ./unpacked -maxdepth 3  \( -name '*.sh' -o -name '*.py' \)  )"
 }
 
 
@@ -93,24 +97,25 @@ while true; do
 				echo "Please answer a number between 1 and $install_location_choices_count."
 			}
 			;;
-   esac
+	esac
 done
 
 install_choice=$(($install_choice-1))
 [ $install_choice -lt $install_location_count ] && {
-   install_location="$(get_install_location $install_choice)"
+	install_location="$(get_install_location $install_choice)"
 } || {
-   while true ; do
-      read -p "Choose directory to install scripts in : " install_location
-      [ "x$install_choice" != "x" ] && break
-   done
+	while true ; do
+		read -p "Choose directory to install scripts in : " install_location
+		[ "x$install_choice" != "x" ] && break
+	done
 }
 install_location="${install_location%/}"
 log_info "Install in : '$install_location'"
 
 install_scripts "$install_location" || {
-   log_error "Failed to install scripts" >&2
-   #exit 1
+	log_error "Failed to install scripts" >&2
+	read dummy
+	exit 1
 }
 
 
@@ -124,3 +129,5 @@ while true; do
         * ) echo "Please answer yes or no." ;;
     esac
 done
+
+

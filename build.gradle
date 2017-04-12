@@ -1,21 +1,5 @@
 group 'net.tetrakoopa'
 
-/*class MyDownload extends DefaultTask {
-
-	@Input
-	String sourceUrl
-
-	@OutputFile
-	File target
-
-	@TaskAction
-	void download() {
-		def f = new File(sourceUrl)
-		if (!f.exists()) {
-			new URL('the url').withInputStream{ i -> f.withOutputStream{ it << i }}
-		}
-	}
-}*/
 
 def getVersionName = { ->
 	def stdout = new ByteArrayOutputStream()
@@ -28,7 +12,7 @@ def getVersionName = { ->
 
 version getVersionName
 
-def distributedName = "home-util-${project.version}"
+def distributedName = "${project.name}-${project.version}"
 
 
 /*task wrapper(type: Wrapper) {
@@ -48,22 +32,6 @@ task selfExtractingArchive( dependsOn: 'archiveZip') {
 
 	doLast {
 
-		/*task downloadSomething(type: MyDownload) {
-			sourceUrl = 'https://raw.githubusercontent.com/megastep/makeself/master/makeself.sh'
-			target = file('build/makeself.sh')
-		}*/
-
-		/*new File('build/tool/makeself').mkdirs()
-		// https://raw.githubusercontent.com/megastep/makeself/master/makeself.sh
-		def f = new File('build/tool/makeself/makeself.sh')
-		if (!f.exists()) {
-			new URL('https://raw.githubusercontent.com/megastep/makeself/master/makeself.sh').withInputStream{ i -> f.withOutputStream{ it << i }}
-		}
-		f = new File('build/tool/makeself/makeself-header.sh')
-		if (!f.exists()) {
-			new URL('https://raw.githubusercontent.com/megastep/makeself/master/makeself-header.sh').withInputStream{ i -> f.withOutputStream{ it << i }}
-		}*/
-
 		copy {
 			from zipTree(file("output/distrib/final/${distributedName}.zip"))
 			into 'output/installer/unpacked'
@@ -73,10 +41,6 @@ task selfExtractingArchive( dependsOn: 'archiveZip') {
 			into 'output/installer'
 		}
 
-
-		/*exec {
-			commandLine 'sh', 'build/tool/makeself/makeself.sh', './output/installer', "output/distrib/${distributedName}.run", "Home-Util", './install.sh'
-		}*/
 		exec {
 			workingDir 'output'
 			commandLine 'shar', 'installer'
@@ -87,7 +51,14 @@ task selfExtractingArchive( dependsOn: 'archiveZip') {
 		if (shar.exists()) shar.delete()
 
 		shar.append(new File('build/template/install-pre.sh').text)
-		shar.append(new File("$projectDir/output/distrib/${distributedName}.shar").text.replaceAll('\nexit 0[\n]*$', "\n"))
+
+		shar.append("# *** Application variables *** \n")
+		shar.append("MDU_INSTALL_APPLICATION_NAME=${project.name}\n")
+		shar.append("MDU_INSTALL_APPLICATION_LABEL=${project.name}\n")
+		shar.append("MDU_INSTALL_APPLICATION_VERSION=${project.version}\n")
+		shar.append("\n")
+
+		shar.append(new File("$projectDir/output/distrib/${distributedName}.shar").text.replaceAll('\nexit[ ]+0[\n ]*$', "\n"))
 		shar.append(new File('build/template/install-post.sh').text)
 
 	}
