@@ -174,17 +174,23 @@ function _mdu_load_source() {
 	return ${result}
 }
 
-# @param $1 : script to source
-# @param ... : extra suffixes to try loading against
-# @return
-#     - 254            : if script was not found or couldn't be read
-#     - 0              : if script was sourced without error
-#     - [1-253] or 255 : if script returned an error ( if error code was 254, then 253 is returned instead )
+# @description Source a `script`
 #
+# @example
+#   load_source my_script sh py
+#
+# @param $1 string the `script` to source
+# @param $@ string extra `suffixes` to try loading against
+#
+# @exitcode 254 If script was not found or couldn't be read
+# @exitcode 0 If script was sourced without error
+# @exitcode [1-253] If script returned an error ( if error code was 254, then 253 is returned instead )
 function load_source() {
 	_mdu_load_source "" $@
 }
-# Same as 'load_source' but make sure to load script only once
+# @description Source a `script`, but do it only once
+#
+# @see load_source
 function load_source_once() {
 	_mdu_load_source 1 $@
 }
@@ -322,6 +328,49 @@ function log_error()  {
 	#output="$MDU_LOG_STDERR" || output="/proc/$$/fd/2"
 }
 
+# ---------------------- #
+#                        #
+#   Script Attributes    #
+#                        #
+# ---------------------- #
+
+# @description Extract attributes line from a shell `script`
+#
+# @example
+#   hasScriptAttribute my_script.sh
+#
+# @arg $1 string path to the `script`
+#
+# @exitcode 1 If script could not be read
+# @exitcode 2 'attributes' line was invalid ( ex. does start with # )
+# @exitcode 0 if successful
+extract_script_attributes_line() {
+	sed -e '2q' -e '2d' -e '/^#!\/.*\/bash/d' "$1"
+}
+
+# @description Extract attributes line from a shell script
+#
+# @example
+#   hasScriptAttribute somewhere/my_script.sh foobar
+#
+# @arg $1 string path to the `script`
+# @arg $2 string `attribute` of which the presence must be checked
+#
+# @exitcode 1 If `script` could not be read
+# @exitcode 2 _attributes line_ was invalid ( ex. does start with # )
+# @exitcode 3 script does not have the requested `attribute`
+# @exitcode 0 the `attribute` exists
+#
+# @see extract_script_attributes_line
+has_script_attribute() {
+	local script="$1" attribute="$2"
+	local attributesLine
+	attributesLine="$(extract_script_attributes_line "$script")" || return $?
+	[ "x#@mdu-helper-capable" == "x$attributesLine" ] && return 0
+	return 3
+}
+
+
 
 # ---------------------- #
 #                        #
@@ -329,6 +378,14 @@ function log_error()  {
 #                        #
 # ---------------------- #
 
+# @description Get the value of a decoration key
+#
+# @arg $1 string key
+#
+# @stdout value of the decoration
+#
+# @exitcode 0 If a decoration with this name existed
+# @exitcode 1 If no decoration with this name existed
 mdu_getTextDecoration() {
 	local prefix="_mdu_text_decoration__"
 	local i="${prefix}$1"
@@ -336,18 +393,36 @@ mdu_getTextDecoration() {
 		echo -n -e "${!i-}"
 		return 0
 	}
+	return 1
 }
+# @description Set the value of a decoration
+#
+# @arg $1 string key
+# @arg $2 string value
+#
+# @exitcode 0
 mdu_setTextDecoration() {
 	local prefix="_mdu_text_decoration__"
 	local i="${prefix}$1"
 	#read -d"\0" "$i" <<<"$2"
 	read -r "$i" <<<"$2"
 }
+# @description Check if a decoration exists
+#
+# @arg $1 string key
+#
+# @exitcode 0 if a decoration for this key  exists
+# @exitcode !0 if no decoration for this key  exists
 mdu_isSetTextDecoration() {
 	local prefix="_mdu_text_decoration__"
 	local i="${prefix}$1"
 	[ -z ${!i+x} ] && return 1 || return 0
 }
+# @description Remove a decoration
+#
+# @arg $1 string key
+#
+# @exitcode 0
 mdu_unsetTextDecoration() {
 	local prefix="_mdu_text_decoration__"
 	local i="${prefix}$1"
@@ -384,7 +459,7 @@ function decorate()  {
 	echo
 }
 function decorate_n()  {
-	#read bacground status : echo -e "\e]11;?\a"
+	#read background status : echo -e "\e]11;?\a"
 	local text="$1"
 	local previousDecoration="$2"
 
@@ -432,9 +507,21 @@ function escaped_for_regex {
 }
 
 
+# @description Check if a `line` is a comment with '#'
+#
+# @arg $1 string `line`
+#
+# @exitcode 0 If the line is a comment
+# @exitcode !0 If the line is not a comment
 function line_isComment_withSharp() {
 	grep -Eq '^[ 	]*#' <<< "$1" && return 0 || return 1
 }
+# @description Check if a `line` is empty
+#
+# @arg $1 string `line`
+#
+# @exitcode 0 If the line is empty
+# @exitcode !0 If the line contains other character than ' '
 function line_isEmpty() {
 	grep -Eq '^[ 	]*$' <<< "$1" && return 0 || return 1
 }
@@ -454,8 +541,24 @@ function _mdu_properties_value_from_line() {
 	return 1
 }
 
-# Param 1  : key
-# StdInput : text to be searched in
+# @description Get a `value` for a `key` from a `text`
+#
+# Text is
+# ```
+# # any line starting with '#' ignored
+# key1=value1
+# key2=value2
+# ...
+# keyN=valueN
+# ```
+#
+# @arg $1 string `key`
+# @arg $2 string *optionnal* `text` to be search in
+# @stdin `text` to be search in ( *only* when arg $2 is not provided )
+# @stdout corresponding  `value` (if any was found) to the `key`
+#
+# @exitcode 0 if a `value` was found
+# @exitcode !0 if no `value` was found
 function find_property {
 	[ -z ${2+x} ] && {
 		while read l ; do
@@ -478,11 +581,29 @@ function properties_findTyped {
 	return $?
 }
 
+# @description Extract the `key` part (i.e. the part on the left) from a `line` like :
+#
+# ```
+# key=value
+# ```
+#
+# @arg $1 string `line`
+#
+# @exitcode 0
 function line_KeyValue_getKey() {
-	echo "$1" | sed 's/^[ 	]*\([^ 	=]*\)[ 	]*=\(.*\)/\1/'
+	sed 's/^[ 	]*\([^ 	=]*\)[ 	]*=\(.*\)/\1/' <<< "$1"
 }
+# @description Extract the `value` part (i.e. the part on the right) from a `line` like :
+#
+# ```
+# key=value
+# ```
+#
+# @arg $1 string `line`
+#
+# @exitcode 0
 function line_KeyValue_getValue() {
-	echo "$1" | sed 's/^[ 	]*\([^ 	=]*\)[ 	]*=\(.*\)/\2/'
+	sed 's/^[ 	]*\([^ 	=]*\)[ 	]*=\(.*\)/\2/' <<< "$1"
 }
 
 

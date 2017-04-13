@@ -1,9 +1,12 @@
 #!/bin/bash
 
 
+# @description Escape a string for URL parameter
 #
-# param 1 : string to escape to URL encoding
+# @arg $1 string text to convert
+# @stdout the string escaped for url use
 #
+# @exitcode 0
 function encodeUrl() {
     local l="${#1}"
     for (( i = 0; i < l; i++ )); do
@@ -15,10 +18,13 @@ function encodeUrl() {
     done
 }
 
+# @description Escape a string for HTML
 #
-# param in : string to escape to html
+# @arg $1 string text to convert
+# @stdout the string escaped for HTML use
 #
+# @exitcode 0
 function encodeHtml() {
-	sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g; s/"/\&quot;/g; s/'"'"'/\&#39;/g'
+	sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g; s/"/\&quot;/g; s/'"'"'/\&#39;/g' <<< "$1"
 }
 
