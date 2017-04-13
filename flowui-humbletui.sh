@@ -17,8 +17,10 @@ source "$(readlink "$(dirname "$0")/shell-util.sh")" 2>/dev/null \
  UNMARK(){ echo -en "\e[27m";}
       R(){ CLEAR ;stty sane;};
 
+keey_l=
 __read_key() {
 	local ky keey
+	keey_l=
 	while :; do
 		read -s -n1 ky 2>/dev/null >&2
 		#if [[ $key = $ESC[A ]]; then echo up; return 0; fi
@@ -33,9 +35,9 @@ __read_key() {
 				09) echo "tab" ; return 0 ;;
 			esac
 		}
-		echo -en "key = $ky " >&2
 		[ "${#keey}" -gt 5 ] && break
 	done
+	keey_l="$keey"
 	case $keey in
 		1b5b41) echo up; return 0 ;;
 		1b5b42) echo down; return 0 ;;
@@ -43,8 +45,6 @@ __read_key() {
 		1b5b44) echo left; return 0 ;;
 		1b5b33) echo delete; return 0 ;;
 	esac
-
-	echo -en "keey = $keey " >&2
 
 }
 
@@ -140,18 +140,6 @@ __compute_layout() {
            echo -e "$1";UNMARK;}
            i=0; CLEAR; CIVIS;NULL=/dev/null
 
-__read_key() {
-	local key
-	read -s -n1 key 2>/dev/null >&2
-	if [[ $key = $ESC[A ]]; then echo up; return 0; fi
-	if [[ $key = $ESC[B ]]; then echo down; return 0; fi;
-	#if [[ $key = $ESC[B ]];then echo down;fi;
-	key="$(echo -e "$key" | hexdump -e '16/1 "%02x" "\n"')"
-	if [ $key = "0a" ]; then echo enter; return 0; fi;
-	[[ $key =~ ^(.*)0a$ ]] && key="${BASH_REMATCH[1]}"
-	echo -en "key = $key" >&2
-}
-
 __set_fg_color() {
 	printf '\e[0;%s8;2;%s;%s;%sm' "3" "$1" "$2" "$3"
 	#local bg=4
@@ -237,6 +225,48 @@ __compute_layout() {
 	local components="$1" title="$2" header="$3" footer="$4"
 }
 
+__get_component_content_min_size() {
+	local component_index="$1" component_name="$2"
+	local component
+
+	local label_width input_width label_max_width input_max_width height
+	height=0
+	label_max_width=0
+	input_max_width=0
+
+	component=$(fui_get_component "$component_name" ) || { __print_error "Failed to get component '$component_name'" ; }
+	for input in ${component} ; do
+
+		[[ "$input" =~ ^([^:]+):([^:]+)(:([^:]*))?(:(.*))?$ ]] && {
+			name="${BASH_REMATCH[1]}"
+			type="${BASH_REMATCH[2]}"
+			flag="${BASH_REMATCH[4]}"
+			validation="${BASH_REMATCH[6]}"
+			[[ "$type" =~ \[(.*)\] || "$type" =~ \[(.*)\]\* ]] && {
+				enum="${BASH_REMATCH[1]}"
+				[[ $type == *\* ]] && type="multiple-enum" || type="enum"
+				IFS="|" read -ra values <<< "${enum}"
+				fui_is_input_mandatory "$flag" && [ 0 -eq ${#values[@]} ] && { __print_error "Mandatory enum with no choice '$type'" ; IFS="$previous_IFS" ; return ${FUI_ERROR_INVALID_INPUT_DESC} ; }
+			}
+
+			label="$(fui_get_input_label "$name" "$component")"
+			[ "x$label" = x ] && label="$name"
+
+			label_width="${#label}"
+			input_width=15
+			[ $label_width -gt $label_max_width ] && label_max_width=$label_width
+			[ $input_width -gt $input_max_width ] && input_max_width=$input_width
+			height=$(($height+1))
+		}
+	done
+	echo "$(($label_max_width+1+$input_max_width)),$height,$label_max_width,$input_max_width"
+}
+__draw_selected_input() {
+	local components="$1" title="$2" header="$3" footer="$4"
+
+
+}
+
 __draw() {
 
 	local components="$1" title="$2" header="$3" footer="$4"
@@ -282,70 +312,58 @@ __draw() {
 		label_max_width=0
 		input_max_width=0
 
-		for (( display_round = 0; display_round < 2; display_round++ )); do
+		IFS="," read content_width content_height label_max_width input_max_width <<< "$(__get_component_content_min_size "$component_index" "$component_name")"
 
-			[ $display_round -eq 1 ] && {
-				s="╔═[ $component_title ]═"
-				component_width=$(($label_max_width+1+$input_max_width+5))
-				__draw_at $y_component $x "$s"
-				__draw_at $y_component $(($x+$component_width-1)) "╗"
-				[ $((${#s}+2)) -lt $component_width ] && __draw_r_at $y_component $((x+${#s})) $(($component_width-${#s}-2)) "═"
-				__draw_at $((y_component+1)) $x "║"
-				__draw_at $((y_component+1)) $(($x+$component_width-1)) "║"
-			}
-
+			s="╔═[ $component_title ]═($content_width;$content_height)"
+			component_width=$(($content_width+4))
+			__draw_at $y_component $x "$s"
+			__draw_at $y_component $(($x+$component_width-1)) "╗"
+			[ $((${#s}+2)) -lt $component_width ] && __draw_r_at $y_component $((x+${#s})) $(($component_width-${#s}-2)) "═"
+			__draw_at $((y_component+1)) $x "║"
+			__draw_at $((y_component+1)) $(($x+$component_width-1)) "║"
 
 			y=$(($y_component+2))
 
+			input_index=0
+			for input in ${component} ; do
 
-		input_index=0
-		for input in ${component} ; do
+				[[ "$input" =~ ^([^:]+):([^:]+)(:([^:]*))?(:(.*))?$ ]] && {
+					name="${BASH_REMATCH[1]}"
+					type="${BASH_REMATCH[2]}"
+					flag="${BASH_REMATCH[4]}"
+					validation="${BASH_REMATCH[6]}"
+					[[ "$type" =~ \[(.*)\] || "$type" =~ \[(.*)\]\* ]] && {
+						enum="${BASH_REMATCH[1]}"
+						[[ $type == *\* ]] && type="multiple-enum" || type="enum"
+						IFS="|" read -ra values <<< "${enum}"
+						fui_is_input_mandatory "$flag" && [ 0 -eq ${#values[@]} ] && { __print_error "Mandatory enum with no choice '$type'" ; IFS="$previous_IFS" ; return ${FUI_ERROR_INVALID_INPUT_DESC} ; }
+					}
 
-		[[ "$input" =~ ^([^:]+):([^:]+)(:([^:]*))?(:(.*))?$ ]] && {
-			name="${BASH_REMATCH[1]}"
-			type="${BASH_REMATCH[2]}"
-			flag="${BASH_REMATCH[4]}"
-			validation="${BASH_REMATCH[6]}"
-			[[ "$type" =~ \[(.*)\] || "$type" =~ \[(.*)\]\* ]] && {
-				enum="${BASH_REMATCH[1]}"
-				[[ $type == *\* ]] && type="multiple-enum" || type="enum"
-				IFS="|" read -ra values <<< "${enum}"
-				fui_is_input_mandatory "$flag" && [ 0 -eq ${#values[@]} ] && { __print_error "Mandatory enum with no choice '$type'" ; IFS="$previous_IFS" ; return ${FUI_ERROR_INVALID_INPUT_DESC} ; }
-			}
+					label="$(fui_get_input_label "$name" "$component")"
+					[ "x$label" = x ] && label="$name"
 
-			label="$(fui_get_input_label "$name" "$component")"
-			[ "x$label" = x ] && label="$name"
+					#[ $display_round -eq 1 ] && {
+					local input_flag=
+					[ $input_index -eq $selected_input ] && input_flag="${input_flag}s"
+					__draw_at $y $x "║"
+					#__draw_label $y $((2+$x)) $label_max_width "" "$label"
+					__draw_label_input $y $((2+$x)) $label_max_width $input_max_width "$input_flag" "$label" "$input" "$(fui_get_variable_key "$component_name" "$name")"
+					__draw_at $y $((x+$component_width-1)) "║"
+					y=$(($y+1))
 
-			label_width="${#label}"
-			input_width=15
-			[ $display_round -eq 1 ] && {
-				local input_flag=
-				[ $input_index -eq $selected_input ] && input_flag="${input_flag}s"
-				__draw_at $y $x "║"
-				#__draw_label $y $((2+$x)) $label_max_width "" "$label"
-				__draw_label_input $y $((2+$x)) $label_max_width $input_max_width "$input_flag" "$label" "$input" "$(fui_get_variable_key "$component_name" "$name")"
-				__draw_at $y $((x+$component_width-1)) "║"
+
 				} || {
-				[ $label_width -gt $label_max_width ] && label_max_width=$label_width
-				[ $input_width -gt $input_max_width ] && input_max_width=$input_width
-			}
-			y=$(($y+1))
+					__print_error "INVALID_COMPONENT_DESC '$component'"
+					IFS="$previous_IFS"
+					return ${FUI_ERROR_INVALID_COMPONENT_DESC}
 
-
-		} || {
-			__print_error "INVALID_COMPONENT_DESC '$component'"
-			IFS="$previous_IFS"
-			return ${FUI_ERROR_INVALID_COMPONENT_DESC}
-
-		}
-		input_index=$(($input_index+1))
-		done
-		[ $display_round -eq 1 ] && {
+				}
+				input_index=$(($input_index+1))
+			done
 			__draw_at $y $x "╚"
 			__draw_r_at $y $((x+1)) $(($component_width-2)) "═"
 			__draw_at $y $((x+$component_width-1)) "╝"
-		}
-		done
+		#done
 
 		y=$(($y+2))
 
@@ -371,27 +389,27 @@ __handle_key() {
 
 		up)
 			selected_input=$(($selected_input-1))
-			#redraw_needed=screen
+			redraw_needed=screen
 			;;
 		down)
 			selected_input=$(($selected_input+1))
-			#[ selected_input ] &&
 			redraw_needed=screen
 			;;
 		enter)
 			#redraw_needed=screen
-			#default_action=1;
+			page_done=1;
 			;;
 		backspace|delete)
 			__draw_at 3 50 "modif $key"
 			selected_variable="$(__get_selected_variable_key "$components")"
-			__draw_at 1 50 "selected $selected_variable"
+			__draw_at 1 50 "selected '$selected_variable'"
 			local selected_value="$(fui_get_variable_by_key "$selected_variable")"
 			[ ${#selected_value} -gt 0 ] && {
 				selected_value=${selected_value:0:$((${#selected_value}-1))}
-				fui_get_variable_by_key "$selected_variable" "$selected_value"
-				#redraw_needed=select-input-value
+				fui_set_variable_by_key "$selected_variable" "$selected_value"
+				redraw_needed=select-input-value
 			}
+			__draw_at 2 50 "new-cted '$selected_value'"
 			;;
 		*)
 			__draw_at 0 50 "[$key]" ;;
@@ -430,55 +448,24 @@ __fui_run_page_HUMBLETUI() {
 	IFS=" "
 
 	page_done=0
+	key=
 
 	while [ $page_done -eq 0 ] ; do
 		key="$(__read_key)"
+
+		redraw_needed=
+
 		__handle_key "$components" "$key"
 
 		[ "x$redraw_needed" = "xscreen" ] && __draw "$components" "$title" "$header" "$footer"
-		[[ "x$redraw_needed" =~ ^xselect-input-value:(.*)$ ]] && {
-			__draw "$components" "${BASH_REMATCH[1]}"
-		}
-		__draw_at 5 50 "key $key"
+		[ "x$redraw_needed" = "xselect-input-value" ] && __draw_selected_input "$components"
 
-	#while :; do
+		__draw_at 10 60 "component:$selected_component input:$selected_input"
+		__draw_at 11 60 "key = $key"
+		__draw_at 12 60 "keey_l = $keey_l"
+		__draw_at 13 60 ""
 
-		__draw "$components" "$title" "$header" "$footer"
-
-		IFS=" "
-
-		page_done=0
-		key=
-
-		while [ $page_done -eq 0 ] ; do
-			key="$(__read_key)"
-
-			redraw_needed=
-
-			case "$key" in
-
-			up)
-				selected_input=$(($selected_input-1))
-				redraw_needed=screen
-				;;
-			down)
-				selected_input=$(($selected_input+1))
-				#[ selected_input ] &&
-				redraw_needed=screen
-				;;
-			enter)
-
-				#redraw_needed=screen
-				page_done=1
-				break;
-				;;
-
-			esac
-
-			[ "x$redraw_needed" = "xscreen" ] && __draw "$components" "$title" "$header" "$footer"
-		done
-
-	#done
+	done
 
 	IFS="$previous_IFS"
 }
