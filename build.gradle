@@ -14,18 +14,42 @@ version getVersionName
 
 def distributedName = "${project.name}-${project.version}"
 
+def distributionDirectory = 'output/distrib'
+
 
 /*task wrapper(type: Wrapper) {
 	gradleVersion = '3.4.1'
 }*/
 
-task archiveZip(type: Zip) {
+task doc() {
+
+	doLast {
+
+		def shellScripts = fileTree('./').include('*.sh')
+		def docDir = new File("${distributionDirectory}/doc")
+
+		if (!docDir.exists()) docDir.mkdirs()
+
+		shellScripts.each { File file ->
+			def document = new File("${distributionDirectory}/doc/${file.name}.md")
+			exec {
+				commandLine 'build/tool/shdoc/shdoc_io_w.sh', "${file.name}", "${document.path}"
+			}
+			if(!(document.length()>0) || document.text.matches("[\n \t]*") ) document.delete()
+		}
+
+	}
+
+}
+
+task archiveZip(type: Zip, dependsOn: 'doc') {
 
 	baseName = "home-util-${project.version}"
 
-	destinationDir = new File('output/distrib/final')
+	destinationDir = new File("${distributionDirectory}/final")
 
-	from fileTree('./').include('*.sh', '*.py', 'README.md')
+	from fileTree('./').include('doc/**', '*.sh', '*.py', 'README.md')
+	from fileTree("${distributionDirectory}").include('doc/**')
 }
 
 task selfExtractingArchive( dependsOn: 'archiveZip') {
@@ -33,7 +57,7 @@ task selfExtractingArchive( dependsOn: 'archiveZip') {
 	doLast {
 
 		copy {
-			from zipTree(file("output/distrib/final/${distributedName}.zip"))
+			from zipTree(file("${distributionDirectory}/final/${distributedName}.zip"))
 			into 'output/installer/unpacked'
 		}
 		copy {
@@ -44,10 +68,10 @@ task selfExtractingArchive( dependsOn: 'archiveZip') {
 		exec {
 			workingDir 'output'
 			commandLine 'shar', 'installer'
-			standardOutput = new FileOutputStream("$projectDir/output/distrib/${distributedName}.shar")
+			standardOutput = new FileOutputStream("$projectDir/${distributionDirectory}/${distributedName}.shar")
 		}
 
-		def shar = new File("output/distrib/final/${distributedName}.run")
+		def shar = new File("${distributionDirectory}/final/${distributedName}.run")
 		if (shar.exists()) shar.delete()
 
 		shar.append(new File('build/template/install-pre.sh').text)
@@ -58,8 +82,8 @@ task selfExtractingArchive( dependsOn: 'archiveZip') {
 		shar.append("MDU_INSTALL_APPLICATION_VERSION=${project.version}\n")
 		shar.append("\n")
 
-		shar.append(new File("$projectDir/output/distrib/${distributedName}.shar").text.replaceAll('\nexit[ ]+0[\n ]*$', "\n"))
-		shar.append(new File('build/template/install-post.sh').text)
+		shar.append(new File("${distributionDirectory}/${distributedName}.shar").text.replaceAll('\nexit[ ]+0[\n ]*$', "\n"))
+		shar.append(new File("build/template/install-post.sh").text)
 
 	}
 
