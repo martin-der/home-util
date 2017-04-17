@@ -2,11 +2,17 @@
 
 source "$(dirname "${BASH_SOURCE[0]}")/shell-util.sh" 2>/dev/null || source shell-util  || exit 1
 
-# param 1 : key
-# param 2 : value
-# param 3 : list of '<confKey>=<envVar>' ( separated by CR )
-# param 4 : [optional] prefix, added to the name of created environment var
-# If key is in the list, then an environment variable named '<[prefix]envVar>' is exported.
+# @description If `key` is in the list, then an environment variable named `[prefix]envVar>` is exported.
+#
+# @arg $1 string key
+# @arg $2 string value
+# @arg $3 string list of '<confKey>=<envVar>' ( separated by CR )
+# @arg $4 string [optional] prefix, added to the name of created environment var
+#
+# @exitcode 0 If a a variable is created
+# @exitcode >0 otherwise
+#
+# @example convertConfigKeyAndExportToEnvVariableIfExists name
 function convertConfigKeyAndExportToEnvVariableIfExists() {
 	local KEY="$1"
 	local VALUE="$2"
@@ -39,10 +45,33 @@ mdu_variable_getType() {
 }
 
 
+# @description Print a variable and its content
+#
+# @arg $1 string the name of variable
+#
+# @stdout
+# * If the variable exists it is printed with its value and prefixed `(+)`
+# * If the variable does not exist it is printed prefixed by `(-)`
+#
+# @exitcode 0
 function printVariable() {
 	[ -z ${!1+x} ] && echo "(-)${1}" || echo "(+)${1}:'${!1}'"
 }
 
+
+# @description Convert a value into a typed value
+# * `string` : `value` is returned as is
+# * `bool` or `boolean` :
+#   * `1`, `true` or `yes` : gives `1`
+#   * `0`, `false` or `no` : gives `0`
+# * `integer` : is returned (without leading zero) if `value` matches `[+-]?[01-9]+`
+#
+# @arg $1 string value
+# @arg $2 string type
+#
+# @exitcode 0 If conversion vas possible
+# @exitcode 1 If conversion failed
+# @exitcode 2 If type is unknown
 function convertVariable() {
 	local value="$2"
 	[ "x$value" == "x" ] && return 1
@@ -55,10 +84,11 @@ function convertVariable() {
 				"true"|"yes"|1) echo 1 ; return 0 ;;
 				"false"|"no"|0) echo 0 ; return 0 ;;
 			esac
+			echo "Cannot convert '$value' in '$tyype'" >&2 ; return 1
 			;;
 		string) echo "$value" ; return 0 ;;
 	esac
-	return 1
+	echo "$value"
+	echo "Unknown type '$tyype'" >&2
+	return 2
 }
-
-
