@@ -60,8 +60,8 @@ install_scripts() {
 	mkdir -p "${install_location}" || return 1
 	while IFS=$'\n' read f ; do
 		ftarget="$(basename "$f")"
-   		cp "$f" "${install_location}/$ftarget" || return 1
-	done <<< "$( find ./unpacked -maxdepth 3  \( -name '*.sh' -o -name '*.py' \)  )"
+   		cp -r "$f" "${install_location}/$ftarget" || return 1
+	done <<< "$( find ./unpacked -maxdepth 1 -mindepth 1 \( -name '*.sh' -o -name '*.py' -o -name 'doc' \)  )"
 }
 
 
