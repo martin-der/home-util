@@ -81,18 +81,16 @@ __draw_label() {
 __draw_input() {
 	local x="$2" y="$1" w="$3" f="$4" input="$5" vn="${6:-}"
 	local v
-	local inputs input value
-	local name label type flag enum validation values
 	[[ "$input" =~ ^([^:]+):([^:]+)(:([^:]*))?(:(.*))?$ ]] && {
 		name="${BASH_REMATCH[1]}"
 		type="${BASH_REMATCH[2]}"
 		flag="${BASH_REMATCH[4]}"
 		validation="${BASH_REMATCH[6]}"
 		[[ "$type" =~ \[(.*)\] || "$type" =~ \[(.*)\]\* ]] && {
-			enum="${BASH_REMATCH[1]}"
-			[[ $type == *\* ]] && type="multiple-enum" || type="enum"
-			IFS="|" read -ra values <<< "${enum}"
-			fui_is_input_mandatory "$flag" && [ 0 -eq ${#values[@]} ] && { __print_error "Mandatory enum with no choice '$type'" ;  return ${FUI_ERROR_INVALID_INPUT_DESC} ; }
+		 enum="${BASH_REMATCH[1]}"
+		 [[ $type == *\* ]] && type="multiple-enum" || type="enum"
+		 IFS="|" read -ra values <<< "${enum}"
+		 fui_is_input_mandatory "$flag" && [ 0 -eq ${#values[@]} ] && { __print_error "Mandatory enum with no choice '$type'" ; return ${FUI_ERROR_INVALID_INPUT_DESC} ; }
 		}
 
 		local s=0
@@ -110,7 +108,6 @@ __draw_input() {
 				__set_bg_color 0 0 0
 			;;
 			boolean)
-				__draw_at $y $x "[ ]"
 				;;
 			integer)
 				;;
@@ -118,8 +115,10 @@ __draw_input() {
 				;;
 			enum)
 				;;
-			*) __draw_at 54 50 "Unknown type '$type' 1" ; __draw_at 55 50 "Input '$input'" ; return ${FUI_ERROR_INVALID_COMPONENT_DESC} ;;
+			*) __print_error "Unknown type '$type'" ; return ${FUI_ERROR_INVALID_COMPONENT_DESC} ;;
 		esac
+	} || {
+	  __draw_at $y $x "BI-$input"
 	}
 }
 
@@ -156,6 +155,49 @@ __set_fg_color() {
 }
 __set_bg_color() {
 	printf '\e[0;%s8;2;%s;%s;%sm' "4" "$1" "$2" "$3"
+}
+
+
+__draw_input() {
+	local x="$2" y="$1" w="$3" f="$4" input="$5" vn="${6:-}"
+	local v
+	[[ "$input" =~ ^([^:]+):([^:]+)(:([^:]*))?(:(.*))?$ ]] && {
+		name="${BASH_REMATCH[1]}"
+		type="${BASH_REMATCH[2]}"
+		flag="${BASH_REMATCH[4]}"
+		validation="${BASH_REMATCH[6]}"
+		[[ "$type" =~ \[(.*)\] || "$type" =~ \[(.*)\]\* ]] && {
+			enum="${BASH_REMATCH[1]}"
+			[[ $type == *\* ]] && type="multiple-enum" || type="enum"
+			IFS="|" read -ra values <<< "${enum}"
+			fui_is_input_mandatory "$flag" && [ 0 -eq ${#values[@]} ] && { __print_error "Mandatory enum with no choice '$type'" ;  return ${FUI_ERROR_INVALID_INPUT_DESC} ; }
+		}
+
+		local s=0
+		[[ "$f" =~ s ]] && s=1
+
+
+		v="${!vn}"
+
+		case "$type" in
+			string)
+				[ $s -eq 1 ] && __set_bg_color 20 60 20 || __set_bg_color 20 20 20
+				__draw_r_at $y $x $w " "
+				__draw_at $y $x "$v"
+				[ $s -eq 1 ] && __draw_at $y $(($x+${#v})) "█"
+				__set_bg_color 0 0 0
+			;;
+			boolean)
+				;;
+			integer)
+				;;
+			"multiple-enum")
+				;;
+			enum)
+				;;
+			*) __print_error "Unknown type '$type'" ;  return ${FUI_ERROR_INVALID_COMPONENT_DESC} ;;
+		esac
+	}
 }
 
 __compute_layout() {
@@ -209,8 +251,6 @@ __draw_inputs() {
 	local requested_inputs="$1" components="$2" title="$3" header="$4" footer="$5"
 	local x y x_component y_component
 	local component_name input
-	local component component_title inputs input enum values value
-	local name label type flag validation
 
 	local label_width input_width
 
@@ -222,14 +262,14 @@ __draw_inputs() {
 		y=$(($y+2))
 	}
 
+
+
 	component_index=0
 	while IFS="\n" read component_name; do
 
 		y_component=$y
 
 		component=$(fui_get_component "$component_name" ) || { __print_error "Failed to get component '$component_name'" ; return 1 ; }
-
-		__draw_at $((20+$component_index)) 0 "[ component [$component_index] = '$component' ]"
 
 		IFS="," read content_width content_height label_width input_width <<< "$(__get_component_content_min_size "$component_index" "$component_name")"
 
@@ -238,8 +278,8 @@ __draw_inputs() {
 		input_index=0
 		while IFS="\n" read input ; do
 
-			[[ "$input" =~ ^([^:]+):([^:]+)(:([^:]*))?(:(.*))?$ ]] &&
-			{
+			 [[ "$input" =~ ^([^:]+):([^:]+)(:([^:]*))?(:(.*))?$ ]] &&
+			 {
 				name="${BASH_REMATCH[1]}"
 				type="${BASH_REMATCH[2]}"
 				flag="${BASH_REMATCH[4]}"
@@ -252,7 +292,7 @@ __draw_inputs() {
 				}
 
 				#[[ $requested_inputs =~ ,?$selected_input,? ]] &&
-				#{
+				{
 
 					label="$(fui_get_input_label "$name" "$component")"
 					[ "x$label" = x ] && label="$name"
@@ -260,7 +300,7 @@ __draw_inputs() {
 					local input_flag=
 					[ $input_index -eq $selected_input ] && input_flag="${input_flag}s"
 					__draw_label_input $y $((2+$x)) $label_width $input_width "$input_flag" "$label" "$input" "$(fui_get_variable_key "$component_name" "$name")"
-				#}
+				}
 				input_index=$(($input_index+1))
 				y=$(($y+1))
 			}
@@ -312,9 +352,6 @@ __draw() {
 
 		component=$(fui_get_component "$component_name" ) || { __print_error "Failed to get component '$component_name'" ; return 1 ; }
 
-		__draw_at $((20+$component_index)) 0 "[ component-S [$component_index] = '$component' ]"
-
-
 		IFS="," read content_width content_height label_width input_width <<< "$(__get_component_content_min_size "$component_index" "$component_name")"
 
 		s="╔═[ $component_title ]═($content_width;$content_height)"
@@ -330,10 +367,8 @@ __draw() {
 
 		input_index=0
 		while IFS="\n" read input; do
-			__draw_at $((40+$input_index)) 170 "[ $input_index => '$input' ]"
 
 			[[ "$input" =~ ^([^:]+):([^:]+)(:([^:]*))?(:(.*))?$ ]] && {
-
 				name="${BASH_REMATCH[1]}"
 				type="${BASH_REMATCH[2]}"
 				flag="${BASH_REMATCH[4]}"
