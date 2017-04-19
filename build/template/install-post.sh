@@ -37,7 +37,7 @@ install_with_terminal() {
 
 #if [ -t 1 ] ; then
 if tty -s; then
-	./installer/install.sh
+	install.sh
 else
 	install_with_terminal || {
 		echo "Unable to run script with terminal" >&2
