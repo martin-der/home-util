@@ -22,11 +22,14 @@ setUp() {
 	echo "" > "$mdu_config"
 }
 tearDown() {
-	echo "Content of home"
-	find "$HOME"  ! -exec ls -dl '{}' \;
+	printHomeContent
 	rm -rf "$TMP_DIR"
 }
 
+printHomeContent() {
+	echo "Content of home"
+	find "$HOME" -exec ls -dl '{}' \;
+}
 
 
 testCreateBinDirectory() {
@@ -36,7 +39,6 @@ testCreateBinDirectory() {
 	./init-home.sh
 	assertEquals 0 $?
 	assertTrue "Directory '$HOME/bin' has been created" "[ -d \"$HOME/bin\" ]"
-	
 }
 
 testCreateBinDirectoryWithLinkedExcutables() {
