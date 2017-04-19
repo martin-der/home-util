@@ -70,7 +70,7 @@ CANCEL_STDOUT_FILTER=
 CANCEL_STDERR_FILTER=
 
 
-function parseCancel() {
+function parseOptionCancel() {
 
     local mode
     [[ "$1" =~ ^([^:]+)(:(.*))?$ ]] && {
@@ -102,7 +102,7 @@ while getopts "t:i:d:c:" option; do
         i) interval=$OPTARG ;;
         d) delay=$OPTARG ;;
         c)
-            parseCancel "$OPTARG" || exit 2
+            parseOptionCancel "$OPTARG" || exit 2
             ;;
         q) quiet=1 ;;
         h) printUsage ; exit 3 ;;
@@ -131,7 +131,7 @@ fi
 	TIMEOUT_CANCELED=0
 	((t = timeout))
 
-	trap "TIMEOUT_CANCELED=1 ; notify-send 'Timeout Cancel' 'Signal = TERM' " TERM
+	trap "TIMEOUT_CANCELED=1 ; notify-send 'Timeout Cancele' 'Signal = TERM' " TERM
 
 	while ((t > 0)); do
 		sleep ${interval}
@@ -156,7 +156,9 @@ THIS_STDERR="/proc/$$/fd/2"
 function process_stdout() {
     tee -a "$THIS_STDOUT" | while read l ; do
         [[ "$l" =~ $CANCEL_STDOUT_FILTER ]] && {
+        	#notify-send "Kill" "killing the killer because l='$l'"
 			kill -s TERM ${timeout_process_id}
+			#return 0
 		}
 	done
 }
@@ -179,13 +181,13 @@ function process_stderr() {
 if [ "x$CANCEL_STDOUT_FILTER" != x -o "x$CANCEL_STDERR_FILTER" != x ] ; then
 	if [ "x$CANCEL_STDOUT_FILTER" == x ] ; then
 		log_debug "Run, scanning stderr"
-		eval "$( ( exec "$@" ) 2> >( process_stderr ) > "$THIS_STDERR" ); t_ret=$?; typeset -p t_ret )" 2>/dev/null
+		eval "$( ( exec "$@" ) 2> >( process_stderr 2>/dev/null ) > "$THIS_STDOUT" ); t_ret=$?; typeset -p t_ret )" 2>/dev/null
 	elif [ "x$CANCEL_STDERR_FILTER" == x ] ; then
 		log_debug "Run, scanning stdout"
 		eval "$( ( exec "$@" ) 2> "$THIS_STDERR" > >( process_stdout 2>/dev/null ); t_ret=$?; typeset -p t_ret )" 2>/dev/null
 	else
 		log_debug "Run, scanning stdout and stderr"
-		eval "$( ( exec "$@" ) 2> >( process_stderr ) > >( process_stdout ); t_ret=$?; typeset -p t_ret )" 2>/dev/null
+		eval "$( ( exec "$@" ) 2> >( process_stderr 2>/dev/null  ) > >( process_stdout 2>/dev/null  ); t_ret=$?; typeset -p t_ret )" 2>/dev/null
 	fi
 
 	exit $t_ret
