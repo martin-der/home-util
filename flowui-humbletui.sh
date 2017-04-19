@@ -8,11 +8,9 @@ source "$(readlink "$(dirname "$0")/shell-util.sh")" 2>/dev/null \
 
      trap "R;exit" 2
     ESC=$( echo -en "\e")
-   MOVE(){ echo -en "\e[${1};${2}H";}
   CLEAR(){ echo -en "\ec";}
   CIVIS(){ echo -en "\e[?25l";}
    DRAW(){ echo -en "\e%@\e(0";}
-  WRITE(){ echo -en "\e(B";}
    MARK(){ echo -en "\e[7m";}
  UNMARK(){ echo -en "\e[27m";}
       R(){ CLEAR ;stty sane;};
@@ -57,12 +55,13 @@ __set_bg_color() {
 	printf '\e[0;%s8;2;%s;%s;%sm' "4" "$1" "$2" "$3"
 }
 
+__move(){ echo -en "\e[${1};${2}H";}
 
 __draw_r_at() {
-	MOVE $1 $2 ; for ((i=0; i<$3; i++)); do echo -n "$4"; done
+	__move $1 $2 ; for ((i=0; i<$3; i++)); do echo -n "$4"; done
 }
 __draw_at() {
-	MOVE $1 $2 ; echo -en "$3"
+	__move $1 $2 ; echo -en "$3"
 }
 __draw_label() {
 	local x="$2" y="$1" w="$3" f="$4" t="$5"
@@ -82,16 +81,18 @@ __draw_label() {
 __draw_input() {
 	local x="$2" y="$1" w="$3" f="$4" input="$5" vn="${6:-}"
 	local v
+	local inputs input value
+	local name label type flag enum validation values
 	[[ "$input" =~ ^([^:]+):([^:]+)(:([^:]*))?(:(.*))?$ ]] && {
 		name="${BASH_REMATCH[1]}"
 		type="${BASH_REMATCH[2]}"
 		flag="${BASH_REMATCH[4]}"
 		validation="${BASH_REMATCH[6]}"
 		[[ "$type" =~ \[(.*)\] || "$type" =~ \[(.*)\]\* ]] && {
-		 enum="${BASH_REMATCH[1]}"
-		 [[ $type == *\* ]] && type="multiple-enum" || type="enum"
-		 IFS="|" read -ra values <<< "${enum}"
-		 fui_is_input_mandatory "$flag" && [ 0 -eq ${#values[@]} ] && { __print_error "Mandatory enum with no choice '$type'" ; IFS="$previous_IFS" ; return ${FUI_ERROR_INVALID_INPUT_DESC} ; }
+			enum="${BASH_REMATCH[1]}"
+			[[ $type == *\* ]] && type="multiple-enum" || type="enum"
+			IFS="|" read -ra values <<< "${enum}"
+			fui_is_input_mandatory "$flag" && [ 0 -eq ${#values[@]} ] && { __print_error "Mandatory enum with no choice '$type'" ;  return ${FUI_ERROR_INVALID_INPUT_DESC} ; }
 		}
 
 		local s=0
@@ -109,6 +110,7 @@ __draw_input() {
 				__set_bg_color 0 0 0
 			;;
 			boolean)
+				__draw_at $y $x "[ ]"
 				;;
 			integer)
 				;;
@@ -116,10 +118,8 @@ __draw_input() {
 				;;
 			enum)
 				;;
-			*) __print_error "Unknown type '$type'" ; IFS="$previous_IFS" ; return ${FUI_ERROR_INVALID_COMPONENT_DESC} ;;
+			*) __draw_at 54 50 "Unknown type '$type' 1" ; __draw_at 55 50 "Input '$input'" ; return ${FUI_ERROR_INVALID_COMPONENT_DESC} ;;
 		esac
-	} || {
-	  __draw_at $y $x "BI-$input"
 	}
 }
 
@@ -148,16 +148,6 @@ __draw_label_input() {
 	__draw_input $y $(($x+$lw+$sep)) "$iw" "$f" "$input" "$vn"
 }
 
-__compute_layout() {
-	local components="$1" title="$2" header="$3" footer="$4"
-}
-   HEAD(){ DRAW
-           for each in $(seq 1 13);do
-           echo -e "   x                                          x"
-           done
-           WRITE;MARK;MOVE 1 5
-           echo -e "$1";UNMARK;}
-           i=0; CLEAR; CIVIS;NULL=/dev/null
 
 __set_fg_color() {
 	printf '\e[0;%s8;2;%s;%s;%sm' "3" "$1" "$2" "$3"
@@ -168,53 +158,11 @@ __set_bg_color() {
 	printf '\e[0;%s8;2;%s;%s;%sm' "4" "$1" "$2" "$3"
 }
 
-
-__draw_input() {
-	local x="$2" y="$1" w="$3" f="$4" input="$5" vn="${6:-}"
-	local v
-	[[ "$input" =~ ^([^:]+):([^:]+)(:([^:]*))?(:(.*))?$ ]] && {
-		name="${BASH_REMATCH[1]}"
-		type="${BASH_REMATCH[2]}"
-		flag="${BASH_REMATCH[4]}"
-		validation="${BASH_REMATCH[6]}"
-		[[ "$type" =~ \[(.*)\] || "$type" =~ \[(.*)\]\* ]] && {
-		 enum="${BASH_REMATCH[1]}"
-		 [[ $type == *\* ]] && type="multiple-enum" || type="enum"
-		 IFS="|" read -ra values <<< "${enum}"
-		 fui_is_input_mandatory "$flag" && [ 0 -eq ${#values[@]} ] && { __print_error "Mandatory enum with no choice '$type'" ; IFS="$previous_IFS" ; return ${FUI_ERROR_INVALID_INPUT_DESC} ; }
-		}
-
-		local s=0
-		[[ "$f" =~ s ]] && s=1
-
-
-		v="${!vn}"
-
-		case "$type" in
-			string)
-				[ $s -eq 1 ] && __set_bg_color 20 60 20 || __set_bg_color 20 20 20
-				__draw_r_at $y $x $w " "
-				__draw_at $y $x "$v"
-				[ $s -eq 1 ] && __draw_at $y $(($x+${#v})) "█"
-				__set_bg_color 0 0 0
-			;;
-			boolean)
-				;;
-			integer)
-				;;
-			"multiple-enum")
-				;;
-			enum)
-				;;
-			*) __print_error "Unknown type '$type'" ; IFS="$previous_IFS" ; return ${FUI_ERROR_INVALID_COMPONENT_DESC} ;;
-		esac
-	} || {
-	  __draw_at $y $x "BI-$input"
-	}
-}
-
 __compute_layout() {
 	local components="$1" title="$2" header="$3" footer="$4"
+	__viewport_width="$(tput cols)"
+	__viewport_height="$(tput lines)"
+
 }
 
 __get_component_content_min_size() {
@@ -238,7 +186,7 @@ __get_component_content_min_size() {
 				enum="${BASH_REMATCH[1]}"
 				[[ $type == *\* ]] && type="multiple-enum" || type="enum"
 				IFS="|" read -ra values <<< "${enum}"
-				fui_is_input_mandatory "$flag" && [ 0 -eq ${#values[@]} ] && { __print_error "Mandatory enum with no choice '$type'" ; IFS="$previous_IFS" ; return ${FUI_ERROR_INVALID_INPUT_DESC} ; }
+				fui_is_input_mandatory "$flag" && [ 0 -eq ${#values[@]} ] && { __print_error "Mandatory enum with no choice '$type'" ;  return ${FUI_ERROR_INVALID_INPUT_DESC} ; }
 			}
 
 			label="$(fui_get_input_label "$name" "$component")"
@@ -259,7 +207,10 @@ __draw_selected_input() {
 }
 __draw_inputs() {
 	local requested_inputs="$1" components="$2" title="$3" header="$4" footer="$5"
-	local x y
+	local x y x_component y_component
+	local component_name input
+	local component component_title inputs input enum values value
+	local name label type flag validation
 
 	local label_width input_width
 
@@ -272,24 +223,23 @@ __draw_inputs() {
 	}
 
 	component_index=0
-	for component_name in ${components} ; do
+	while IFS="\n" read component_name; do
 
-		y=$(($y+2))
 		y_component=$y
 
-		component_title="$(fui_get_component_label "$component_name")"
-		[ "x$component_title" = x ] && component_title="$component_name"
+		component=$(fui_get_component "$component_name" ) || { __print_error "Failed to get component '$component_name'" ; return 1 ; }
 
-		component=$(fui_get_component "$component_name" ) || { __print_error "Failed to get component '$component_name'" ; IFS="$previous_IFS" ; return 1 ; }
+		__draw_at $((20+$component_index)) 0 "[ component [$component_index] = '$component' ]"
 
 		IFS="," read content_width content_height label_width input_width <<< "$(__get_component_content_min_size "$component_index" "$component_name")"
 
 		y=$(($y_component+2))
 
 		input_index=0
-		for input in ${component} ; do
+		while IFS="\n" read input ; do
 
-			 [[ "$input" =~ ^([^:]+):([^:]+)(:([^:]*))?(:(.*))?$ ]] && {
+			[[ "$input" =~ ^([^:]+):([^:]+)(:([^:]*))?(:(.*))?$ ]] &&
+			{
 				name="${BASH_REMATCH[1]}"
 				type="${BASH_REMATCH[2]}"
 				flag="${BASH_REMATCH[4]}"
@@ -298,30 +248,28 @@ __draw_inputs() {
 					enum="${BASH_REMATCH[1]}"
 					[[ $type == *\* ]] && type="multiple-enum" || type="enum"
 					IFS="|" read -ra values <<< "${enum}"
-					fui_is_input_mandatory "$flag" && [ 0 -eq ${#values[@]} ] && { __print_error "Mandatory enum with no choice '$type'" ; IFS="$previous_IFS" ; return ${FUI_ERROR_INVALID_INPUT_DESC} ; }
+					fui_is_input_mandatory "$flag" && [ 0 -eq ${#values[@]} ] && { __print_error "Mandatory enum with no choice '$type'" ; return ${FUI_ERROR_INVALID_INPUT_DESC} ; }
 				}
 
 				#[[ $requested_inputs =~ ,?$selected_input,? ]] &&
-				{
+				#{
 
 					label="$(fui_get_input_label "$name" "$component")"
 					[ "x$label" = x ] && label="$name"
 
-					#[ $display_round -eq 1 ] && {
 					local input_flag=
 					[ $input_index -eq $selected_input ] && input_flag="${input_flag}s"
-					#__draw_label $y $((2+$x)) $label_width "" "$label"
 					__draw_label_input $y $((2+$x)) $label_width $input_width "$input_flag" "$label" "$input" "$(fui_get_variable_key "$component_name" "$name")"
-				}
+				#}
 				input_index=$(($input_index+1))
 				y=$(($y+1))
 			}
-		done
+		done <<< "${component}"
 
 		y=$(($y+2))
 
 		component_index=$(($component_index+1))
-	done
+	done <<< "${components}"
 
 }
 
@@ -335,8 +283,8 @@ __draw() {
 	local label_width input_width component_width
 	local s
 
-	local w="$(tput rows)"
-	local h="$(tput lines)"
+	local w="$__viewport_width"
+	local h="$__viewport_height"
 	local input_index component_index
 
 	echo -en "\ec"
@@ -345,27 +293,27 @@ __draw() {
 
 	x=$__page_content_x
 	y=$__page_content_y
-	MOVE $y $x ; echo "$title"
+	__draw_at $y $x "$title"
 	y=$(($y+2))
 	[ "x$header" != "x" ] && {
-		MOVE $y $x ; echo "$header"
+		__draw_at $y $x "$header"
 		y=$(($y+2))
 	}
 
-	local previous_IFS="$IFS"
-	IFS=$'\n'
-
-	__draw_at 0 0 "$(tput cols) / (tput rows)"
+	__draw_at 0 0 "$__viewport_width / $__viewport_height"
 
 	component_index=0
-	for component_name in ${components} ; do
+	while IFS="\n" read component_name; do
 
 		y_component=$y
 
 		component_title="$(fui_get_component_label "$component_name")"
 		[ "x$component_title" = x ] && component_title="$component_name"
 
-		component=$(fui_get_component "$component_name" ) || { __print_error "Failed to get component '$component_name'" ; IFS="$previous_IFS" ; return 1 ; }
+		component=$(fui_get_component "$component_name" ) || { __print_error "Failed to get component '$component_name'" ; return 1 ; }
+
+		__draw_at $((20+$component_index)) 0 "[ component-S [$component_index] = '$component' ]"
+
 
 		IFS="," read content_width content_height label_width input_width <<< "$(__get_component_content_min_size "$component_index" "$component_name")"
 
@@ -381,9 +329,11 @@ __draw() {
 		y=$(($y_component+2))
 
 		input_index=0
-		for input in ${component} ; do
+		while IFS="\n" read input; do
+			__draw_at $((40+$input_index)) 170 "[ $input_index => '$input' ]"
 
 			[[ "$input" =~ ^([^:]+):([^:]+)(:([^:]*))?(:(.*))?$ ]] && {
+
 				name="${BASH_REMATCH[1]}"
 				type="${BASH_REMATCH[2]}"
 				flag="${BASH_REMATCH[4]}"
@@ -392,7 +342,7 @@ __draw() {
 					enum="${BASH_REMATCH[1]}"
 					[[ $type == *\* ]] && type="multiple-enum" || type="enum"
 					IFS="|" read -ra values <<< "${enum}"
-					fui_is_input_mandatory "$flag" && [ 0 -eq ${#values[@]} ] && { __print_error "Mandatory enum with no choice '$type'" ; IFS="$previous_IFS" ; return ${FUI_ERROR_INVALID_INPUT_DESC} ; }
+					fui_is_input_mandatory "$flag" && [ 0 -eq ${#values[@]} ] && { __print_error "Mandatory enum with no choice '$type'" ; return ${FUI_ERROR_INVALID_INPUT_DESC} ; }
 				}
 
 				label="$(fui_get_input_label "$name" "$component")"
@@ -409,12 +359,10 @@ __draw() {
 
 			} || {
 				__print_error "INVALID_COMPONENT_DESC '$component'"
-				IFS="$previous_IFS"
 				return ${FUI_ERROR_INVALID_COMPONENT_DESC}
-
 			}
 			input_index=$(($input_index+1))
-		done
+		done <<< "${component}"
 		__draw_at $y $x "╚"
 		__draw_r_at $y $((x+1)) $(($component_width-2)) "═"
 		__draw_at $y $((x+$component_width-1)) "╝"
@@ -422,10 +370,10 @@ __draw() {
 		y=$(($y+2))
 
 		component_index=$(($component_index+1))
-	done
+	done <<< "${components}"
 
 	[ "x$footer" != "x" ] && {
-		MOVE $y $x ; echo "$footer"
+		__move $y $x ; echo "$footer"
 		y=$(($y+2))
 	}
 
@@ -479,16 +427,12 @@ __handle_key() {
 	esac
 }
 
-#
-# @param 1 components
-# @param 2 title
-# @param 3 header
-# @param 4 footer
-#
 __fui_run_page_HUMBLETUI() {
 	local components="$1" title="$2" header="$3" footer="$4"
 
 	trap "__compute_layout \"$components\" \"$title\" \"$header\" \"$footer\" ;  __draw \"$components\" \"$title\" \"$header\" \"$footer\"" WINCH
+
+	__compute_layout "$components" "$title" "$header" "$footer"
 
 	local redraw_needed default_action
 	local key
@@ -496,9 +440,6 @@ __fui_run_page_HUMBLETUI() {
 	selected_component=0
 	selected_input=0
 	previous_selected_input=-1
-
-	local previous_IFS="$IFS"
-	IFS=$'\n'
 
 	__page_content_x=3
 	__page_content_y=2
@@ -528,12 +469,10 @@ __fui_run_page_HUMBLETUI() {
 		[ "x$redraw_needed" = "xselected-and-previous" ] && __draw_inputs "$previous_selected_input,$selected_input" "$components" "$title" "$header" "$footer"
 
 
-		__draw_at 10 60 "component:$selected_component input:$selected_input"
-		__draw_at 11 60 "key = $key"
-		__draw_at 12 60 "keey_l = $keey_l"
+		__draw_at 10 60 "component:$selected_component input:$selected_input           "
+		__draw_at 11 60 "key = $key             "
+		__draw_at 12 60 "keey_l = $keey_l          "
 		__draw_at 13 60 ""
 
 	done
-
-	IFS="$previous_IFS"
 }
