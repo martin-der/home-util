@@ -1,0 +1,50 @@
+{
+	"components" : [
+		{
+			"name" : "animal",
+			"inputs" : [
+				{
+					"name" : "name",
+					"type" : "string",
+					"validation" : "[^ ]{2,}"
+				},
+				{
+					"name" : "species",
+					"type" : "[dog|cat|mouse|cow|snake|turtle]",
+					"mandatory" : true,
+					"validation" : ""
+				},
+				{
+					"name" : "gender",
+					"type" : "[male|female]",
+					"mandatory" : true
+				},
+				{
+					"name" : "medical-care",
+					"type" : "boolean"
+				},
+				{
+					"name" : "find-own-food",
+					"type" : "boolean"
+				}
+			]
+		},
+		{
+			"name" : "food"
+		},
+		{
+			"name" : "habitat"
+		}
+	],
+	"pages" : [
+		{
+			"name" : "get-animal",
+			"componenents" : [
+				"animal"
+			]
+		}
+	]
+}
+
+
+

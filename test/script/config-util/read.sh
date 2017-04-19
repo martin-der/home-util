@@ -1,13 +1,10 @@
 #!/bin/bash
 
-pushd "$(dirname "$0")" > /dev/null
-root_dir="$(pwd -P)/../../.."
-popd > /dev/null
-test_root_dir="${root_dir}/test"
+source "$(dirname "${BASH_SOURCE[0]}")/../runner.sh"
 
 
 oneTimeSetUp() {
-	. "${root_dir}/config-util.sh" || exit 1
+	. "${src_root_dir}/config-util.sh" || exit 1
 	RESOURCES_DIR="${test_root_dir}/resources"
 }
 
@@ -98,6 +95,4 @@ fiiibuuur.status=STATE"
 }
 
 
-. "$test_root_dir/shunit2-2.0.3/src/shell/shunit2" || exit 4
-[ $__shunit_testsFailed -gt 0 ] && exit 5 || exit 0
-
+runTests

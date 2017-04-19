@@ -1,7 +1,7 @@
 #!/bin/bash
 #@mdu-helper-capable
 
-source "$(dirname "$0")/../../../completion-helper.sh" || exit 1
+source "${src_root_dir}/completion-helper.sh" || exit 1
 
 
 function listActions() {

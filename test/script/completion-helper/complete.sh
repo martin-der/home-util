@@ -1,13 +1,10 @@
 #!/bin/bash
 
-pushd "$(dirname "$0")" > /dev/null
-root_dir="$(pwd -P)/../../.."
-popd > /dev/null
-test_root_dir="${root_dir}/test"
+source "$(dirname "${BASH_SOURCE[0]}")/../runner.sh"
 
 
 oneTimeSetUp() {
-	#source "${root_dir}/completion-helper.sh" || exit 1
+	#source "${src_root_dir}/completion-helper.sh" || exit 1
 	source "${test_root_dir}/resources/smart_dog.sh" help --helper-complete || exit 1
 	local smart_dog_completion_line="$(complete -p | grep smart_dog)"
 	completion_function="$(sed "s#^complete -F \(.*\) smart_dog\.sh\$#\1#" <<< "${smart_dog_completion_line}")"
@@ -39,8 +36,5 @@ testCompleteVerbs() {
 
 
 
-
-
-. "$test_root_dir/shunit2-2.0.3/src/shell/shunit2" || exit 4
-[ $__shunit_testsFailed -gt 0 ] && exit 5 || exit 0
+runTests
 

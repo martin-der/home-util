@@ -13,7 +13,6 @@ def allSuccesful = true
 
 
 task testAllScripts(type: Test) {
-
 	doLast {
 		println "All successful = $allSuccesful"
 	}

@@ -1,9 +1,6 @@
 #!/bin/bash
 
-pushd "$(dirname "$0")" > /dev/null
-root_dir="$(pwd -P)/../../.."
-popd > /dev/null
-test_root_dir="${root_dir}/test"
+source "$(dirname "${BASH_SOURCE[0]}")/../runner.sh"
 
 
 # Just to be safe if 'setUp' fails its job
@@ -26,6 +23,11 @@ tearDown() {
 	rm -rf "$TMP_DIR"
 }
 
+initHome() {
+ 	"${src_root_dir}/init-home.sh" "$@"
+}
+
+
 printHomeContent() {
 	echo "Content of home"
 	find "$HOME" -exec ls -dl '{}' \;
@@ -36,7 +38,7 @@ testCreateBinDirectory() {
 
 	echo 'directory.bin=$HOME/bin' >> "$mdu_config"
 
-	./init-home.sh
+	initHome
 	assertEquals 0 $?
 	assertTrue "Directory '$HOME/bin' has been created" "[ -d \"$HOME/bin\" ]"
 }
@@ -52,7 +54,7 @@ script-system-util/config-util.sh' >> "$mdu_config"
 	echo "Content of mdu-conf"
 	cat "$mdu_config"
 
-	./init-home.sh
+	initHome
 	assertEquals 0 $?
 
 	local created_link
@@ -63,6 +65,4 @@ script-system-util/config-util.sh' >> "$mdu_config"
 }
 
 
-. "$test_root_dir/shunit2-2.0.3/src/shell/shunit2" || exit 4
-[ $__shunit_testsFailed -gt 0 ] && exit 5 || exit 0
-
+runTests

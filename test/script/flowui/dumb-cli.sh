@@ -1,13 +1,11 @@
 #!/bin/bash
 
-pushd "$(dirname "$0")" > /dev/null
-root_dir="$(pwd -P)/../../.."
-popd > /dev/null
-test_root_dir="${root_dir}/test"
+source "$(dirname "${BASH_SOURCE[0]}")/../runner.sh"
 
+exit 0
 
 oneTimeSetUp() {
-	. "$root_dir/flowui.sh"
+	. "${src_root_dir}/flowui.sh"
 	__fui_engine=humble-tui
 	fui_set_builder shelter_care
 	fui_set_expresser shelter_care_i18n
@@ -152,6 +150,4 @@ testReceiveAnimal() {
 }
 
 
-. "$test_root_dir/shunit2-2.0.3/src/shell/shunit2" || exit 4
-[ ${__shunit_testsFailed} -gt 0 ] && exit 5 || exit 0
-
+runTests

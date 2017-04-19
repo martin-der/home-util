@@ -1,9 +1,6 @@
 #!/bin/bash
 
-pushd "$(dirname "$0")" > /dev/null
-root_dir="$(pwd -P)/../../.."
-popd > /dev/null
-test_root_dir="${root_dir}/test"
+source "$(dirname "${BASH_SOURCE[0]}")/../runner.sh"
 
 
 # Just to be safe if 'setUp' fails its job
@@ -27,6 +24,10 @@ tearDown() {
 	rm -rf "$TMP_DIR"
 }
 
+initHome() {
+ 	"${src_root_dir}/init-home.sh" "$@"
+}
+
 
 testCreateXDGDirectories() {
 	export MDU_LOG_LEVEL=debug
@@ -39,7 +40,7 @@ XDG_MUSIC_DIR="$HOME/music"
 XDG_PICTURES_DIR="$HOME/pictures"
 XDG_VIDEOS_DIR="$HOME/videos"' > "$HOME/.config/user-dirs.dirs"
 
-	./init-home.sh
+	initHome
 	assertEquals 0 $?
 
 	assertTrue "Directory '$HOME/desktop' has been created" "[ -d \"$HOME/desktop\" ]"
@@ -54,11 +55,9 @@ XDG_VIDEOS_DIR="$HOME/videos"' > "$HOME/.config/user-dirs.dirs"
 
 testNoProblemIfNoXDGConfProvided() {
 
-	./init-home.sh
+	initHome
 	assertEquals 0 $?
 }
 
 
-. "$test_root_dir/shunit2-2.0.3/src/shell/shunit2" || exit 4
-[ $__shunit_testsFailed -gt 0 ] && exit 5 || exit 0
-
+runTests
