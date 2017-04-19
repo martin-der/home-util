@@ -23,9 +23,14 @@ Done : All fetched"
 
 }
 
+timeout() {
+	"${root_dir}/timeout.sh" "$@"
+}
+
+
 testFastCommand() {
     local result output
-    output="$("${root_dir}/timeout.sh" -t15 -i1 "${test_root_dir}/resources/fetch_from_far_away_and_dump.sh")"
+    output="$(timeout -t15 -i1 "${test_root_dir}/resources/fetch_from_far_away_and_dump.sh")"
     result=$?
     assertEquals 0 ${result}
     assertEquals "${expected_10_fetched}" "${output}"
@@ -33,7 +38,7 @@ testFastCommand() {
 
 testFastCommandWithParameter() {
     local result output
-    output="$("${root_dir}/timeout.sh" -t15 -i1 "${test_root_dir}/resources/fetch_from_far_away_and_dump.sh" 2)"
+    output="$(timeout -t15 -i1 "${test_root_dir}/resources/fetch_from_far_away_and_dump.sh" 2)"
     result=$?
     assertEquals 0 ${result}
     local expected="Fetching data 1...
@@ -44,7 +49,7 @@ Done : All fetched"
 
 testCommand() {
     local result output
-    output="$("${root_dir}/timeout.sh" -t5 -i1 "${test_root_dir}/resources/fetch_from_far_away_and_dump.sh")"
+    output="$(timeout -t5 -i1 "${test_root_dir}/resources/fetch_from_far_away_and_dump.sh")"
     result=$?
     assertNotSame "${expected_10_fetched}" "${output}"
 }
@@ -52,7 +57,7 @@ testCommand() {
 testCommandCancelWithStdoutRegex() {
     local result output
 
-    output="$("${root_dir}/timeout.sh" -t 5 -i 1 -c stdout:data\ 2 "${test_root_dir}/resources/fetch_from_far_away_and_dump.sh" 10)"
+    output="$(timeout -t 5 -i 1 -c stdout:data\ 2 "${test_root_dir}/resources/fetch_from_far_away_and_dump.sh" 10)"
     result=$?
 
     assertEquals "${expected_10_fetched}" "${output}"
@@ -61,7 +66,7 @@ testCommandCancelWithStdoutRegex() {
 testCommandCancelWithWrongStdoutRegex() {
     local result output
 
-    output="$("${root_dir}/timeout.sh" -t 5 -i 1 -c stdout:nooope "${test_root_dir}/resources/fetch_from_far_away_and_dump.sh" 10)"
+    output="$(timeout -t 5 -i 1 -c stdout:nooope "${test_root_dir}/resources/fetch_from_far_away_and_dump.sh" 10)"
     result=$?
 
     assertNotSame "${expected_10_fetched}" "${output}"
