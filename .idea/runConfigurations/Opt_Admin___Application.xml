@@ -1,0 +1,17 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Opt-Admin / Application" type="BashConfigurationType" factoryName="Bash">
+    <option name="INTERPRETER_OPTIONS" value="" />
+    <option name="INTERPRETER_PATH" value="/bin/bash" />
+    <option name="WORKING_DIRECTORY" value="" />
+    <option name="PARENT_ENVS" value="true" />
+    <option name="SCRIPT_NAME" value="test/script/opt-admin/application.sh" />
+    <option name="PARAMETERS" value="" />
+    <module name="" />
+    <envs>
+      <env name="MDU_LOG_LEVEL" value="none" />
+    </envs>
+    <method>
+      <option name="Make" enabled="false" />
+    </method>
+  </configuration>
+</component>
