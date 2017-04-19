@@ -26,12 +26,12 @@ task doc() {
 	doLast {
 
 		def shellScripts = fileTree('./').include('*.sh')
-		def docDir = new File("${distributionDirectory}/doc")
+		def docDir = new File("output/doc")
 
 		if (!docDir.exists()) docDir.mkdirs()
 
 		shellScripts.each { File file ->
-			def document = new File("${distributionDirectory}/doc/${file.name}.md")
+			def document = new File(docDir, "${file.name}.md")
 			exec {
 				commandLine 'build/tool/shdoc/shdoc_io_w.sh', "${file.name}", "${document.path}"
 			}
@@ -49,7 +49,7 @@ task archiveZip(type: Zip, dependsOn: 'doc') {
 	destinationDir = new File("${distributionDirectory}/final")
 
 	from fileTree('./').include('doc/**', '*.sh', '*.py', 'README.md')
-	from fileTree("${distributionDirectory}").include('doc/**')
+	from fileTree("output").include('doc/**')
 }
 
 task selfExtractingArchive( dependsOn: 'archiveZip') {
@@ -58,15 +58,15 @@ task selfExtractingArchive( dependsOn: 'archiveZip') {
 
 		copy {
 			from zipTree(file("${distributionDirectory}/final/${distributedName}.zip"))
-			into 'output/installer/unpacked'
+			into "${distributionDirectory}/installer/unpacked"
 		}
 		copy {
 			from file('build/template/install.sh')
-			into 'output/installer'
+			into "${distributionDirectory}/installer"
 		}
 
 		exec {
-			workingDir 'output'
+			workingDir "${distributionDirectory}"
 			commandLine 'shar', 'installer'
 			standardOutput = new FileOutputStream("$projectDir/${distributionDirectory}/${distributedName}.shar")
 		}
