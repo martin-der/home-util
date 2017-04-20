@@ -2,5 +2,5 @@
 #@mdu-helper-capable
 
 
-echo "This script can perfom completion using a dedicated helper"
+echo "This script can perform completion using a dedicated helper"
 
