@@ -365,8 +365,9 @@ extract_script_attributes_line() {
 has_script_attribute() {
 	local script="$1" attribute="$2"
 	local attributesLine
+	attribute="$(escaped_for_regex "$attribute")"
 	attributesLine="$(extract_script_attributes_line "$script")" || return $?
-	[ "x#@mdu-helper-capable" == "x$attributesLine" ] && return 0
+	[[ "${attributesLine}" =~ ^#([\ \t]*|.*[\ \t]+)@${attribute}([\ \t]*|[\ \t]+.*)$ ]] && return 0
 	return 3
 }
 
@@ -502,7 +503,7 @@ function decorate_n()  {
 	echo -n "$text"
 }
 
-function escaped_for_regex {
+escaped_for_regex() {
 	sed -e 's/[]\/$*.^|[]/\\&/g' <<< "$1"
 }
 
