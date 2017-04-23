@@ -43,7 +43,7 @@ function extractArchive {
 		return 1
 	}
 
-	$DRYDO $commandPrefix "$1" > /dev/null || {
+	"$commandPrefix" "$1" > /dev/null || {
 		log_error "Error while extracting archive"
 		return 2
 	}
