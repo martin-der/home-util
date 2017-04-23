@@ -11,8 +11,8 @@ source "$(readlink "$(dirname "$0")/shell-util.sh")" 2>/dev/null \
   CLEAR(){ echo -en "\ec";}
   CIVIS(){ echo -en "\e[?25l";}
    DRAW(){ echo -en "\e%@\e(0";}
-   MARK(){ echo -en "\e[7m";}
- UNMARK(){ echo -en "\e[27m";}
+#   MARK(){ echo -en "\e[7m";}
+# UNMARK(){ echo -en "\e[27m";}
       R(){ CLEAR ;stty sane;};
 
 keey_l=

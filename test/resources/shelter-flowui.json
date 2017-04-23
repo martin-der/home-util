@@ -1,4 +1,36 @@
 {
+	"config" : {
+		"entrance" : "get-animal"
+	},
+	"pages" : [
+		{
+			"name" : "get-animal",
+			"title" : "animal",
+			"header" : "Describe the new animal you're about the receive.",
+			"components" : [
+				"animal"
+			],
+			"navigation" : "get-food"
+		},
+		{
+			"name" : "get-food",
+			"title" : "food",
+			"header" : "Enter information about a diet.",
+			"footer" : "If you are not sure about the food quantity, pick more than you may need.",
+			"components" : [
+				"food"
+			],
+			"navigation" : "get-habitat"
+		},
+		{
+			"name" : "get-habitat",
+			"title" : "habitat",
+			"header" : "Enter information about living place of animal.",
+			"components" : [
+				"habitat"
+			]
+		}
+	],
 	"components" : [
 		{
 			"name" : "animal",
@@ -30,17 +62,36 @@
 			]
 		},
 		{
-			"name" : "food"
+			"name" : "food",
+			"inputs" : [
+				{
+					"name" : "food",
+					"type" : "string",
+					"mandatory" : true,
+					"validation" : "[^\\s]+"
+				},
+				{
+					"name" : "quantity",
+					"type" : "integer",
+					"mandatory" : true,
+					"validation" : ">0"
+				}
+			]
 		},
 		{
-			"name" : "habitat"
-		}
-	],
-	"pages" : [
-		{
-			"name" : "get-animal",
-			"componenents" : [
-				"animal"
+			"name" : "habitat",
+			"inputs" : [
+				{
+					"name" : "place",
+					"type" : "[rock|desert|bush|forest|pond|river|sea]*",
+					"mandatory" : true
+				},
+				{
+					"name" : "temperature",
+					"type" : "integer",
+					"mandatory" : false,
+					"validation" : "<50,>-50"
+				}
 			]
 		}
 	]

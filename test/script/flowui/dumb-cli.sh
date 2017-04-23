@@ -2,12 +2,15 @@
 
 source "$(dirname "${BASH_SOURCE[0]}")/../runner.sh"
 
-exit 0
+
 
 oneTimeSetUp() {
 	. "${src_root_dir}/flowui.sh"
+	. "${src_root_dir}/flowui-builder-json.sh"
 	__fui_engine=humble-tui
 	fui_set_builder shelter_care
+	#fui_set_builder from_json_builder
+	from_json_builder_set_file "${test_root_dir}/resources/shelter-flowui.json"
 	fui_set_expresser shelter_care_i18n
 }
 
@@ -47,6 +50,9 @@ shelter_care_i18n() {
 shelter_care() {
 	local what="$1" which="$2" part="$3"
 	case "$what" in
+		entrance)
+			echo "get-animal"
+			;;
 		page)
 			case "$which" in
 				get-animal)
@@ -144,7 +150,7 @@ testReceiveAnimal() {
 	oneTimeSetUp ;
 	fui_set_variable_for_page "get-animal" "animal" "name" "Caroline"
 	fui_set_variable_for_page "get-animal" "animal" "species" "turtle"
-	fui_run_page get-animal
+	fui_run_first_page
 	fui_list_variables
 	exit 0 ;
 }

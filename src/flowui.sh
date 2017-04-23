@@ -9,6 +9,7 @@ __fui_builder=
 __fui_expresser=
 __fui_engine=dumb-cli
 __fui_output_prefix=__fui_VAL
+__fui_page_runner=
 __fui_RUN_page=
 
 FUI_ERROR_BAD_BUILDER=4
@@ -33,6 +34,31 @@ __check_builder_or_print_error() {
 	[ "${__fui_builder:-}" == "x" ] && { echo "no builder configured, use 'fui_set_builder <builder-function>'" >&2 ; return 1 ; }
 	return 0
 }
+
+
+__load_page_runner() {
+
+	__fui_page_runner=
+	case "$__fui_engine" in
+		dumb-cli)
+			load_source_once "./flowui-dumbcli" sh || {  __print_error "Failed to load 'flowui-dumbcli'" ; return ${FUI_ERROR_BAD_BUILDER}; }
+			__fui_page_runner=__fui_run_page_DUMBCLI
+			;;
+		humble-tui)
+			load_source_once "./flowui-humbletui" sh || {  __print_error "Failed to load 'flowui-humbletui'" ; return ${FUI_ERROR_BAD_BUILDER}; }
+			__fui_page_runner=__fui_run_page_HUMBLETUI
+			;;
+		*)
+			__print_error "Unknown runner '${__fui_engine}'" ; return ${FUI_ERROR_BAD_BUILDER};
+			;;
+	esac
+
+	[ "x$(type -t "$__fui_page_runner")" == xfunction ] || {  __print_error "'$__fui_page_runner' is not a valid function" ; return ${FUI_ERROR_BAD_BUILDER}; }
+
+	return 0
+}
+
+
 fui_is_input_mandatory() {
 	[ "x$1" == "xm" ]
 }
@@ -205,27 +231,20 @@ fui_set_variable_by_key() {
 }
 
 
+fui_run_first_page() {
+	local page
+
+	page="$("$__fui_builder" entrance "" "")" || { __print_error "Failed to get first page '$page'" ; return 1 ; }
+
+	fui_run_page "$page"
+}
+
 fui_run_page() {
 	__check_builder_or_print_error || return 1
 	__check_param_is_given 1 "Page Name" "$@"
 	local page="$1"
 
-	local page_runner
-	case "$__fui_engine" in
-		dumb-cli)
-			load_source_once "./flowui-dumbcli" sh || {  __print_error "Failed to load 'flowui-dumbcli'" ; return ${FUI_ERROR_BAD_BUILDER}; }
-			page_runner=__fui_run_page_DUMBCLI
-			;;
-		humble-tui)
-			load_source_once "./flowui-humbletui" sh || {  __print_error "Failed to load 'flowui-humbletui'" ; return ${FUI_ERROR_BAD_BUILDER}; }
-			page_runner=__fui_run_page_HUMBLETUI
-			;;
-		*)
-			__print_error "Unknown runner '${__fui_engine}'" ; return ${FUI_ERROR_BAD_BUILDER};
-			;;
-	esac
-
-	[ "x$(type -t "$page_runner")" == xfunction ] || {  __print_error "'$page_runner' is not a valid function" ; return ${FUI_ERROR_BAD_BUILDER}; }
+	__load_page_runner
 
 	while :; do
 		local components title header footer
@@ -238,7 +257,7 @@ fui_run_page() {
 		__fui_RUN_page="$page"
 
 		local previous_IFS="$IFS"
-		"$page_runner" "$components" "$title" "$header" "$footer"
+		"$__fui_page_runner" "$components" "$title" "$header" "$footer"
 		IFS="$previous_IFS"
 
 		navigation="$("$__fui_builder" page "$page" navigation)" || { __print_error "Failed to get navigation for page '$page'" ; return 1 ; }
@@ -248,7 +267,6 @@ fui_run_page() {
 		}
 		break;
 	done
-
 
 }
 
