@@ -358,7 +358,7 @@ extract_script_attributes_line() {
 #
 # @exitcode 1 If `script` could not be read
 # @exitcode 2 _attributes line_ was invalid ( ex. does start with # )
-# @exitcode 3 script does not have the requested `attribute`
+# @exitcode 3 `script` does not have the requested `attribute`
 # @exitcode 0 the `attribute` exists
 #
 # @see extract_script_attributes_line
@@ -367,8 +367,8 @@ has_script_attribute() {
 	local attributesLine
 	attribute="$(escaped_for_regex "$attribute")"
 	attributesLine="$(extract_script_attributes_line "$script")" || return $?
-	[[ "${attributesLine}" =~ ^#([\ \t]*|.*[\ \t]+)@${attribute}([\ \t]*|[\ \t]+.*)$ ]] && return 0
-	return 3
+	[[ "${attributesLine}" =~ ^#([\ \t]*|.*[\ \t]+)@${attribute}([\ \t]*|[\ \t]+.*)$ ]] || return 3
+	return 0
 }
 
 

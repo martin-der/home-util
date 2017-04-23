@@ -10,7 +10,10 @@
 		echo "'$1' does not exist or is not readable" >&2
 		exit 2
 	}
-	[ "x#@mdu-helper-capable" == "x$(cat "$1" | sed -e '2q' -e '2d' -e '/^#!\/.*\/bash/d')" ] && {
+	source "$(readlink "$(dirname "$0")/shell-util.sh")" 2>/dev/null \
+		|| source "$(dirname "$0")/shell-util.sh" 2>/dev/null \
+		|| source shell-util || exit 1
+	has_script_attribute "$1" "mdu-helper-capable" && {
 		echo "Capable"
 		exit 0
 	} || {
