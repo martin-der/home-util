@@ -9,9 +9,14 @@ source "$(readlink "$(dirname "$0")/shell-util.sh")" 2>/dev/null \
 DRY_MODE=0
 USE_SUFFIX=0
 OUTPUT_FILE=
-MODIFIED_FILES_ONLY=0
+APPEND_MODIFIED_FILES=0
+APPEND_NEW_FILES=0
 ALLOW_EMPTY_ARCHIVE=0
+SAVE_ARCHIVE_IN_BACKUP_DIR=0
+DO_NOT_SAVE_ARCHIVE_IN_BACKUP_DIR=0
 PUSH_TO=
+QUIET=0
+VERBOSE=0
 
 scriptName="${0##*/}"
 
@@ -47,11 +52,18 @@ Synopsis
         If used, archive save in backup directory is disable
         Use '-a' to
 	-b
-		Save archive in backup directory.
-		This is the default behavior. This option is only usefull
+        Save archive(s) in backup directory.
+        This is the default behavior if '-p' is not given.
+        Therefore this option is only usefull with '-p'.
+	-B
+		Don`t save any archive in backup directory.
 
     -m
-        Create archive with modified files only
+        Create archive with modified files.
+        Can be combined with '-n'.
+    -n
+        Create archive with new files.
+        Can be combined with '-m'.
 
     -e
         Allow empty archive creation.
@@ -60,28 +72,48 @@ Synopsis
     -d
         'drymode' : Simulate, don\'t do actual work
 
+    -q
+        quiet
+    -v
+        verbose
+
     -h
         Print help and exit
 EOF
 }
 
-while getopts "so:medph" option; do
+print_arguments_error_and_die() {
+	echo "$1" >&2
+	printHelpProposal >&2
+	exit 1
+}
+
+while getopts "so:omnedbBpqvh" option; do
     case "$option" in
         s) USE_SUFFIX=1 ;;
         o) OUTPUT_FILE=$OPTARG ;;
-        m) MODIFIED_FILES_ONLY=1 ;;
+        m) APPEND_MODIFIED_FILES=1 ;;
+        n) APPEND_NEW_FILES=1 ;;
         e) ALLOW_EMPTY_ARCHIVE=1 ;;
         d) DRY_MODE=1 ;;
+        b) SAVE_ARCHIVE_IN_BACKUP_DIR=1 ;;
+        B) DO_NOT_SAVE_ARCHIVE_IN_BACKUP_DIR=1 ;;
         p) PUSH_TO=$OPTARG ;;
         h) printUsage ; exit 3 ;;
         *)
-            echo "Unknown option '$option'" >&2
-            printHelpProposal >&2
-            exit 1
+            print_arguments_error_and_die "Unknown option '$option'"
             ;;
     esac
 done
 shift $((OPTIND - 1))
+
+[ $SAVE_ARCHIVE_IN_BACKUP_DIR -eq 1 -a $DO_NOT_SAVE_ARCHIVE_IN_BACKUP_DIR -eq 1 ] && {
+	print_arguments_error_and_die "Options '-b' and '-B' are contradictory"
+}
+[ $DO_NOT_SAVE_ARCHIVE_IN_BACKUP_DIR -eq 1 -a "x$PUSH_TO" = "x" ] && {
+	print_arguments_error_and_die "When asked to no save into backup directory ('-B') a push to option ('-p') must be provided "
+}
+
 
 [ "x${MDU_BUP_DIRECTORY:-}" == "x" ] && {
 	TARGET_DIR="$HOME"
@@ -174,7 +206,7 @@ makeArchiveAll() {
 	}
     echo "${file_name}"
 }
-makeArchiveModified() {
+makeArchiveModifiedOrNew() {
 	local project name pkg_name file_name files
 
 	project="$1"
@@ -183,19 +215,28 @@ makeArchiveModified() {
 
 	pkg_name="${name}-$(archiveNameSuffix 1)"
 
+	local list_files_command="git ls-files --exclude-standard"
+	[ $APPEND_MODIFIED_FILES -ne 0 ] && list_files_command="$list_files_command -m"
+	[ $APPEND_NEW_FILES -ne 0 ] && list_files_command="$list_files_command -o"
+
+	log_info "list_files_command = '$list_files_command'"
+
+
     file_name="${TARGET_DIR}/${pkg_name}.zip"
-    files="$(git ls-files -m)"
+    files="$(${list_files_command})"
     [ "$(echo -n "$files" | wc -l)" -eq 0 ] && {
 		[ $ALLOW_EMPTY_ARCHIVE -eq 0 ] && {
-			log_error "No modified file found : won't create empty archive"
+			log_error "No file matching criteria('$list_files_command') found : won't create empty archive"
 			return 1
 		} || {
-			log_warn "No modified file found : create an empty archive"
-			createEmptyZip "$file_name"
+			log_warn "No file  matching criteria('$list_files_command') found : creating an empty archive"
+			[ $DRY_MODE -eq 0 ] && {
+				createEmptyZip "$file_name"
+			}
 		}
 	} || {
 		[ $DRY_MODE -eq 0 ] && {
-			( git ls-files -m | (
+			( echo "$files" | (
 				zip -@ "$file_name" || {
 					log_error "Failed to zip content" >&2
 					return 5
@@ -224,11 +265,11 @@ makeAllArchivesFrom() {
 	log_info "Created archive '${GREEN}${archive}${COLOR_RESET}'"
 	CREATED_ARCHIVES="${archive}\n"
 }
-makeArchiveWithModifiedFrom() {
+makeArchiveWithModifiedOrNewFrom() {
 	local project archive_modified
 	project=$1
 
-	archive_modified=$(makeArchiveModified "$project" ) || {
+	archive_modified=$(makeArchiveModifiedOrNew "$project" ) || {
 		clean_exit 2
 	}
 	log_info "Created archive with modified files '${GREEN}${archive_modified}${COLOR_RESET}'"
@@ -266,16 +307,16 @@ putAllTo() {
 
 while read i ; do
 
-	log_info "Dealing with '${BLUE}$i${COLOR_RESET}'...${COLOR_RESET}"
+	log_info "Dealing with '${BLUE}$i${COLOR_RESET}'..."
 	(
-		log_debug "Entering ${YELLOW}$(pwd)/${i}${COLOR_RESET}"
+		log_debug "Entering ${YELLOW}${i}${COLOR_RESET}"
 		cd "$i" || { 
 			log_error "Could not cd into '${YELLOW}$i${COLOR_RESET}'"
 			clean_exit 1
 		}
 
-		[ $MODIFIED_FILES_ONLY -eq 1 ] && {
-			makeArchiveWithModifiedFrom "$i"
+		[ $APPEND_MODIFIED_FILES -eq 1 -o $APPEND_NEW_FILES  -eq 1 ] && {
+			makeArchiveWithModifiedOrNewFrom "$i"
 		} || {
 			makeAllArchivesFrom "$i"
 		}
