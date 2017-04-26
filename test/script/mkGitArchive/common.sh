@@ -46,9 +46,9 @@ createGitRepository() {
 
 		sed -i.bak "s/onything/anything/g" "foobar"
 		git add -- "foobar" || exit 5
-		git commit -m "Fix another typo" || exit 5
+		git commit -m "Fix another typo" >/dev/null || exit 5
 
-
+		rm -f "foobar.bak"
 	)
 }
 
