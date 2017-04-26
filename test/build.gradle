@@ -21,7 +21,7 @@ task testAllScripts(type: Test) {
 def sourceDirectory = file("$sourceDir")
 sourceDirectory.eachFileRecurse(groovy.io.FileType.FILES) {
 	script ->
-		def isTest = script.name.endsWith('.sh') && !script.name.equals("common.sh")
+		def isTest = script.name.endsWith('.sh') && !script.name.equals("common.sh") && !script.name.equals("runner.sh")
 		if(isTest) {
 
 
