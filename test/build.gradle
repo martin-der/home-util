@@ -21,25 +21,27 @@ task testAllScripts(type: Test) {
 def sourceDirectory = file("$sourceDir")
 sourceDirectory.eachFileRecurse(groovy.io.FileType.FILES) {
 	script ->
-	if(script.name.endsWith('.sh')) {
+		def isTest = script.name.endsWith('.sh') && !script.name.equals("common.sh")
+		if(isTest) {
 
-		def trimmedStart = "${project.projectDir}/script/"
-		def filename = "$script".startsWith(trimmedStart) ? "$script".substring(trimmedStart.size()) : "$file"
 
-		task "performTest_$filename" (type: Exec) {
-			workingDir homeutilProjectDir
-			commandLine 'bash', "$script"
-			ignoreExitValue false
-			doLast {
-				println "[Testing '$filename']"
-				if(execResult != 0) {
-					allSuccesful = false
+			def trimmedStart = "${project.projectDir}/script/"
+			def filename = "$script".startsWith(trimmedStart) ? "$script".substring(trimmedStart.size()) : "$file"
+
+			task "performTest_$filename" (type: Exec) {
+				workingDir homeutilProjectDir
+				commandLine 'bash', "$script"
+				ignoreExitValue false
+				doLast {
+					println "[Testing '$filename']"
+					if(execResult != 0) {
+						allSuccesful = false
+					}
 				}
 			}
-		}
 
-		testAllScripts.dependsOn("performTest_$filename")
-	}
+			testAllScripts.dependsOn("performTest_$filename")
+		}
 }
 
 
