@@ -28,7 +28,7 @@ testZipWithGitContent() {
 	assertEquals "3 files in output" 3 "$(count_files_in "${OUTPUT_DIRECTORY}")"
 }
 
-testCustomOutputDirectory() {
+testCustomBackupDirectory() {
 	mkdir "${MDU_BUP_DIRECTORY}/warehouse"
 	( cd "${FOOBAR_PROJECT_DIR}" && mkArchive -B "${MDU_BUP_DIRECTORY}/warehouse" )
 	assertLastCommandSucceeded "Make archive"
