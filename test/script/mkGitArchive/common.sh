@@ -55,6 +55,10 @@ createGitRepository() {
 mkArchive() {
 	"${src_root_dir}/mkGitArchive.sh" "$@"
 }
+count_files_in() {
+	( cd "$1" && ls -1 | wc -l )
+}
+
 
 sameFiles() {
 	[ "x$(cat "$1")" = "x$(cat "$2")" ] && return 0
