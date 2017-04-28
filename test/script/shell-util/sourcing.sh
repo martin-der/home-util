@@ -6,7 +6,6 @@ source "$(dirname "${BASH_SOURCE[0]}")/../runner.sh"
 oneTimeSetUp() {
 	export MDU_HUMAN_MODE=0
 	export MDU_NO_COLOR=1
-	export MDU_LOG_LEVEL=warn
 	. "${src_root_dir}/shell-util.sh" || exit 1
 	RESOURCES_DIR="${test_root_dir}/resources"
 

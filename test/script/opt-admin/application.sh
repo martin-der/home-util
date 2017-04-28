@@ -4,7 +4,6 @@ source "$(dirname "${BASH_SOURCE[0]}")/../runner.sh"
 
 
 oneTimeSetUp() {
-	export MDU_LOG_LEVEL=debug
 	. "${src_root_dir}/shell-util.sh" || exit 1
 	RESOURCES_DIR="${test_root_dir}/resources"
 }

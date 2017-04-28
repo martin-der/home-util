@@ -30,7 +30,6 @@ initHome() {
 
 
 testCreateXDGDirectories() {
-	export MDU_LOG_LEVEL=debug
 	echo 'XDG_DESKTOP_DIR="$HOME/desktop"
 XDG_DOWNLOAD_DIR="$HOME/download"
 XDG_TEMPLATES_DIR="$HOME/templates"
