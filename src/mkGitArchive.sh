@@ -8,8 +8,10 @@ source "$(readlink "$(dirname "$0")/shell-util.sh")" 2>/dev/null \
 
 DRY_MODE=0
 USE_SUFFIX=0
-OUTPUT_FILE_NAME=
 BACKUP_DIR=
+ARCHIVE_FORMAT=
+APPEND_SOURCES=0
+APPEND_SOURCES_WITH_GIT_HISTORY=0
 APPEND_MODIFIED_FILES=0
 APPEND_NEW_FILES=0
 ALLOW_EMPTY_ARCHIVE=0
@@ -23,6 +25,9 @@ scriptName="${0##*/}"
 QUICK_STAMP=$(date +%Y%m%d)
 
 CREATED_ARCHIVES=
+QUALIFIER_ARCHIVE_WITH_SOURCES="source"
+QUALIFIER_ARCHIVE_WITH_SOURCES_AND_GIT_HISTORY="source+history"
+QUALIFIER_ARCHIVE_WITH_UNCOMMITTED_FILES="desktop"
 
 printHelpProposal() {
     echo "Type"
@@ -36,8 +41,16 @@ printUsage() {
 Synopsis
     $scriptName [options...] [git_directory] -- [included_files...]
 
-    -o output_file
-        Choose the archive's name
+    -a archive_type
+        Choose the archive format.
+        Overrides the format inferred from the suffix of the output file format, if any (see '-f').
+        Available formats are ( matching suffix in bracket ) :
+            - zip ( .zip )
+            - gz  ( .tar.gz, .tgz )
+        Note : gz archives are 'tared' first
+
+    -f output_file_format
+        Choose the archive\'s format
         TODO : Default value: ???
         See '-s' option for suffix description
 
@@ -45,18 +58,22 @@ Synopsis
         Append suffix to the archive file name.
 
 	-p destination
-        Push file.
-        If used, archive save in backup directory is disable
+        Push file to destination.
+        If used, saving of archives in backup directory is disabled
 	-b
         Save archive(s) in backup directory.
-        This is the default behavior if '-p' is not given.
+        This is the default behavior only if '-p' is not given.
         Therefore this option is only useful with '-p'.
 	-B directory
 		Set the backup directory.
 		Implies '-b'
 
+    -h
+        Create archive with sources.
+    -g
+        Create archive with sources and git history.
     -m
-        Create archive with modified files.
+        Create archive with modified files ( i.e. uncommitted ).
         Can be combined with '-n'.
     -n
         Create archive with new files ( i.e. untracked ).
@@ -67,6 +84,8 @@ Synopsis
         Allow empty archive creation.
         Handy with '-m' or '-n' when no file was modified or there is no untracked file.
 
+    -o
+    	Overwrite any existing file.
     -d
         'drymode' : Simulate, don\'t do actual work
 
@@ -86,10 +105,16 @@ print_arguments_error_and_die() {
 	exit 1
 }
 
-while getopts "so:mnedbB:p:qvh" option; do
+while getopts "asf:mnedbB:p:qvh" option; do
 	case "$option" in
+		a)
+			ARCHIVE_FORMAT=$OPTARG
+			[ "$ARCHIVE_FORMAT" == "zip" -o "$ARCHIVE_FORMAT" == "gz" ] || print_arguments_error_and_die "Invalid archive format '$ARCHIVE_FORMAT'"
+			;;
 		s) USE_SUFFIX=1 ;;
-		o) OUTPUT_FILE_NAME=$OPTARG ;;
+		f) ARCHIVE_FORMAT=$OPTARG ;;
+		h) APPEND_SOURCES=1 ;;
+		g) APPEND_SOURCES_WITH_GIT_HISTORY=1 ;;
 		m) APPEND_MODIFIED_FILES=1 ;;
 		n) APPEND_NEW_FILES=1 ;;
 		e) ALLOW_EMPTY_ARCHIVE=1 ;;
@@ -111,6 +136,15 @@ while getopts "so:mnedbB:p:qvh" option; do
 	esac
 done
 shift $((OPTIND - 1))
+
+[ $APPEND_SOURCES -eq 0 -a $APPEND_SOURCES_WITH_GIT_HISTORY -eq 0 -a $APPEND_MODIFIED_FILES -eq 0 -a $APPEND_NEW_FILES -eq 0 ] && {
+	log_debug "No archive type provided => defaulting to 'source' and 'source with git history'"
+	APPEND_SOURCES=1
+	APPEND_SOURCES_WITH_GIT_HISTORY=1
+}
+ONE_TYPE_OF_ARCHIVE=1
+[ $(($APPEND_SOURCES + $APPEND_SOURCES_WITH_GIT_HISTORY + $APPEND_MODIFIED_FILES)) -gt 1 ] && ONE_TYPE_OF_ARCHIVE=0
+[ $(($APPEND_SOURCES + $APPEND_SOURCES_WITH_GIT_HISTORY + $APPEND_NEW_FILES)) -gt 1 ] && ONE_TYPE_OF_ARCHIVE=0
 
 
 findOutTargetDir() {
@@ -146,7 +180,7 @@ log_debug "Destination directory : ${YELLOW}${TARGET_DIR}${COLOR_RESET}"
 EMPTY_ZIP="50 4b 05 06 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 --"
 createEmptyZip() {
 	printf "" > "$1"
-	while read -d ' ' n ; do echo "n = '$n'" ; printf "\\$(printf "%o" 0x$n)" >> "$1" ; done <<< "$EMPTY_ZIP"
+	while read -d ' ' n ; do printf "\\$(printf "%o" 0x$n)" >> "$1" ; done <<< "$EMPTY_ZIP"
 }
 
 
@@ -176,21 +210,32 @@ log_debug "Make archive(s) for the following project(s) : ${projects}"
 
 
 archiveNameSuffix() {
-    local suffix modified git_version
-    modified="$1"
+    local suffix use_git_id git_version
+    use_git_id="${1:-0}"
     suffix="$QUICK_STAMP"
-    git_version="$(git describe --tags 2>/dev/null)" || git_version="$(git rev-parse HEAD)"
-    [ "x${1:-}" = "x1" ] && suffix="${suffix}-${git_version}"
+    [ "x${use_git_id}" = "x1" ] && {
+	    git_version="$(git describe --tags 2>/dev/null)" || git_version="$(git rev-parse HEAD)"
+    	suffix="${suffix}-${git_version}"
+    }
     echo "$suffix"
 }
 
+getPackageName() {
+	local project type use_git_id name
+	project="$1"
+	type="${2}"
+	use_git_id="${3:-0}"
+	name="$(basename "$project")"
+	[ ${ONE_TYPE_OF_ARCHIVE} -eq 0 ] && name="${name}-${type}"
+	echo "${name}-$(archiveNameSuffix "$use_git_id" )"
+}
+
 makeArchive() {
-	local project name pkg_name file_name
+	local project pkg_name file_name
 
 	project="$1"
-	name="$(basename "$project")"
 
-	pkg_name="${name}-$(archiveNameSuffix)"
+	pkg_name="$(getPackageName "$project" "$QUALIFIER_ARCHIVE_WITH_SOURCES_AND_GIT_HISTORY")"
 	file_name="${TARGET_DIR}/${pkg_name}.tgz"
 	[ $DRY_MODE -eq 0 ] && {
 		( git archive --format=tar --prefix="${pkg_name}/" HEAD | gzip > "${file_name}" ) > /dev/null || return 1
@@ -199,12 +244,11 @@ makeArchive() {
 }
 
 makeArchiveAll() {
-	local project name pkg_name file_name
+	local project pkg_name file_name
 
-    project="$1"
-	name="$(basename "$project")"
+	project="$1"
 
-	pkg_name="${name}-$(archiveNameSuffix)"
+	pkg_name="$(getPackageName "$project" "$QUALIFIER_ARCHIVE_WITH_SOURCES_AND_GIT_HISTORY")"
     file_name="${TARGET_DIR}/${pkg_name}.zip"
 	[ $DRY_MODE -eq 0 ] && {
 		( git archive --format=zip HEAD > "${file_name}" && zip -r "${file_name}" .git ) > /dev/null || return 1
@@ -212,13 +256,12 @@ makeArchiveAll() {
     echo "${file_name}"
 }
 makeArchiveModifiedOrNew() {
-	local project name pkg_name file_name files
+	local project pkg_name file_name files
 
 	project="$1"
 	shift
-	name="$(basename "$project")"
 
-	pkg_name="${name}-$(archiveNameSuffix 1)"
+	pkg_name="$(getPackageName "$project" "$QUALIFIER_ARCHIVE_WITH_UNCOMMITTED_FILES")"
 
 	local list_files_command="git ls-files --exclude-standard"
 	[ $APPEND_MODIFIED_FILES -ne 0 ] && list_files_command="$list_files_command -m"
@@ -251,17 +294,21 @@ makeArchiveModifiedOrNew() {
 
 
 
-makeAllArchivesFrom() {
+makeArchiveSourcesFrom() {
 	local project archive_all archive
 	project=$1
 
-	archive_all=$(makeArchiveAll "$project" ) || {
+	archive_all=$(makeArchive "$project" ) || {
 		clean_exit 2
 	}
 	log_info "Created all archive '${GREEN}${archive_all}${COLOR_RESET}'"
 	CREATED_ARCHIVES="${archive_all}\n"
+}
+makeArchiveSourcesWithGitFrom() {
+	local project archive_all archive
+	project=$1
 
-	archive=$(makeArchive "$project" ) || {
+	archive=$(makeArchiveAll "$project" ) || {
 		clean_exit 2
 	}
 	log_info "Created archive '${GREEN}${archive}${COLOR_RESET}'"
@@ -274,8 +321,9 @@ makeArchiveWithModifiedOrNewFrom() {
 	archive_modified=$(makeArchiveModifiedOrNew "$project" ) || {
 		clean_exit 2
 	}
-	log_info "Created archive with modified files '${GREEN}${archive_modified}${COLOR_RESET}'"
+	log_info "Created archive with modified or new files '${GREEN}${archive_modified}${COLOR_RESET}'"
 	CREATED_ARCHIVES="${archive_modified}\n"
+	return 0
 }
 
 
@@ -307,24 +355,31 @@ putAllTo() {
 #}
 
 
-while read i ; do
+while read p ; do
 
-	log_info "Dealing with '${BLUE}$i${COLOR_RESET}'..."
+	log_info "Dealing with '${BLUE}$p${COLOR_RESET}'..."
 	(
-		log_debug "Entering ${YELLOW}${i}${COLOR_RESET}"
-		cd "$i" || { 
-			log_error "Could not cd into '${YELLOW}$i${COLOR_RESET}'"
+		log_debug "Entering ${YELLOW}${p}${COLOR_RESET}"
+		cd "$p" || {
+			log_error "Could not cd into '${YELLOW}$p${COLOR_RESET}'"
 			clean_exit 1
 		}
 
 		[ $APPEND_MODIFIED_FILES -eq 1 -o $APPEND_NEW_FILES  -eq 1 ] && {
-			makeArchiveWithModifiedOrNewFrom "$i"
-		} || {
-			makeAllArchivesFrom "$i"
-		}
+			log_debug "Creating modified or new files archive"
+			makeArchiveWithModifiedOrNewFrom "$p"
+		} || true
+		[ $APPEND_SOURCES -eq 1 ] && {
+			log_debug "Creating sources archive"
+			makeArchiveSourcesFrom "$p"
+		} || true
+		[ $APPEND_SOURCES_WITH_GIT_HISTORY -eq 1 ] && {
+			log_debug "Creating sources with git history archive"
+			makeArchiveSourcesWithGitFrom "$p"
+		} || true
 
 	) || {
-		log_error "Fatal Error : Unable create archive for '${BLUE}$i${COLOR_RESET}'"
+		log_error "Fatal Error : Unable create archive for '${BLUE}$p${COLOR_RESET}'"
 		clean_exit 1
 	}
 	

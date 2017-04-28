@@ -75,3 +75,7 @@ assertSameFiles() {
 		return $?
 	}
 }
+
+unzip_mute_empty_warning() {
+	unzip "$1" 2>&1 | grep -v "zipfile is empty"
+}

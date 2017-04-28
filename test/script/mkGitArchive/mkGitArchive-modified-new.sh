@@ -6,12 +6,10 @@ source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
 oneTimeSetUp() {
 	common_oneTimeSetUp
-	export MDU_LOG_LEVEL=debug
 }
 
 setUp() {
 	common_setUp
-export MDU_LOG_LEVEL=warn
 }
 tearDown() {
 	common_tearDown
@@ -90,7 +88,7 @@ testFailCreatingEmptyZipWithModifiedFiles() {
 testCreatingEmptyZipWithModifiedFiles() {
 	( cd "${FOOBAR_PROJECT_DIR}" && mkArchive -m -e )
 	assertLastCommandSucceeded "Make archive"
-	( cd "${OUTPUT_DIRECTORY}" && unzip "$MDU_BUP_DIRECTORY/foobar_project-*.zip" >/dev/null )
+	( cd "${OUTPUT_DIRECTORY}" && unzip_mute_empty_warning "$MDU_BUP_DIRECTORY/foobar_project-*.zip" >/dev/null )
 	assertLastCommandSucceeded "Unzip archive"
 	assertEquals "0 files in output" 0 "$(count_files_in "${OUTPUT_DIRECTORY}")"
 }
@@ -99,9 +97,9 @@ testFailCreatingEmptyZipWithNewFiles() {
 	assertLastCommandFailed "Make archive" ""
 }
 testCreatingEmptyZipWithNewFiles() {
-	( cd "${FOOBAR_PROJECT_DIR}" && mkArchive -n -e 2>/dev/null )
+	( cd "${FOOBAR_PROJECT_DIR}" && mkArchive -n -e )
 	assertLastCommandSucceeded "Make archive"
-	( cd "${OUTPUT_DIRECTORY}" && unzip "$MDU_BUP_DIRECTORY/foobar_project-*.zip" >/dev/null )
+	( cd "${OUTPUT_DIRECTORY}" && unzip_mute_empty_warning "$MDU_BUP_DIRECTORY/foobar_project-*.zip" >/dev/null )
 	assertLastCommandSucceeded "Unzip archive"
 	assertEquals "0 files in output" 0 "$(count_files_in "${OUTPUT_DIRECTORY}")"
 }
