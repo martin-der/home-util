@@ -418,7 +418,10 @@ function installAlternative() {
 
 	DESTINATION="${APP_DIR}/${ALTERNATIVE_NAME-${SOURCE_NAME}}"
 
-	TMP_DIR=`mktemp -d`
+	TMP_DIR=`mktemp -d -t opt-admin.XXXXXXXXXX` || {
+		log_error "Could not create temp directory"
+		return 2
+	}
 	trap "rm -rf $TMP_DIR" EXIT
 	log_debug "Working in $TMP_DIR"
 
