@@ -1,7 +1,7 @@
 #!/bin/bash
 
-source "$(dirname "${BASH_SOURCE[0]}")/../runner.sh"
-source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/../runner.sh" || exit 4
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh" || exit 4
 
 
 oneTimeSetUp() {

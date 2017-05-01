@@ -6,7 +6,7 @@ source "$(readlink "$(dirname "$0")/shell-util.sh")" 2>/dev/null \
 
 
 
-DRY_MODE=0
+SIMULATION_MODE=0
 USE_SUFFIX=0
 BACKUP_DIR=
 ARCHIVE_FORMAT=
@@ -15,19 +15,28 @@ APPEND_SOURCES_WITH_GIT_HISTORY=0
 APPEND_MODIFIED_FILES=0
 APPEND_NEW_FILES=0
 ALLOW_EMPTY_ARCHIVE=0
-SAVE_ARCHIVE_IN_BACKUP_DIR=0
+EXPLICIT_SAVE_ARCHIVE_IN_BACKUP_DIR=0
 PUSH_TO=
+FORCE_OVERWRITE=0
 QUIET=0
 VERBOSE=0
 
 scriptName="${0##*/}"
 
-QUICK_STAMP=$(date +%Y%m%d)
-
-CREATED_ARCHIVES=
 QUALIFIER_ARCHIVE_WITH_SOURCES="source"
 QUALIFIER_ARCHIVE_WITH_SOURCES_AND_GIT_HISTORY="source+history"
-QUALIFIER_ARCHIVE_WITH_UNCOMMITTED_FILES="desktop"
+QUALIFIER_ARCHIVE_WITH_UNTRACKED_FILES="desktop"
+
+
+ERROR_PROJECT_DIRECTORY_NOT_ACCESSIBLE=29
+ERROR_DESTINATION_DIRECTORY_NOT_WRITABLE=30
+ERROR_WOULD_OVERWRITE=31
+ERROR_REFUSE_EMPTY_ARCHIVE=32
+ERROR_ARCHIVE_CREATION_FAILURE=33
+ERROR_COMPRESSION_FAILURE=34
+ERROR_ARCHIVE_FROM_GIT_FAILURE=35
+ERROR_INTERNAL_MISSING_COMPRESS_INFORMATION=40
+ERROR_MISCELLANEOUS=50
 
 printHelpProposal() {
     echo "Type"
@@ -41,12 +50,21 @@ printUsage() {
 Synopsis
     $scriptName [options...] [git_directory] -- [included_files...]
 
+Description
+    Creates up to three type of archives.
+    * create an archive with all files at current revision.
+    * create an archive with all files at current revision and the git history.
+    * create an archive with all modified files at current revision and the git history.
+
+Options
+
     -a archive_type
         Choose the archive format.
         Overrides the format inferred from the suffix of the output file format, if any (see '-f').
-        Available formats are ( matching suffix in bracket ) :
-            - zip ( .zip )
-            - gz  ( .tar.gz, .tgz )
+        Available formats are ( matching suffixes in bracket ) :
+            - zip   ( .zip )
+            - gz    ( .tar.gz, .tgz )
+            - bzip2 ( .tar.bz2, .tbz2 )
         Note : gz archives are 'tared' first
 
     -f output_file_format
@@ -68,17 +86,17 @@ Synopsis
 		Set the backup directory.
 		Implies '-b'
 
-    -h
+    -k
         Create archive with sources.
     -g
         Create archive with sources and git history.
     -m
         Create archive with modified files ( i.e. uncommitted ).
-        Can be combined with '-n'.
+        If combined with '-n' then all files will end in the same archive.
     -n
         Create archive with new files ( i.e. untracked ).
         This does not include files excluded from tracking.
-        Can be combined with '-m'.
+        If combined with '-m' then all files will end in the same archive.
 
     -e
         Allow empty archive creation.
@@ -105,24 +123,25 @@ print_arguments_error_and_die() {
 	exit 1
 }
 
-while getopts "asf:mnedbB:p:qvh" option; do
+while getopts "a:sf:kgmneodbB:p:qvh" option; do
 	case "$option" in
 		a)
+			[ "$OPTARG" == "zip" -o "$OPTARG" == "gz" ] || print_arguments_error_and_die "Invalid archive format '$OPTARG'"
 			ARCHIVE_FORMAT=$OPTARG
-			[ "$ARCHIVE_FORMAT" == "zip" -o "$ARCHIVE_FORMAT" == "gz" ] || print_arguments_error_and_die "Invalid archive format '$ARCHIVE_FORMAT'"
 			;;
 		s) USE_SUFFIX=1 ;;
-		f) ARCHIVE_FORMAT=$OPTARG ;;
-		h) APPEND_SOURCES=1 ;;
+		#f) ARCHIVE_FORMAT=$OPTARG ;;
+		k) APPEND_SOURCES=1 ;;
 		g) APPEND_SOURCES_WITH_GIT_HISTORY=1 ;;
 		m) APPEND_MODIFIED_FILES=1 ;;
 		n) APPEND_NEW_FILES=1 ;;
 		e) ALLOW_EMPTY_ARCHIVE=1 ;;
-		d) DRY_MODE=1 ;;
-		b) SAVE_ARCHIVE_IN_BACKUP_DIR=1 ;;
+		o) FORCE_OVERWRITE=1 ;;
+		d) SIMULATION_MODE=1 ;;
+		b) EXPLICIT_SAVE_ARCHIVE_IN_BACKUP_DIR=1 ;;
 		B)
 			BACKUP_DIR=$OPTARG
-			SAVE_ARCHIVE_IN_BACKUP_DIR=1
+			EXPLICIT_SAVE_ARCHIVE_IN_BACKUP_DIR=1
 			[ "x$BACKUP_DIR" = "x" ] && print_arguments_error_and_die "'backup directory' is required with option -B"
 			;;
 		p)
@@ -146,8 +165,35 @@ ONE_TYPE_OF_ARCHIVE=1
 [ $(($APPEND_SOURCES + $APPEND_SOURCES_WITH_GIT_HISTORY + $APPEND_MODIFIED_FILES)) -gt 1 ] && ONE_TYPE_OF_ARCHIVE=0
 [ $(($APPEND_SOURCES + $APPEND_SOURCES_WITH_GIT_HISTORY + $APPEND_NEW_FILES)) -gt 1 ] && ONE_TYPE_OF_ARCHIVE=0
 
+SAVE_ARCHIVE_IN_BACKUP_DIR=1
+[ "x$PUSH_TO" != "x" -a $EXPLICIT_SAVE_ARCHIVE_IN_BACKUP_DIR -eq 0 ] && SAVE_ARCHIVE_IN_BACKUP_DIR=0
+TMP_DIRECTORY=
+
+QUICK_STAMP=$(date +%Y%m%d)
+CREATED_ARCHIVE=
+CREATED_ARCHIVES=
+
+
+clean_on_exit() {
+	[ $SIMULATION_MODE -eq 0 ] || log_warn "Dry mode : This was a simulation. Nothing has been done"
+	[ "x$TMP_DIRECTORY" != "x" ] && {
+		log_debug "Removing working dir '$TMP_DIRECTORY'"
+		rm -rf "$TMP_DIRECTORY"
+	}
+}
+
+trap clean_on_exit EXIT INT TERM
+
+[ $SAVE_ARCHIVE_IN_BACKUP_DIR -eq 0 ] && {
+	TMP_DIRECTORY=`mktemp -d -t mkGitarchive.XXXXXXXXXX` || exit $ERROR_MISCELLANEOUS
+}
 
 findOutTargetDir() {
+	[ $SAVE_ARCHIVE_IN_BACKUP_DIR -eq 0 ] && {
+
+		return 0
+	}
+
 	[ "x$BACKUP_DIR" != "x" ] && { TARGET_DIR="$BACKUP_DIR" ; return 0 ; }
 	[ "x${MDU_BUP_DIRECTORY:-}" != "x" ] && { TARGET_DIR="$MDU_BUP_DIRECTORY" ; return 0 ; }
 	TARGET_DIR="$HOME"
@@ -159,22 +205,12 @@ findOutTargetDir
 
 [ -d "$TARGET_DIR" ] || {
 	log_error "Destination directory '${TARGET_DIR}' does not exist or is not writable"
-	exit 7
-}
-
-
-clean_on_exit() {
-	[ $DRY_MODE -eq 0 ] || log_warn "Dry mode : This was a simulation. Nothing has been done"
-}
-
-clean_exit() {
-	clean_on_exit
-	exit $1
+	exit $ERROR_DESTINATION_DIRECTORY_NOT_WRITABLE
 }
 
 log_debug "Destination directory : ${YELLOW}${TARGET_DIR}${COLOR_RESET}"
 
-[ $DRY_MODE -eq 0 ] || log_info "Dry mode : This is a simulation. Nothing will be done"
+[ $SIMULATION_MODE -eq 0 ] || log_info "Dry mode : This is a simulation. Nothing will be done"
 
 
 EMPTY_ZIP="50 4b 05 06 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 --"
@@ -183,6 +219,16 @@ createEmptyZip() {
 	while read -d ' ' n ; do printf "\\$(printf "%o" 0x$n)" >> "$1" ; done <<< "$EMPTY_ZIP"
 }
 
+
+checkFileOrDieWouldOverwrite() {
+	local file
+	file="$1"
+	[ -x "$file" ] && [ $FORCE_OVERWRITE -eq 0 ] && {
+		log_error "File '$file' exists and overwrite is not allowed"
+		exit $ERROR_WOULD_OVERWRITE
+	}
+	return 0
+}
 
 # ----------------------------------------------------
 
@@ -194,7 +240,7 @@ enumerateProjects() {
 		[ "x$(pwd)" = "x${git_dir}" ] && echo "$git_dir"
 		return 0
 	}
-	find . -maxdepth 1 -type d -not -path '*/\.*' -not -name '\.' | sed "s#^\\./##"
+	find . -mindepth 1 -maxdepth 1 -type d -not -path '*/\.*' -not -name '\.' | sed "s#^\\./##"
 }
 
 [ "x$1" == "x" ] && {
@@ -224,10 +270,147 @@ getPackageName() {
 	local project type use_git_id name
 	project="$1"
 	type="${2}"
-	use_git_id="${3:-0}"
+	use_git_id="${3:-1}"
 	name="$(basename "$project")"
 	[ ${ONE_TYPE_OF_ARCHIVE} -eq 0 ] && name="${name}-${type}"
 	echo "${name}-$(archiveNameSuffix "$use_git_id" )"
+}
+
+getPackageType() {
+	local destination
+	destination="$1"
+	[ "x$ARCHIVE_FORMAT" != "x" ] && {
+		echo "$ARCHIVE_FORMAT"
+		return 0
+	}
+	local filename dir base ext
+	filename="${destination##*/}"
+    #dir="${destination:0:${#destination} - ${#filename}}"
+    base="${filename%.[^.]*}"
+    ext="${filename:${#base} + 1}"
+    if [[ -z "$base" && -n "$ext" ]]; then
+    	# If we have an extension and no base, it's really the base
+        base=".$ext"
+        ext=""
+    fi
+    case "$ext" in
+    	"zip") echo "zip" ; return 0 ;;
+    	"tar.gz"|"tgz") echo "gz" ; return 0 ;;
+    esac
+    log_error "Could not infer archive type from filename '$filename'."
+    return 1
+}
+
+# @param 1 source if '-' then use files list from stdin else git revision
+# @param 2 destination
+# @param 3 archive directory prefix
+# @param 4 add '.git' directory
+createArchive() {
+	local source dest add_git format compress_command
+	source="$1"
+	dest="$2"
+	prefix_dir="$3"
+	add_git="${4:-0}"
+
+	format="$(getPackageType "$dest")" || return 3
+	log_debug "Archive format is : '$format'"
+
+	if [ "$source" = "-" ] ; then
+		case "$format" in
+			"zip")
+				zip -@ "$dest" || {
+					log_error "Failed to zip content"
+					return ${ERROR_COMPRESSION_FAILURE}
+				}
+				;;
+			"gz"|"bz2")
+				case "$format" in
+					"gz")
+						compress_command=gzip
+						;;
+					"bzip2")
+						compress_command=bzip2
+						;;
+					*)
+						log_error "Command for piped compression with '$format' format is unknown"
+						return ${ERROR_INTERNAL_MISSING_COMPRESS_INFORMATION}
+				esac
+				(
+					tar c -T - || {
+						log_error "Failed to tar content"
+						return ${ERROR_COMPRESSION_FAILURE}
+					}
+				) | ${compress_command} > "$dest"
+				;;
+			*)
+				log_error "Command for compressing files list from stdin with '$format' format is unknown"
+				return ${ERROR_INTERNAL_MISSING_COMPRESS_INFORMATION}
+		esac
+	else
+		case "$format" in
+			"zip")
+				git archive --format=zip --prefix="${prefix_dir}/" "$source" > "$dest" || {
+					log_error "Failed to create git archive"
+					return ${ERROR_ARCHIVE_FROM_GIT_FAILURE}
+				}
+				echo "Adding git?"
+				[ $add_git -eq 1 ] && {
+					echo "Adding git!"
+					zip -r "${dest}" .git > /dev/null || {
+						log_error "Failed to add '.git' to zip archive"
+						return ${ERROR_COMPRESSION_FAILURE}
+					}
+				}
+				;;
+			"gz"|"bz2")
+				case "$format" in
+					"gz")
+						compress_command=gzip
+						;;
+					"bz2")
+						compress_command=bzip2
+						;;
+					*)
+						log_error "Command for piped compression with '$format' format is unknown"
+						return ${ERROR_INTERNAL_MISSING_COMPRESS_INFORMATION}
+				esac
+				(
+					local temp_dest
+					[ $add_git -eq 1 ] && {
+						temp_dest="${dest}.$$.temp"
+						trap "rm -f \"${dest}.$$.temp\""
+					}
+					{
+						if [ $add_git -eq 1 ] ; then
+							git archive --format=tar --prefix="${prefix_dir}/" "$1" > "$temp_dest"
+						else
+							git archive --format=zip --prefix="${prefix_dir}/" "$1"
+						fi
+					} || {
+						log_error "Failed to create tar archive"
+						return ${ERROR_ARCHIVE_FROM_GIT_FAILURE}
+					}
+					[ $add_git -eq 1 ] && {
+						tar -fr "${temp_dest}" .git > /dev/null || {
+							log_error "Failed to add '.git' to tar archive"
+							return ${ERROR_COMPRESSION_FAILURE}
+						}
+						cat "$temp_dest" || {
+							log_error "Failed to cat tar archive with '.git'"
+							return ${ERROR_COMPRESSION_FAILURE}
+						}
+					}
+				) | ${compress_command} > "$dest" || {
+					log_error "Failed to compress tar archive"
+					return ${ERROR_COMPRESSION_FAILURE}
+				}
+				;;
+			*)
+				log_error "Format '$format' is unknown for the git create archive command"
+				return ${ERROR_INTERNAL_MISSING_COMPRESS_INFORMATION}
+				;;
+		esac
+	fi
 }
 
 makeArchive() {
@@ -237,10 +420,9 @@ makeArchive() {
 
 	pkg_name="$(getPackageName "$project" "$QUALIFIER_ARCHIVE_WITH_SOURCES_AND_GIT_HISTORY")"
 	file_name="${TARGET_DIR}/${pkg_name}.tgz"
-	[ $DRY_MODE -eq 0 ] && {
-		( git archive --format=tar --prefix="${pkg_name}/" HEAD | gzip > "${file_name}" ) > /dev/null || return 1
-	}
-	echo "${file_name}"
+	checkFileOrDieWouldOverwrite "$file_name"
+	createArchive "HEAD" "$file_name" "$(basename "$project")" 0 || return $?
+	CREATED_ARCHIVE="${file_name}"
 }
 
 makeArchiveAll() {
@@ -248,12 +430,11 @@ makeArchiveAll() {
 
 	project="$1"
 
-	pkg_name="$(getPackageName "$project" "$QUALIFIER_ARCHIVE_WITH_SOURCES_AND_GIT_HISTORY")"
+	pkg_name="$(getPackageName "$project" "$QUALIFIER_ARCHIVE_WITH_SOURCES")"
     file_name="${TARGET_DIR}/${pkg_name}.zip"
-	[ $DRY_MODE -eq 0 ] && {
-		( git archive --format=zip HEAD > "${file_name}" && zip -r "${file_name}" .git ) > /dev/null || return 1
-	}
-    echo "${file_name}"
+	checkFileOrDieWouldOverwrite "$file_name"
+	createArchive "HEAD" "$file_name" "$(basename "$project")" 1 || return $?
+	CREATED_ARCHIVE="${file_name}"
 }
 makeArchiveModifiedOrNew() {
 	local project pkg_name file_name files
@@ -261,68 +442,67 @@ makeArchiveModifiedOrNew() {
 	project="$1"
 	shift
 
-	pkg_name="$(getPackageName "$project" "$QUALIFIER_ARCHIVE_WITH_UNCOMMITTED_FILES")"
+	pkg_name="$(getPackageName "$project" "$QUALIFIER_ARCHIVE_WITH_UNTRACKED_FILES")"
 
 	local list_files_command="git ls-files --exclude-standard"
 	[ $APPEND_MODIFIED_FILES -ne 0 ] && list_files_command="$list_files_command -m"
 	[ $APPEND_NEW_FILES -ne 0 ] && list_files_command="$list_files_command -o"
 
     file_name="${TARGET_DIR}/${pkg_name}.zip"
+	checkFileOrDieWouldOverwrite "$file_name"
     files="$(${list_files_command})"
-    [ "$(echo -n "$files" | wc -c)" -eq 0 ] && {
+	[ "$(echo -n "$files" | wc -c)" -eq 0 ] && {
 		[ $ALLOW_EMPTY_ARCHIVE -eq 0 ] && {
 			log_error "No file matching criteria('$list_files_command') found : won't create empty archive"
-			return 1
+			return $ERROR_REFUSE_EMPTY_ARCHIVE
 		} || {
 			log_warn "No file  matching criteria('$list_files_command') found : creating an empty archive"
-			[ $DRY_MODE -eq 0 ] && {
+			[ $SIMULATION_MODE -eq 0 ] && {
 				createEmptyZip "$file_name"
 			}
 		}
 	} || {
-		[ $DRY_MODE -eq 0 ] && {
-			( echo "$files" | (
-				zip -@ "$file_name" || {
-					log_error "Failed to zip content" >&2
-					return 5
-				}
-			) ) > /dev/null || return 1
-		}
+		echo -n "$files" | createArchive - "$file_name" "$(basename "$project")" 0 || return $?
 	}
-    echo "${file_name}"
+	CREATED_ARCHIVE="${file_name}"
 }
 
 
 
 makeArchiveSourcesFrom() {
-	local project archive_all archive
+	local project archive
 	project=$1
 
-	archive_all=$(makeArchive "$project" ) || {
-		clean_exit 2
+	makeArchive "$project" || {
+		exit 2
 	}
-	log_info "Created all archive '${GREEN}${archive_all}${COLOR_RESET}'"
-	CREATED_ARCHIVES="${archive_all}\n"
+	archive="${CREATED_ARCHIVE}"
+	log_info "Created archive '${GREEN}${archive}${COLOR_RESET}'"
+	CREATED_ARCHIVES="${CREATED_ARCHIVES}${archive}\n"
+	return 0
 }
 makeArchiveSourcesWithGitFrom() {
-	local project archive_all archive
+	local project archive_all
 	project=$1
 
-	archive=$(makeArchiveAll "$project" ) || {
-		clean_exit 2
+	makeArchiveAll "$project" || {
+		exit 2
 	}
-	log_info "Created archive '${GREEN}${archive}${COLOR_RESET}'"
-	CREATED_ARCHIVES="${archive}\n"
+	archive_all="${CREATED_ARCHIVE}"
+	log_info "Created archive with git history '${GREEN}${archive_all}${COLOR_RESET}'"
+	CREATED_ARCHIVES="${CREATED_ARCHIVES}${archive_all}\n"
+	return 0
 }
 makeArchiveWithModifiedOrNewFrom() {
 	local project archive_modified
 	project=$1
 
-	archive_modified=$(makeArchiveModifiedOrNew "$project" ) || {
-		clean_exit 2
+	makeArchiveModifiedOrNew "$project" || {
+		exit $?
 	}
+	archive_modified="${CREATED_ARCHIVE}"
 	log_info "Created archive with modified or new files '${GREEN}${archive_modified}${COLOR_RESET}'"
-	CREATED_ARCHIVES="${archive_modified}\n"
+	CREATED_ARCHIVES="${CREATED_ARCHIVES}${archive_modified}\n"
 	return 0
 }
 
@@ -335,7 +515,7 @@ putTo() {
 	target="$2"
 	adb push "$ARCHIVE" "$REMOTE_DEST" > /dev/null || {
 		log_error "Could send archive: adb push '$ARCHIVE' '$REMOTE_DEST'${COLOR_RESET}"
-		clean_exit 3
+		exit 3
 	}
 }
 
@@ -349,20 +529,21 @@ putAllTo() {
 #	log_debug "Dealing with current directory..."
 #	name=$(basename $(pwd))
 #	makeAllArchivesFrom "${name}" || {
-#		clean_exit 5
+#		exit 5
 #	}
-#	clean_exit 0
+#	exit 0
 #}
 
+_owd="$(pwd)"
 
 while read p ; do
 
 	log_info "Dealing with '${BLUE}$p${COLOR_RESET}'..."
-	(
+	{
 		log_debug "Entering ${YELLOW}${p}${COLOR_RESET}"
 		cd "$p" || {
 			log_error "Could not cd into '${YELLOW}$p${COLOR_RESET}'"
-			clean_exit 1
+			exit $ERROR_PROJECT_DIRECTORY_NOT_ACCESSIBLE
 		}
 
 		[ $APPEND_MODIFIED_FILES -eq 1 -o $APPEND_NEW_FILES  -eq 1 ] && {
@@ -378,16 +559,19 @@ while read p ; do
 			makeArchiveSourcesWithGitFrom "$p"
 		} || true
 
-	) || {
+		cd "$_owd"
+	} || {
 		log_error "Fatal Error : Unable create archive for '${BLUE}$p${COLOR_RESET}'"
-		clean_exit 1
+		exit 1
 	}
 	
 done <<< "$projects"
+
+log_debug "Created archive(s) : '$CREATED_ARCHIVES'"
 
 [ "x$PUSH_TO" != "x" ] && {
 	putAllTo "$PUSH_TO"
 }
 
-clean_exit 0
+exit 0
 

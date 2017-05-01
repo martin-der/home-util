@@ -1,10 +1,10 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Mk Git Archive / Modified New" type="BashConfigurationType" factoryName="Bash">
+  <configuration default="false" name="Mk Git Archive / Saved" type="BashConfigurationType" factoryName="Bash">
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="INTERPRETER_PATH" value="/bin/bash" />
     <option name="WORKING_DIRECTORY" value="" />
     <option name="PARENT_ENVS" value="true" />
-    <option name="SCRIPT_NAME" value="test/script/mkGitArchive/mkGitArchive-modified-new.sh" />
+    <option name="SCRIPT_NAME" value="test/script/mkGitArchive/mkGitArchive-saved.sh" />
     <option name="PARAMETERS" value="" />
     <module name="" />
     <envs>
