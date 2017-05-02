@@ -29,12 +29,13 @@ QUALIFIER_ARCHIVE_WITH_UNTRACKED_FILES="desktop"
 
 
 ERROR_PROJECT_DIRECTORY_NOT_ACCESSIBLE=29
-ERROR_DESTINATION_DIRECTORY_NOT_WRITABLE=30
-ERROR_WOULD_OVERWRITE=31
-ERROR_REFUSE_EMPTY_ARCHIVE=32
-ERROR_ARCHIVE_CREATION_FAILURE=33
-ERROR_COMPRESSION_FAILURE=34
-ERROR_ARCHIVE_FROM_GIT_FAILURE=35
+ERROR_NO_GIT_PROJECT_FOUND=30
+ERROR_DESTINATION_DIRECTORY_NOT_WRITABLE=31
+ERROR_WOULD_OVERWRITE=32
+ERROR_REFUSE_EMPTY_ARCHIVE=33
+ERROR_ARCHIVE_CREATION_FAILURE=34
+ERROR_COMPRESSION_FAILURE=35
+ERROR_ARCHIVE_FROM_GIT_FAILURE=36
 ERROR_INTERNAL_MISSING_COMPRESS_INFORMATION=40
 ERROR_MISCELLANEOUS=50
 
@@ -201,6 +202,9 @@ findOutTargetDir() {
 	return 0
 }
 
+log_debug "BACKUP_DIR='$BACKUP_DIR'"
+log_debug "SAVE_ARCHIVE_IN_BACKUP_DIR='$SAVE_ARCHIVE_IN_BACKUP_DIR'"
+log_debug "TARGET_DIR='$TARGET_DIR'"
 findOutTargetDir
 
 [ -d "$TARGET_DIR" ] || {
@@ -223,9 +227,12 @@ createEmptyZip() {
 checkFileOrDieWouldOverwrite() {
 	local file
 	file="$1"
-	[ -x "$file" ] && [ $FORCE_OVERWRITE -eq 0 ] && {
-		log_error "File '$file' exists and overwrite is not allowed"
-		exit $ERROR_WOULD_OVERWRITE
+	[ -e "$file" ] && {
+		[ $FORCE_OVERWRITE -eq 0 ] && {
+			log_error "File '$file' exists and overwrite is not allowed"
+			exit $ERROR_WOULD_OVERWRITE
+		}
+		log_info "Overwriting ${YELLOW}'${file}'${COLOR_RESET}"
 	}
 	return 0
 }
@@ -234,17 +241,44 @@ checkFileOrDieWouldOverwrite() {
 
 # findout projects
 
-enumerateProjects() {
-	local git_dir
-	git_dir="$(git rev-parse --show-toplevel)" && {
-		[ "x$(pwd)" = "x${git_dir}" ] && echo "$git_dir"
+# 0 => git root dir
+# 1 => git dir but not root dir
+# 2 => not a git dir
+isGitRootDir() {
+	local git_dir project
+	git_dir="$(git rev-parse --show-toplevel)" || return 2
+
+	git_dir="$(realpath "$git_dir")"
+	project="$(realpath "$(pwd)")"
+	[ "${git_dir}" = "${project}" ] && {
 		return 0
 	}
-	find . -mindepth 1 -maxdepth 1 -type d -not -path '*/\.*' -not -name '\.' | sed "s#^\\./##"
+	return 1
+}
+
+enumerateProjects() {
+	local found_projects
+	isGitRootDir && {
+		echo "$(pwd)"
+		return 0
+	}
+	found_projects=0
+	 while read p ; do
+		( cd "$p" && isGitRootDir ) && {
+			echo "$p" | sed "s#^\\./##"
+			found_projects=$(($found_projects + 1))
+		}
+	done <<< "$(find . -mindepth 1 -maxdepth 1 -type d -not -path '*/\.*' -not -name '\.')"
+	[ found_projects -gt 0 ] && return 0
+
+	return 1
 }
 
 [ "x$1" == "x" ] && {
-	projects="$(enumerateProjects)"
+	projects="$(enumerateProjects)" || {
+		log_error "Not git project(s) found from ${BLUE}'$(pwd)'${COLOR_RESET}"
+		exit ${ERROR_NO_GIT_PROJECT_FOUND}
+	}
 } || {
 	projects="$1"
 }
@@ -353,9 +387,7 @@ createArchive() {
 					log_error "Failed to create git archive"
 					return ${ERROR_ARCHIVE_FROM_GIT_FAILURE}
 				}
-				echo "Adding git?"
 				[ $add_git -eq 1 ] && {
-					echo "Adding git!"
 					zip -r "${dest}" .git > /dev/null || {
 						log_error "Failed to add '.git' to zip archive"
 						return ${ERROR_COMPRESSION_FAILURE}
@@ -538,9 +570,9 @@ _owd="$(pwd)"
 
 while read p ; do
 
-	log_info "Dealing with '${BLUE}$p${COLOR_RESET}'..."
+	log_info "Dealing with ${BLUE}'$p'${COLOR_RESET}..."
 	{
-		log_debug "Entering ${YELLOW}${p}${COLOR_RESET}"
+		log_debug "Entering ${YELLOW}'${p}'${COLOR_RESET}"
 		cd "$p" || {
 			log_error "Could not cd into '${YELLOW}$p${COLOR_RESET}'"
 			exit $ERROR_PROJECT_DIRECTORY_NOT_ACCESSIBLE
