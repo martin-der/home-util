@@ -35,7 +35,8 @@ ERROR_WOULD_OVERWRITE=32
 ERROR_REFUSE_EMPTY_ARCHIVE=33
 ERROR_ARCHIVE_CREATION_FAILURE=34
 ERROR_COMPRESSION_FAILURE=35
-ERROR_ARCHIVE_FROM_GIT_FAILURE=36
+ERROR_BUILDING_INTERMEDIATE_DATA=36
+ERROR_ARCHIVE_FROM_GIT_FAILURE=37
 ERROR_INTERNAL_MISSING_COMPRESS_INFORMATION=40
 ERROR_MISCELLANEOUS=50
 
@@ -64,9 +65,10 @@ Options
         Overrides the format inferred from the suffix of the output file format, if any (see '-f').
         Available formats are ( matching suffixes in bracket ) :
             - zip   ( .zip )
+            - tar   ( .tar )
             - gz    ( .tar.gz, .tgz )
             - bzip2 ( .tar.bz2, .tbz2 )
-        Note : gz archives are 'tared' first
+        Note : gz, bz2 archives are 'tared' first
 
     -f output_file_format
         Choose the archive\'s format
@@ -186,7 +188,7 @@ clean_on_exit() {
 trap clean_on_exit EXIT INT TERM
 
 [ $SAVE_ARCHIVE_IN_BACKUP_DIR -eq 0 ] && {
-	TMP_DIRECTORY=`mktemp -d -t mkGitarchive.XXXXXXXXXX` || exit $ERROR_MISCELLANEOUS
+	TMP_DIRECTORY=`mktemp -d -t mkGitarchive-bup.XXXXXXXXXX` || exit $ERROR_MISCELLANEOUS
 }
 
 findOutTargetDir() {
@@ -335,60 +337,135 @@ getPackageType() {
     return 1
 }
 
+# @param 1 parent source directory
+# @param 2 source directory name
+# @param 3 destination file
+# @param 4 archive type
+createArchiveFromDirectory() {
+	local parent_path dir_name destination_file format
+	parent_path="$1"
+	dir_name="$2"
+	destination_file="$3"
+	format="$4"
+
+	pushd "$parent_path" || return ${ERROR_BUILDING_INTERMEDIATE_DATA}
+	case "$format" in
+		"zip")
+			zip -r "$destination_file" "$dir_name" || {
+				popd
+				log_error "Failed to zip content"
+				return ${ERROR_COMPRESSION_FAILURE}
+			}
+			;;
+		"tar")
+			(
+				tar cf "$dir_name" || {
+					popd
+					log_error "Failed to tar content"
+					return ${ERROR_COMPRESSION_FAILURE}
+				}
+			) > "$destination_file"
+			;;
+		"gz"|"bz2")
+			case "$format" in
+				"gz")
+					compress_command=gzip
+					;;
+				"bzip2")
+					compress_command=bzip2
+					;;
+				*)
+					popd
+					log_error "Command for piped compression with '$format' format is unknown"
+					return ${ERROR_INTERNAL_MISSING_COMPRESS_INFORMATION}
+			esac
+			(
+				tar cf "$dir_name" || {
+					popd
+					log_error "Failed to tar content"
+					return ${ERROR_COMPRESSION_FAILURE}
+				}
+			) | ${compress_command} > "$destination_file"
+			;;
+		*)
+			popd
+			log_error "Unsupported archive type '$format'"
+			return ${ERROR_INTERNAL_MISSING_COMPRESS_INFORMATION}
+	esac
+	popd
+}
+
 # @param 1 source if '-' then use files list from stdin else git revision
 # @param 2 destination
 # @param 3 archive directory prefix
 # @param 4 add '.git' directory
 createArchive() {
-	local source dest add_git format compress_command
+	local source destination add_git format compress_command
 	source="$1"
-	dest="$2"
-	prefix_dir="$3"
+	destination="$2"
+	prefix="$3"
 	add_git="${4:-0}"
 
-	format="$(getPackageType "$dest")" || return 3
-	log_debug "Archive format is : '$format'"
+	format="$(getPackageType "$destination")" || return 3
+	#log_warn "Archive format is : '$format'"
 
 	if [ "$source" = "-" ] ; then
-		case "$format" in
-			"zip")
-				zip -@ "$dest" || {
-					log_error "Failed to zip content"
-					return ${ERROR_COMPRESSION_FAILURE}
-				}
-				;;
-			"gz"|"bz2")
-				case "$format" in
-					"gz")
-						compress_command=gzip
-						;;
-					"bzip2")
-						compress_command=bzip2
-						;;
-					*)
-						log_error "Command for piped compression with '$format' format is unknown"
-						return ${ERROR_INTERNAL_MISSING_COMPRESS_INFORMATION}
-				esac
-				(
-					tar c -T - || {
-						log_error "Failed to tar content"
+		if [ "x${prefix}" != x ] ; then
+			(
+				local temp_dest relative_dir_dest temp_dest_prefix
+				temp_dest=`mktemp -d -t mkGitarchive-fp.XXXXXXXXXX` || return $ERROR_MISCELLANEOUS
+				#log_debug "temp_dest = '$temp_dest'"
+				#trap "rm -rf \"${temp_dest}\"" EXIT INT TERM
+				temp_dest_prefix="${temp_dest}/${prefix}"
+				while read f ; do
+					#log_debug "adding f='$f'"
+					relative_dir_dest="${temp_dest_prefix}/$(basedir "$f")"
+					mkdir -p "$relative_dir_dest" || return ${ERROR_BUILDING_INTERMEDIATE_DATA}
+					cp "$f" "${temp_dest_prefix}/${f}" || return ${ERROR_BUILDING_INTERMEDIATE_DATA}
+				done
+				createArchiveFromDirectory "$temp_dest" "$prefix" "$destination" "$format" || return $?
+			) || return $?
+		else
+			case "$format" in
+				"zip")
+					zip -@ "$destination" || {
+						log_error "Failed to zip content"
 						return ${ERROR_COMPRESSION_FAILURE}
 					}
-				) | ${compress_command} > "$dest"
-				;;
-			*)
-				log_error "Command for compressing files list from stdin with '$format' format is unknown"
-				return ${ERROR_INTERNAL_MISSING_COMPRESS_INFORMATION}
-		esac
+					;;
+				"gz"|"bz2")
+					case "$format" in
+						"gz")
+							compress_command=gzip
+							;;
+						"bzip2")
+							compress_command=bzip2
+							;;
+						*)
+							log_error "Command for piped compression with '$format' format is unknown"
+							return ${ERROR_INTERNAL_MISSING_COMPRESS_INFORMATION}
+					esac
+					(
+						tar c -T - || {
+							log_error "Failed to tar content"
+							return ${ERROR_COMPRESSION_FAILURE}
+						}
+					) | ${compress_command} > "$destination"
+					;;
+				*)
+					log_error "Command for compressing files list from stdin with '$format' format is unknown"
+					return ${ERROR_INTERNAL_MISSING_COMPRESS_INFORMATION}
+			esac
+		fi
 	else
 		case "$format" in
 			"zip")
-				git archive --format=zip --prefix="${prefix_dir}/" "$source" > "$dest" || {
+				git archive --format=zip --prefix="${prefix}/" "$source" > "$destination" || {
 					log_error "Failed to create git archive"
 					return ${ERROR_ARCHIVE_FROM_GIT_FAILURE}
 				}
 				[ $add_git -eq 1 ] && {
-					zip -r "${dest}" .git > /dev/null || {
+					zip -r "${destination}" .git > /dev/null || {
 						log_error "Failed to add '.git' to zip archive"
 						return ${ERROR_COMPRESSION_FAILURE}
 					}
@@ -409,14 +486,14 @@ createArchive() {
 				(
 					local temp_dest
 					[ $add_git -eq 1 ] && {
-						temp_dest="${dest}.$$.temp"
-						trap "rm -f \"${dest}.$$.temp\""
+						temp_dest="${destination}.$$.temp"
+						trap "rm -f \"${destination}.$$.temp\"" EXIT INT TERM
 					}
 					{
 						if [ $add_git -eq 1 ] ; then
-							git archive --format=tar --prefix="${prefix_dir}/" "$1" > "$temp_dest"
+							git archive --format=tar --prefix="${prefix}/" "$1" > "$temp_dest"
 						else
-							git archive --format=zip --prefix="${prefix_dir}/" "$1"
+							git archive --format=zip --prefix="${prefix}/" "$1"
 						fi
 					} || {
 						log_error "Failed to create tar archive"
@@ -432,7 +509,7 @@ createArchive() {
 							return ${ERROR_COMPRESSION_FAILURE}
 						}
 					}
-				) | ${compress_command} > "$dest" || {
+				) | ${compress_command} > "$destination" || {
 					log_error "Failed to compress tar archive"
 					return ${ERROR_COMPRESSION_FAILURE}
 				}
