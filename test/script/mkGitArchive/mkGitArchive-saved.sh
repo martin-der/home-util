@@ -24,7 +24,7 @@ testZipWithGitContent() {
 	assertSameFiles "foobar has been unzipped" "${FOOBAR_PROJECT_DIR}/foobar" "${OUTPUT_DIRECTORY}/foobar_project/foobar"
 	assertSameFiles "greeting.txt has been unzipped" "${FOOBAR_PROJECT_DIR}/greeting.txt" "${OUTPUT_DIRECTORY}/foobar_project/greeting.txt"
 	assertSameFiles "README.txt has been unzipped" "${FOOBAR_PROJECT_DIR}/README.txt" "${OUTPUT_DIRECTORY}/foobar_project/README.txt"
-	#assertTrue "Git data directory has been unzipped" "[ -d \"$OUTPUT_DIRECTORY/foobar_project/.git\" ]"
+	assertTrue "Git data directory has been unzipped" "[ -d \"$OUTPUT_DIRECTORY/foobar_project/.git\" ]"
 	assertEquals "3 files in output" 3 "$(count_files_in "${OUTPUT_DIRECTORY}/foobar_project/")"
 }
 
