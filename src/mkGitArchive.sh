@@ -37,6 +37,7 @@ ERROR_ARCHIVE_CREATION_FAILURE=34
 ERROR_COMPRESSION_FAILURE=35
 ERROR_BUILDING_INTERMEDIATE_DATA=36
 ERROR_ARCHIVE_FROM_GIT_FAILURE=37
+ERROR_UNKNOWN_DESTINATION_EXTENSION=38
 ERROR_INTERNAL_MISSING_COMPRESS_INFORMATION=40
 ERROR_MISCELLANEOUS=50
 
@@ -334,7 +335,7 @@ getPackageType() {
     	"tar.gz"|"tgz") echo "gz" ; return 0 ;;
     esac
     log_error "Could not infer archive type from filename '$filename'."
-    return 1
+    return ${ERROR_UNKNOWN_DESTINATION_EXTENSION}
 }
 
 # @param 1 parent source directory
@@ -351,7 +352,7 @@ createArchiveFromDirectory() {
 	pushd "$parent_path" || return ${ERROR_BUILDING_INTERMEDIATE_DATA}
 	case "$format" in
 		"zip")
-			zip -r "$destination_file" "$dir_name" || {
+			zip -rq "$destination_file" "$dir_name" || {
 				popd
 				log_error "Failed to zip content"
 				return ${ERROR_COMPRESSION_FAILURE}
@@ -400,16 +401,19 @@ createArchiveFromDirectory() {
 # @param 3 archive directory prefix
 # @param 4 add '.git' directory
 createArchive() {
-	local source destination add_git format compress_command
+	local source destination prefix add_git format compress_command
 	source="$1"
 	destination="$2"
 	prefix="$3"
 	add_git="${4:-0}"
 
-	format="$(getPackageType "$destination")" || return 3
+
+	format="$(getPackageType "$destination")" || return $?
 	#log_warn "Archive format is : '$format'"
 
 	if [ "$source" = "-" ] ; then
+		local all_files
+		all_files="$(cat)"
 		if [ "x${prefix}" != x ] ; then
 			(
 				local temp_dest relative_dir_dest temp_dest_prefix
@@ -417,10 +421,10 @@ createArchive() {
 				trap "rm -rf \"${temp_dest}\"" EXIT INT TERM
 				temp_dest_prefix="${temp_dest}/${prefix}"
 				while read f ; do
-					relative_dir_dest="${temp_dest_prefix}/$(basedir "$f")"
+					relative_dir_dest="${temp_dest_prefix}/$(dirname "$f")"
 					mkdir -p "$relative_dir_dest" || return ${ERROR_BUILDING_INTERMEDIATE_DATA}
 					cp "$f" "${temp_dest_prefix}/${f}" || return ${ERROR_BUILDING_INTERMEDIATE_DATA}
-				done
+				done <<< "$all_files"
 				createArchiveFromDirectory "$temp_dest" "$prefix" "$destination" "$format" || return $?
 			) || return $?
 		else
@@ -462,11 +466,12 @@ createArchive() {
 				temp_dest=`mktemp -d -t mkGitarchive-fp.XXXXXXXXXX` || return ${ERROR_MISCELLANEOUS}
 				trap "rm -rf \"${temp_dest}\"" EXIT INT TERM
 				temp_dest_prefix="${temp_dest}/${prefix}"
+				mkdir -p "$temp_dest_prefix" || return ${ERROR_BUILDING_INTERMEDIATE_DATA}
 				( git archive --format=tar "$source" | tar xf - -C "$temp_dest_prefix" ) || return ${ERROR_ARCHIVE_CREATION_FAILURE}
 				[ $add_git -eq 1 ] && {
-					zip -r "${temp_dest}/${prefix}" .git > /dev/null || {
+					cp -r ".git" "${temp_dest}/${prefix}/.git" > /dev/null || {
 						log_error "Failed to add '.git' to zip archive"
-						return ${ERROR_COMPRESSION_FAILURE}
+						return ${ERROR_BUILDING_INTERMEDIATE_DATA}
 					}
 				}
 				createArchiveFromDirectory "$temp_dest" "$prefix" "$destination" "$format" || return $?
@@ -577,10 +582,10 @@ makeArchiveModifiedOrNew() {
     files="$(${list_files_command})"
 	[ "$(echo -n "$files" | wc -c)" -eq 0 ] && {
 		[ $ALLOW_EMPTY_ARCHIVE -eq 0 ] && {
-			log_error "No file matching criteria('$list_files_command') found : won't create empty archive"
+			log_error "No file matching criteria found : won't create empty archive"
 			return $ERROR_REFUSE_EMPTY_ARCHIVE
 		} || {
-			log_warn "No file  matching criteria('$list_files_command') found : creating an empty archive"
+			log_warn "No file  matching criteria found : creating an empty archive"
 			[ $SIMULATION_MODE -eq 0 ] && {
 				createEmptyZip "$file_name"
 			}
