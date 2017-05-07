@@ -42,4 +42,4 @@ script:
     - bash test/script/init-home/bin_dir.sh
     - bash test/script/encode/encode.sh
     - bash test/script/timeout/timeout.sh
-    - ./gradlew archiveZip selfExtractingArchive
+    - ./gradlew packages
