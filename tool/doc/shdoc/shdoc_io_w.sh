@@ -1,3 +1,5 @@
 #!/bin/sh
 
-cat "$1" | build/tool/shdoc/shdoc > "$2"
+SHDOC="$(dirname "$0")/shdoc"
+
+cat "$1" | "$SHDOC" > "$2"
