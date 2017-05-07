@@ -12,81 +12,130 @@ def getVersionName = { ->
 
 version getVersionName
 
-def distributedName = "${project.name}-${project.version}"
-
-def distributionDirectory = 'output/distrib'
-
 
 /*task wrapper(type: Wrapper) {
 	gradleVersion = '3.4.1'
 }*/
 
-task doc() {
 
-	doLast {
+apply plugin: ShellPackagePlugin
 
-		def shellScripts = fileTree('src').include('*.sh')
-		def docDir = new File("output/doc")
+//project.packaging.output.sourceDir='src'
+//project.packaging.output.distributionDir = 'build/for_user'
 
-		if (!docDir.exists()) docDir.mkdirs()
+class ShellPackagePlugin implements Plugin<Project> {
 
-		shellScripts.each { File file ->
-			def document = new File(docDir, "${file.name}.md")
-			exec {
-				commandLine 'build/tool/shdoc/shdoc_io_w.sh', "${file.path}", "${document.path}"
+	void setShellPackageDefaults(Project project) {
+		ShellPackagePluginExtension packaging = (ShellPackagePluginExtension) project.getExtensions().findByName("packaging")
+		packaging.sourceDir = "src"
+		packaging.distributionName = "${project.name}-${project.version}"
+		packaging.output.distributionDir = "${project.buildDir}/distribution"
+		packaging.output.documentationDir = "${project.buildDir}/documentation"
+	}
+
+	void apply(Project project) {
+		//project.apply(plugin:'base')
+
+		project.extensions.create("packaging", ShellPackagePluginExtension)
+		setShellPackageDefaults(project)
+
+
+		project.task('documentation') {
+			doLast {
+				def shellScripts = project.fileTree(project.packaging.sourceDir).include('*.sh')
+				def docDir = project.file(project.packaging.output.documentationDir)
+
+				if (!docDir.exists()) docDir.mkdirs()
+
+				shellScripts.each { File file ->
+					def document = new File(docDir, "${file.name}.md")
+					project.exec {
+						commandLine 'tool/doc/shdoc/shdoc_io_w.sh', "${file.path}", "${document.path}"
+					}
+					// Remove the documentation if it's empty
+					if(!(document.length()>0) || document.text.matches("[\n \t]*") ) document.delete()
+				}
 			}
-			if(!(document.length()>0) || document.text.matches("[\n \t]*") ) document.delete()
 		}
+		project.task('packageZip', type: Zip, dependsOn: 'documentation') {
 
+			baseName = project.packaging.distributionName
+
+			destinationDir = project.file("${project.packaging.output.distributionDir}/final")
+
+			from project.fileTree(project.packaging.sourceDir).include('*.sh', '*.py', 'README.md')
+			from project.fileTree(project.packaging.output.documentationDir).include('./**')
+			from project.file('README.md')
+		}
+		/*gradle.taskGraph.whenReady {TaskExecutionGraph graph ->
+			if(graph.hasTask(tasks.packageZip)) {
+				def fromDir = rootProject.file('services/website/app/')
+				def toDir = rootProject.file('dist/app/')
+				baseName = project.packaging.distributionName
+				destinationDir = project.file("${project.packaging.output.distributionDir}/final")
+
+				from project.fileTree(project.packaging.sourceDir).include('*.sh', '*.py', 'README.md')
+				from project.fileTree(project.packaging.output.documentationDir).include('./**')
+				from project.file('README.md')
+				tasks.copy.from = fromDir
+				tasks.copy.into = toDir
+			}
+		}*/
+
+		project.task('installer', dependsOn: 'packageZip') {
+
+			doLast {
+
+				//println "build dir = '${project.buildDir}'"
+				//project.fileTree(project.packaging.sourceDir).include('*.sh', '*.py', 'README.md').each { File file ->
+				//	println "Found ${file.path}"
+				//}
+
+				project.copy {
+					from project.zipTree(project.file("${project.packaging.output.distributionDir}/final/${project.packaging.distributionName}.zip"))
+					into "${project.packaging.output.distributionDir}/installer/unpacked"
+				}
+				project.copy {
+					from project.file('tool/install/template/install.sh')
+					into "${project.packaging.output.distributionDir}/installer"
+				}
+
+				project.exec {
+					workingDir "${project.packaging.output.distributionDir}"
+					// --submitter=who@where
+					// --archive-name=${project.packaging.distributionName}
+					commandLine 'shar', '-q', 'installer'
+					standardOutput = new FileOutputStream(project.file("${project.packaging.output.distributionDir}/${project.packaging.distributionName}.shar"))
+				}
+
+				def shar = project.file("${project.packaging.output.distributionDir}/final/${project.packaging.distributionName}.run")
+				if (shar.exists()) shar.delete()
+
+				shar.append(new File('tool/install/template/install-pre.sh').text)
+
+				shar.append("# *** Application variables *** \n")
+				shar.append("MDU_INSTALL_APPLICATION_NAME=${project.name}\n")
+				shar.append("MDU_INSTALL_APPLICATION_LABEL=${project.name}\n")
+				shar.append("MDU_INSTALL_APPLICATION_VERSION=${project.version}\n")
+				shar.append("\n")
+
+				shar.append(new File("${project.packaging.output.distributionDir}/${project.packaging.distributionName}.shar").text.replaceAll('\nexit[ ]+0[\n ]*$', "\n"))
+				shar.append(new File("tool/install/template/install-post.sh").text)
+
+			}
+
+		}
+		project.task('packages', dependsOn: ['documentation','packageZip','installer']) { }
 	}
-
 }
 
-task archiveZip(type: Zip, dependsOn: 'doc') {
-
-	baseName = "home-util-${project.version}"
-
-	destinationDir = new File("${distributionDirectory}/final")
-
-	from fileTree('src').include('doc/**', '*.sh', '*.py', 'README.md')
-	from fileTree("output").include('doc/**')
-}
-
-task selfExtractingArchive( dependsOn: 'archiveZip') {
-
-	doLast {
-
-		copy {
-			from zipTree(file("${distributionDirectory}/final/${distributedName}.zip"))
-			into "${distributionDirectory}/installer/unpacked"
-		}
-		copy {
-			from file('build/template/install.sh')
-			into "${distributionDirectory}/installer"
-		}
-
-		exec {
-			workingDir "${distributionDirectory}"
-			commandLine 'shar', 'installer'
-			standardOutput = new FileOutputStream("$projectDir/${distributionDirectory}/${distributedName}.shar")
-		}
-
-		def shar = new File("${distributionDirectory}/final/${distributedName}.run")
-		if (shar.exists()) shar.delete()
-
-		shar.append(new File('build/template/install-pre.sh').text)
-
-		shar.append("# *** Application variables *** \n")
-		shar.append("MDU_INSTALL_APPLICATION_NAME=${project.name}\n")
-		shar.append("MDU_INSTALL_APPLICATION_LABEL=${project.name}\n")
-		shar.append("MDU_INSTALL_APPLICATION_VERSION=${project.version}\n")
-		shar.append("\n")
-
-		shar.append(new File("${distributionDirectory}/${distributedName}.shar").text.replaceAll('\nexit[ ]+0[\n ]*$', "\n"))
-		shar.append(new File("build/template/install-post.sh").text)
-
+class ShellPackagePluginExtension {
+	class Output {
+		String distributionDir
+		String documentationDir
 	}
-
+	String sourceDir
+	String distributionName
+	Output output = new Output()
 }
-
 

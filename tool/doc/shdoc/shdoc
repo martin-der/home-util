@@ -149,7 +149,7 @@ in_stdout {
     if (/^[^#]|^# @[^d]/) {
         in_stdout = 0
     } else {
-        sub(/^# @description /, "")
+        sub(/^# @stdout/, "")
         sub(/^# /, "")
         sub(/^#$/, "")
 
@@ -162,10 +162,7 @@ in_stdout {
     if (!has_stdout) {
     	has_stdout = 1
 		in_stdout = 1
-		if (!has_stdout) {
-			has_stdout = 1
-			docblock = docblock "\n" render("h2", "Output on stdout") "\n"
-		}
+		docblock = docblock "\n" render("h2", "Output on stdout") "\n"
 	}
 }
 
