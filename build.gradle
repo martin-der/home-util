@@ -43,7 +43,7 @@ class ShellPackagePlugin implements Plugin<Project> {
 		project.task('documentation') {
 			doLast {
 				def shellScripts = project.fileTree(project.packaging.sourceDir).include('*.sh')
-				def docDir = project.file(project.packaging.output.documentationDir)
+				File docDir = project.file(project.packaging.output.documentationDir)
 
 				if (!docDir.exists()) docDir.mkdirs()
 
@@ -93,7 +93,7 @@ class ShellPackagePlugin implements Plugin<Project> {
 
 				project.copy {
 					from project.zipTree(project.file("${project.packaging.output.distributionDir}/final/${project.packaging.distributionName}.zip"))
-					into "${project.packaging.output.distributionDir}/installer/unpacked"
+					into "${project.packaging.output.distributionDir}/installer/content"
 				}
 				project.copy {
 					from project.file('tool/install/template/install.sh')

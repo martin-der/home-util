@@ -61,7 +61,7 @@ install_scripts() {
 	while IFS=$'\n' read f ; do
 		ftarget="$(basename "$f")"
    		cp -r "$f" "${install_location}/$ftarget" || return 1
-	done <<< "$( find ./unpacked -maxdepth 1 -mindepth 1 \( -name '*.sh' -o -name '*.py' -o -name 'doc' \)  )"
+	done <<< "$( find ./content -maxdepth 1 -mindepth 1 \( -name '*.sh' -o -name '*.py' -o -name 'doc' \)  )"
 }
 
 
@@ -75,7 +75,7 @@ while true; do
     read -p "Do you want to view the 'README'? [Yn] " yn
     case $yn in
         [Nn] ) break ;;
-        * ) cat "unpacked/README.md" ; break ;;
+        * ) cat "content/README.md" ; break ;;
     esac
 done
 
@@ -124,7 +124,7 @@ log_info "$PAGE_SEPARATOR"
 while true; do
     read -p "Do you want to init home? [yn] " yn
     case $yn in
-        [Yy]* ) ll ./unpacked/init-home.sh; break ;;
+        [Yy]* ) ll ./content/init-home.sh; break ;;
         [Nn]* ) break ;;
         * ) echo "Please answer yes or no." ;;
     esac
