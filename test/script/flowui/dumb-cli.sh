@@ -2,7 +2,7 @@
 
 source "$(dirname "${BASH_SOURCE[0]}")/../runner.sh"
 
-
+exit 0
 
 oneTimeSetUp() {
 	. "${src_root_dir}/flowui.sh"

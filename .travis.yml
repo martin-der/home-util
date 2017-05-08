@@ -30,16 +30,5 @@ deploy:
         tags: true
 
 script:
-    - bash test/script/shell-util/log.sh
-    - bash test/script/shell-util/sourcing.sh
-    - bash test/script/shell-util/decorate.sh
-    - bash test/script/shell-util/properties.sh
-    - bash test/script/config-util/variable.sh
-    - bash test/script/config-util/read.sh
-    - bash test/script/completion-helper/capacity.sh
-    - bash test/script/opt-admin/application.sh
-    - bash test/script/init-home/xdg.sh
-    - bash test/script/init-home/bin_dir.sh
-    - bash test/script/encode/encode.sh
-    - bash test/script/timeout/timeout.sh
     - ./gradlew packages
+    - ./gradlew allTests packages
