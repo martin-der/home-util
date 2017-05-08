@@ -13,15 +13,14 @@ def getVersionName = { ->
 version getVersionName
 
 
-/*task wrapper(type: Wrapper) {
-	gradleVersion = '3.4.1'
-}*/
+//task wrapper(type: Wrapper) { gradleVersion = '3.4.1' }
 
 
 apply plugin: ShellPackagePlugin
 
 //project.packaging.output.sourceDir='src'
 //project.packaging.output.distributionDir = 'build/for_user'
+
 
 class ShellPackagePlugin implements Plugin<Project> {
 
@@ -41,8 +40,12 @@ class ShellPackagePlugin implements Plugin<Project> {
 
 
 		project.task('documentation') {
+
+			ext.inputFiles = project.fileTree(project.packaging.sourceDir).include('*.sh')
+
 			doLast {
-				def shellScripts = project.fileTree(project.packaging.sourceDir).include('*.sh')
+				def shellScripts = ext.inputFiles
+
 				File docDir = project.file(project.packaging.output.documentationDir)
 
 				if (!docDir.exists()) docDir.mkdirs()
@@ -84,7 +87,12 @@ class ShellPackagePlugin implements Plugin<Project> {
 
 		project.task('installer', dependsOn: 'packageZip') {
 
+			ext.outputFiles = project.file("${project.packaging.output.distributionDir}/${project.packaging.distributionName}.shar")
+
 			doLast {
+
+				def installerFile = ext.outputFiles
+				//project.file("${project.packaging.output.distributionDir}/${project.packaging.distributionName}.shar")
 
 				//println "build dir = '${project.buildDir}'"
 				//project.fileTree(project.packaging.sourceDir).include('*.sh', '*.py', 'README.md').each { File file ->
@@ -105,7 +113,7 @@ class ShellPackagePlugin implements Plugin<Project> {
 					// --submitter=who@where
 					// --archive-name=${project.packaging.distributionName}
 					commandLine 'shar', '-q', 'installer'
-					standardOutput = new FileOutputStream(project.file("${project.packaging.output.distributionDir}/${project.packaging.distributionName}.shar"))
+					standardOutput = new FileOutputStream(installerFile)
 				}
 
 				def shar = project.file("${project.packaging.output.distributionDir}/final/${project.packaging.distributionName}.run")
