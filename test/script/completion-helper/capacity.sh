@@ -26,7 +26,7 @@ testIdentifyNotCapableScriptBecauseNotTagged() {
 
 testIdentifyNotCapableNotExistingScript() {
 	local response
-	response="$(bash "${src_root_dir}/completion-helper.sh" "${test_root_dir}/resources/no_such_file.sh")"
+	response="$(bash "${src_root_dir}/completion-helper.sh" "${test_root_dir}/resources/no_such_file.sh" 2>/dev/null)"
 	assertNotSame 0 $?
 	assertEquals "" "$response"
 }
@@ -34,7 +34,7 @@ testIdentifyNotCapableNotReadableScript() {
 	# TODO : move not_readable_file in temp directory so we don't have to modify a tracked file
 	chmod u-r "${test_root_dir}/resources/not_readable_file.sh"
 	local response
-	response="$(bash "${src_root_dir}/completion-helper.sh" "${test_root_dir}/resources/not_readable_file.sh")"
+	response="$(bash "${src_root_dir}/completion-helper.sh" "${test_root_dir}/resources/not_readable_file.sh" 2>/dev/null)"
 	assertNotSame 0 $?
 	assertEquals "" "$response"
 	chmod u+r "${test_root_dir}/resources/not_readable_file.sh"

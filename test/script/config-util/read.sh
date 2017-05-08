@@ -71,12 +71,12 @@ passwd=PASSWORD:string
 righteous=OK:boolean
 fiiibuuur.status=STATE:string"
 
-	convertConfigKeyAndExportToEnvVariableIfExists "righteoussss" "troo" "$properties_2_var"
+	convertConfigKeyAndExportToEnvVariableIfExists "righteoussss" "troo" "$properties_2_var" 2>/dev/null
 	# if var is not found => return 1
 	assertEquals "Var name for key 'righteous' has been found" 1 $?
 	assertEquals "Var 'OK' has been created with correct value" "1" "$OK"
 
-	convertConfigKeyAndExportToEnvVariableIfExists "righteous" "troo" "$properties_2_var"
+	convertConfigKeyAndExportToEnvVariableIfExists "righteous" "troo" "$properties_2_var" 2>/dev/null
 	# if var couldn'd be properly converted => return 2
 	assertEquals "Var name for key 'righteous' has been found" 2 $?
 	assertEquals "Var 'OK' has been created with correct value" "1" "$OK"

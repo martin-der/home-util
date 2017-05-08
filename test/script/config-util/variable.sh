@@ -56,7 +56,7 @@ testConvertBoolean() {
 	assertEquals 0 $?
 	assertEquals 0 "$converted"
 
-	converted=$(convertVariable boolean "yep")
+	converted=$(convertVariable boolean "yep" 2>/dev/null)
 	assertNotSame 0 $?
 	assertEquals "" "$converted" 
 }

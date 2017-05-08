@@ -32,13 +32,13 @@ testCreateApplication() {
 testFailToInstallAlternativeWithoutSource() {
 	optAdmin create foo-app
 	assertEquals 0 $?
-	optAdmin install foo-app
+	optAdmin install foo-app 2>/dev/null
 	assertNotSame 0 $?
 }
 testFailToCreateSameApplication() {
 	optAdmin create foo-app
 	assertEquals 0 $?
-	optAdmin create foo-app
+	optAdmin create foo-app 2>/dev/null
 	assertNotSame 0 $?
 }
 
