@@ -8,7 +8,7 @@ source "$(dirname "$0")/shell-util.sh" 2>/dev/null || source shell-util  || exit
 load_source_once config-util sh || exit 1
 
 
-if test "x${USER+}" = "x" ; then
+if test "x${USER:-}" = "x" ; then
 	log_warn "Environment variable 'USER' is empty or undefined"
 fi
 
