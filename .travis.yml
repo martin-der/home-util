@@ -30,5 +30,4 @@ deploy:
         tags: true
 
 script:
-    - ./gradlew packages
     - ./gradlew allTests packages
