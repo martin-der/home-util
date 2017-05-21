@@ -14,6 +14,9 @@ APPEND_SOURCES=0
 APPEND_SOURCES_WITH_GIT_HISTORY=0
 APPEND_MODIFIED_FILES=0
 APPEND_NEW_FILES=0
+ARCHIVE_PARENT_DIRECTORY_PREFIX=
+ARCHIVE_PARENT_DIRECTORY_PREFIX_FORCED=0
+OUTPUT_FILE_FORMAT=
 ALLOW_EMPTY_ARCHIVE=0
 EXPLICIT_SAVE_ARCHIVE_IN_BACKUP_DIR=0
 PUSH_TO=
@@ -79,14 +82,14 @@ Options
     -s
         Append suffix to the archive file name.
 
-	-p destination
+    -p destination
         Push file to destination.
         If used, saving of archives in backup directory is disabled
-	-b
+    -b
         Save archive(s) in backup directory.
         This is the default behavior only if '-p' is not given.
         Therefore this option is only useful with '-p'.
-	-B directory
+    -B directory
 		Set the backup directory.
 		Implies '-b'
 
@@ -127,13 +130,20 @@ print_arguments_error_and_die() {
 	exit 1
 }
 
-while getopts "a:sf:kgmneodbB:p:qvh" option; do
+while getopts "a:sp:f:kgmneodbB:P:qvh" option; do
 	case "$option" in
 		a)
 			[ "$OPTARG" == "zip" -o "$OPTARG" == "gz" ] || print_arguments_error_and_die "Invalid archive format '$OPTARG'"
 			ARCHIVE_FORMAT=$OPTARG
 			;;
 		s) USE_SUFFIX=1 ;;
+		p)
+			ARCHIVE_PARENT_DIRECTORY_PREFIX=$OPTARG
+			ARCHIVE_PARENT_DIRECTORY_PREFIX_FORCED=1
+			;;
+		f)
+			OUTPUT_FILE_FORMAT=$OPTARG
+			;;
 		#f) ARCHIVE_FORMAT=$OPTARG ;;
 		k) APPEND_SOURCES=1 ;;
 		g) APPEND_SOURCES_WITH_GIT_HISTORY=1 ;;
@@ -148,7 +158,7 @@ while getopts "a:sf:kgmneodbB:p:qvh" option; do
 			EXPLICIT_SAVE_ARCHIVE_IN_BACKUP_DIR=1
 			[ "x$BACKUP_DIR" = "x" ] && print_arguments_error_and_die "'backup directory' is required with option -B"
 			;;
-		p)
+		P)
 			PUSH_TO=$OPTARG
 			[ "x$PUSH_TO" = "x" ] && print_arguments_error_and_die "'target' is required with option -p"
 			;;
