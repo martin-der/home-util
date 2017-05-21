@@ -16,18 +16,31 @@ buildscript{
 	}
 
 	dependencies {
-		//classpath "net.tetrakoopa.poignee:util:0.1-SNAPSHOT"
-		//classpath "net.tetrakoopa.poignee:shell-package:0.1-SNAPSHOT"
-		classpath "com.github.martin-der.poignee:shell-package:${property('version.martin-der.poignee.shell-package')}"
-		classpath "com.github.martin-der.poignee:util:${property('version.martin-der.poignee.util')}"
+		classpath "net.tetrakoopa.poignee:util:0.1-SNAPSHOT"
+		classpath "net.tetrakoopa.gradle.plugin.shell:shell-package:0.1-SNAPSHOT"
+		classpath "net.tetrakoopa.gradle.plugin.shell:shell-test:0.1-SNAPSHOT"
+		//classpath "com.github.martin-der.gradle-shell-plugin:shell:${property('version.mdu.shell')}"
+		//classpath "com.github.martin-der.poignee:util:${property('version.mdu.gradle.util')}"
 	}
 }
 
 
-apply plugin: 'net.tetrakoopa.poignee.shell-package'
 apply plugin: 'net.tetrakoopa.poignee.util'
-
 version getGitVersionName
+apply plugin: 'net.tetrakoopa.shell-package'
 
-//project.packaging.output.sourceDir='src'
-//project.packaging.output.distributionDir = 'build/for_user'
+
+shell_package {
+
+	from project.fileTree("src").include('*.sh', '*.py', 'README.md')
+
+	installer {
+		readme.location = 'README.md'
+		userScript {
+			script {
+				location = "home-init.sh"
+			}
+			question = "Do you want to init home (i.e. run 'home-init')?"
+		}
+	}
+}
