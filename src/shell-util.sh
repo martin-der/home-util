@@ -608,6 +608,39 @@ function line_KeyValue_getValue() {
 }
 
 
+# @description Split file fullpath into different parts
+# Original code seen [here on stackoverflow](http://stackoverflow.com/a/1403489)
+#
+# @arg $1 string fullpath
+#
+# @stdout
+# the parts of the path, one per line
+# * the filename
+# * the directory
+# * the base name ( the filename without extension )
+# * the biggest extension
+#
+# @exitcode 0
+split_filepath() {
+	local fullpath
+	fullpath="$1"
+	local filename dir base ext
+	filename="${fullpath##*/}"
+    dir="${fullpath:0:${#fullpath} - ${#filename} -1}"
+    base="${filename%.[^.]*}"
+    ext="${filename:${#base} + 1}"
+    if [[ -z "$base" && -n "$ext" ]]; then
+    	# If we have an extension and no base, it's really the base
+        base=".$ext"
+        ext=""
+    fi
+
+    echo -e "${filename}"
+    echo -e "${dir}"
+    echo -e "${base}"
+    echo -e "${ext}"
+}
+
 # ---------------------- #
 #                        #
 #          Misc          #
