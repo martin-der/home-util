@@ -243,6 +243,24 @@ __get_component_content_min_size() {
 	done
 	echo "$(($label_max_width+1+$input_max_width)),$height,$label_max_width,$input_max_width"
 }
+
+
+__get_draw_material() {
+	case "$1" in
+		simple-border)
+			echo "┌ ┐ └ ┘ ─ │ ┬ ┴ ├ ┤ ┼"
+			;;
+		double-border)
+			echo "╔ ╗ ╚ ╝ ═ ║ ╦ ╩ ╠ ╣ ╬"
+			;;
+		doubleH-simpleV-border|simpleV-doubleH-border)
+			echo "╓ ╖ ╙ ╜ ─ ║ ╥ ╨ ╟ ╢ ╫"
+			;;
+		doubleV-simpleH-border|simpleH-doubleV-border)
+			echo "╒ ╕ ╘ ╛ ═ │ ╤ ╧ ╞ ╡ ╪"
+			;;
+	esac
+}
 __draw_selected_input() {
 	local components="$1" title="$2" header="$3" footer="$4"
 	__draw_inputs "$selected_input" "$components" "$title" "$header" "$footer"
