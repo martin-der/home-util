@@ -104,7 +104,7 @@ _dump_man() {
 	echo "$name - $summary"
 	echo ".SH SYNOPSIS"
 	local first=1
-	___list_verbs | while read verb ; do
+	___list_verbs | while read -d ' '  verb ; do
 		[ $first -eq 1 ] && first=0 || echo ".br"
 		argumentsRaw=$(___get_verb_arguments "$verb")
 		echo ".B $name"
@@ -119,11 +119,77 @@ _dump_man() {
 			}
 		done
 	done
+
 	local detail=$(___get_information detail)
 	[ "x$detail" != "x" ] && {
 		echo ".SH DESCRIPTION"
 		echo "$detail"
 	}
+}
+
+_dump_markdown() {
+	local name=$_mdu_CH_application
+	local summary=$(___get_information summary)
+
+	echo "$name"
+	local namelen=${#name}
+	for ((i=0; i<$namelen; i++)); do echo -n =; done ; echo
+	echo
+
+	[ "x$summary" != "x" ] && {
+		echo "## Summary"
+		echo
+		echo "$summary"
+		echo
+	}
+
+	echo "## Synopsis"
+	echo
+	local first=1
+	___list_verbs | while read -d ' ' verb ; do
+		#[ $first -eq 1 ] && first=0 || echo
+		argumentsRaw=$(___get_verb_arguments "$verb")
+		echo -n "\`$verb"
+		for argument in ${argumentsRaw}; do
+			local argumentName="$(_getArgumentName "$argument")"
+			_isArgumentOptionnal "${argument}" && {
+				_isArgumentRepeatable "${argument}" && echo -n " [${argumentName}]" || echo -n " [${argumentName}...]"
+			} || {
+				_isArgumentRepeatable "${argument}" && echo -n " ${argumentName}" || echo -n " ${argumentName}..."
+			}
+		done
+		echo "\`"
+		echo
+	done
+	echo
+
+	local detail=$(___get_information detail)
+	echo "## Detail"
+	echo
+	[ "x$detail" != "x" ] && {
+		echo "$detail"
+		echo
+	}
+
+	first=1
+	___list_verbs | while read -d ' ' verb ; do
+		#[ $first -eq 1 ] && first=0 || echo
+		argumentsRaw=$(___get_verb_arguments "$verb")
+		echo -n "$verb"
+		for argument in ${argumentsRaw}; do
+			local argumentName="$(_getArgumentName "$argument")"
+			_isArgumentOptionnal "${argument}" && {
+				_isArgumentRepeatable "${argument}" && echo -n " [${argumentName}]" || echo -n " [${argumentName}...]"
+			} || {
+				_isArgumentRepeatable "${argument}" && echo -n " ${argumentName}" || echo -n " ${argumentName}..."
+			}
+		done
+		echo ""
+		echo
+	done
+	echo
+
+
 }
 
 _mdu_auto_completion() {
@@ -199,6 +265,11 @@ _mdu_CH_init_builder_helper() {
 
 	[ "$1" == "--dump-man" ] && {
 		_dump_man
+		exit 0
+	}
+
+	[ "$1" == "--dump-markdown" ] && {
+		_dump_markdown
 		exit 0
 	}
 
@@ -355,14 +426,16 @@ _mdu_CH_print_help() {
 }
 
 _mdu_CH_show_helper_help() {
-	echo "Sourced | When this script is sourced"
-	echo "caller must provide four callbacks:"
+	echo "| Sourced |"
+	echo "    When this script is sourced"
+	echo "    caller must provide four callbacks:"
 	echo "- getInformation <info> [<verb>]"
 	echo "- listVerbs"
 	echo "- getVerbArguments <verb>"
 	echo "- completeType <type> <verb> [<previous_arg>...]"
-	echo "Executed | When this script is executed"
-	echo "it accepts one parameter:"
+	echo "| Executed |"
+	echo "    When this script is executed"
+	echo "    it accepts one parameter:"
 	echo "- the path of a script"
 	echo "return 0 and echo 'Capable' if the script given has parameter can do automatic completion"
 	echo "return non 0 and echo 'Not Capable' otherwise"

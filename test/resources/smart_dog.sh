@@ -1,7 +1,7 @@
 #!/bin/bash
 #@mdu-helper-capable
 
-source "${src_root_dir}/completion-helper.sh" || exit 1
+source completion-helper.sh || exit 1
 
 
 function listActions() {
@@ -27,12 +27,14 @@ function completeType() {
 }
 function getActionArguments() {
 	case "$1" in
+		"fetch")
+			echo "<what:thing>" ;;
 		"call")
 			echo "<name:dog_name>" ;;
 		"bark")
 			echo "<sound:string>" ;;
 		"sleep")
-			echo "<sound:integer>" ;;
+			echo "<time:integer>" ;;
 		*)
 			return 1 ;;
 	esac
@@ -40,7 +42,40 @@ function getActionArguments() {
 	return 0
 }
 function getInformation() {
-	:
+	local info="$1"
+	local name="$2"
+	local what="$3"
+	local action parameterType
+
+	[ "x$what" == "x" ] && {
+		[ "x$info" == "xsummary" ] && echo "Dog interaction for newbies"
+		[ "x$info" == "xdetail" ] && echo "This application helps you to interact with you dog."
+		return 0
+	}
+
+	[ "x$what" == "xtype" ] && {
+		case "$name" in
+			thing)
+				[ "x$info" == "xsummary" ] && echo "A thing the dog is familiar with"
+				[ "x$info" == "xdetail" ] && echo "Anything known by the dog can be fetch. Just make sure the dog can handle it. Don't ask a small dog to fetch a huge log otherwise you may hurt the dog."
+				;;
+		esac
+		return 0
+	}
+
+	[ "x$what" == "xverb" ] && {
+		case "$name" in
+			fetch)
+				[ "x$info" == "xsummary" ] && echo "Demand you dog to fetch something"
+				;;
+			sleep)
+				[ "x$info" == "xsummary" ] && echo "Demand you dog to go to sleep"
+				[ "x$info" == "xdetail" ] && echo "Time is in second. There is no garantu the wakes up after n seconds. You may have to wake it up ( see \`call\` )"
+				;;
+		esac
+	}
+
+	return 0
 }
 
 
