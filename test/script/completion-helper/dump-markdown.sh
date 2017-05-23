@@ -9,9 +9,39 @@ oneTimeSetUp() {
 testDumpMarkdown() {
 	local markdown_text expected_markdown_text
 
-	expected_markdown_text="toto
-=====
-"
+	expected_markdown_text="smart_dog.sh
+============
+
+## Summary
+
+Dog interaction for newbies
+
+## Synopsis
+
+`smart_dog.sh <global_options> fetch <options> what...`
+
+`smart_dog.sh <global_options> bark sound...`
+
+`smart_dog.sh <global_options> sleep duration...`
+
+`smart_dog.sh <global_options> smell`
+
+`smart_dog.sh <global_options> call name...`
+
+
+## Description
+
+This application helps you to interact with you dog.
+
+fetch what...
+
+bark sound...
+
+sleep duration...
+
+smell
+
+call name..."
 
 	markdown_text="$("${test_root_dir}/resources/smart_dog.sh" help --dump-markdown)"
 	assertLastCommandSucceeded

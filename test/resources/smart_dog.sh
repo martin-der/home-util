@@ -34,13 +34,34 @@ function getActionArguments() {
 		"bark")
 			echo "<sound:string>" ;;
 		"sleep")
-			echo "<time:integer>" ;;
+			echo "<duration:integer>" ;;
 		*)
 			return 1 ;;
 	esac
 
 	return 0
 }
+
+function getOption() {
+	local info option verb
+	info="$1"
+	option="$2"
+	verb="$3"
+	[ "x$option" = "x" -a "x$verb" = "x" ] && {
+		#[v]erbose [r]eplay-order <times> [d]ry-mode [a]ll(dogs)
+		echo "vr:da"
+		return 0
+	}
+	[ "x$option" = "x" ] && {
+		case "$verb" in
+			"fetch")
+				echo "u:" ; return 0
+				;;
+		esac
+		return 0
+	}
+}
+
 function getInformation() {
 	local info="$1"
 	local name="$2"
@@ -79,6 +100,6 @@ function getInformation() {
 }
 
 
-_mdu_CH_init_builder_helper "listActions" "getActionArguments" "getInformation" "completeType" $@
+_mdu_CH_init_builder_helper "listActions" "getActionArguments" "getOption" "getInformation" "completeType" $@
 
 

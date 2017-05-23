@@ -91,14 +91,24 @@ ___get_verb_arguments() {
 	"$_mdu_CH_get_verb_arguments_CB" $@
 	return $?
 }
+___get_option() {
+	# info option whom
+	"$_mdu_CH_get_option_CB" "${1:-}" "${2:-}" "${3:-}"
+	return $?
+}
 ___get_information() {
+	# info name what
 	"$_mdu_CH_get_information_CB" "${1:-}" "${2:-}" "${3:-}"
 	return $?
 }
 
 _dump_man() {
-	local name=$_mdu_CH_application
+	local command name
 	local summary=$(___get_information summary)
+
+	name="$_mdu_CH_application"
+	command="$name"
+
 	echo ".TH $name 1 \"$(date +"%d %b %Y")\" \"version 1.0\""
 	echo ".SH NAME"
 	echo "$name - $summary"
@@ -107,7 +117,7 @@ _dump_man() {
 	___list_verbs | while read -d ' '  verb ; do
 		[ $first -eq 1 ] && first=0 || echo ".br"
 		argumentsRaw=$(___get_verb_arguments "$verb")
-		echo ".B $name"
+		echo ".B $command"
 		echo "$verb"
 		for argument in ${argumentsRaw}; do
 			local argumentName="$(_getArgumentName "$argument")"
@@ -128,8 +138,12 @@ _dump_man() {
 }
 
 _dump_markdown() {
-	local name=$_mdu_CH_application
+	local command name
 	local summary=$(___get_information summary)
+	local global_options options
+
+	name="$_mdu_CH_application"
+	command="$name"
 
 	echo "$name"
 	local namelen=${#name}
@@ -145,11 +159,16 @@ _dump_markdown() {
 
 	echo "## Synopsis"
 	echo
+	global_options=$(___get_option)
 	local first=1
 	___list_verbs | while read -d ' ' verb ; do
+		options=$(___get_option "" "" "$verb")
 		#[ $first -eq 1 ] && first=0 || echo
 		argumentsRaw=$(___get_verb_arguments "$verb")
-		echo -n "\`$verb"
+		echo -n "\`$command "
+		[ "x$global_options" != "x" ] && echo -n "<global_options> "
+		echo -n "$verb"
+		[ "x$options" != "x" ] && echo -n " <options>"
 		for argument in ${argumentsRaw}; do
 			local argumentName="$(_getArgumentName "$argument")"
 			_isArgumentOptionnal "${argument}" && {
@@ -164,7 +183,7 @@ _dump_markdown() {
 	echo
 
 	local detail=$(___get_information detail)
-	echo "## Detail"
+	echo "## Description"
 	echo
 	[ "x$detail" != "x" ] && {
 		echo "$detail"
@@ -244,9 +263,11 @@ _mdu_CH_set_callbacks() {
 	export _mdu_CH_list_verbs_CB
 	_mdu_CH_get_verb_arguments_CB="$2"
 	export _mdu_CH_get_verb_arguments_CB
-	_mdu_CH_get_information_CB="$3"
+	_mdu_CH_get_option_CB="$3"
+	export _mdu_CH_get_option_CB
+	_mdu_CH_get_information_CB="$4"
 	export _mdu_CH_get_information_CB
-	_mdu_CH_complete_type_CB="$4"
+	_mdu_CH_complete_type_CB="$5"
 	export _mdu_CH_complete_type_CB
 
 	[ "x$_mdu_CH_list_verbs_CB" == x ] && { echo "[_mdu_CH_help] callback 'list_verbs'(1) is missing" >&2 ; return 1 ; }
@@ -255,8 +276,8 @@ _mdu_CH_set_callbacks() {
 
 _mdu_CH_init_builder_helper() {
 
-	_mdu_CH_set_callbacks $@
-	shift 4
+	_mdu_CH_set_callbacks "$@"
+	shift 5
 
 	[ ! -z ${1+x} -a "x$1" == "xhelp" ] || return
 	shift
@@ -275,11 +296,6 @@ _mdu_CH_init_builder_helper() {
 
 	[ "$1" == "--man" ] && {
 		_dump_man | man /dev/stdin
-		exit 0
-	}
-
-	[ "$1" == "--is-mdu-helper" ] && {
-		echo "mdu_helper_capable"
 		exit 0
 	}
 

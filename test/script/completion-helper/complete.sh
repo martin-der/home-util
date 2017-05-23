@@ -28,12 +28,90 @@ prepareCompletionVars() {
 
 }
 
-testCompleteVerbs() {
-	prepareCompletionVars 1 0 smart_dog.sh "" azaze
-	"$completion_function" "${test_root_dir}/resources/smart_dog.sh"
-	IFS=',' echo "COMPREPLY = ${COMPREPLY[*]}"
+getCompReplies() {
+	for r in "${COMPREPLY[@]}"
+	do
+		echo "$r"
+	done
 }
 
+testCompleteVerbs() {
+
+	local response expected
+	expected="fetch
+bark
+sleep
+smell
+call
+learn"
+
+	prepareCompletionVars 1 0 smart_dog.sh ""
+	"$completion_function" "${test_root_dir}/resources/smart_dog.sh"
+	response="$(getCompReplies)"
+	assertEquals "$expected" "$response"
+}
+
+testCompleteVerbsWithGivenOneLetter() {
+
+	local response expected
+	expected="sleep
+smell"
+
+	prepareCompletionVars 1 1 smart_dog.sh "s"
+	"$completion_function" "${test_root_dir}/resources/smart_dog.sh"
+	response="$(getCompReplies)"
+	assertEquals "$expected" "$response"
+}
+
+testCompleteVerbFirstArgument() {
+
+	local response expected
+	expected="bill
+rex
+rintintin
+strongheart
+snoopy"
+
+	prepareCompletionVars 2 0 smart_dog.sh "call" ""
+	"$completion_function" "${test_root_dir}/resources/smart_dog.sh"
+	response="$(getCompReplies)"
+	assertEquals "$expected" "$response"
+}
+
+testCompleteVerbFirstArgumentStartingWithS() {
+
+	local response expected
+	expected="strongheart
+snoopy"
+
+	prepareCompletionVars 2 1 smart_dog.sh "call" "s"
+	"$completion_function" "${test_root_dir}/resources/smart_dog.sh"
+	response="$(getCompReplies)"
+	assertEquals "Callable dogs starting with 's'" "$expected" "$response"
+}
+
+testCompleteVerbFirstArgumentStartingWithR() {
+
+	local response expected
+	expected="rex
+rintintin"
+
+	prepareCompletionVars 2 1 smart_dog.sh "call" "r"
+	"$completion_function" "${test_root_dir}/resources/smart_dog.sh"
+	response="$(getCompReplies)"
+	assertEquals "Callable dogs starting with 'r'" "$expected" "$response"
+}
+
+testCompleteVerbFirstArgumentStartingWithRi() {
+
+	local response expected
+	expected="rintintin"
+
+	prepareCompletionVars 2 1 smart_dog.sh "call" "ri"
+	"$completion_function" "${test_root_dir}/resources/smart_dog.sh"
+	response="$(getCompReplies)"
+	assertEquals "Callable dogs starting with 'ri'" "$expected" "$response"
+}
 
 
 runTests
