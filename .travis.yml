@@ -1,9 +1,7 @@
-language: bash
+language:
+  - bash
 
 sudo: required
-
-jdk:
-  - oraclejdk8
 
 gradle:
   - oraclejdk8
@@ -11,8 +9,6 @@ gradle:
 before_install:
     - sudo apt-get -qq update
     - sudo apt-get install -y sharutils git gawk
-before_script:
-    - curl -L "http://downloads.sourceforge.net/shunit2/shunit2-2.0.3.tgz" | tar zx -C test
 
 branches:
     except:
