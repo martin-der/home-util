@@ -1,9 +1,0 @@
-
-
-apply plugin: 'net.tetrakoopa.shell-test'
-
-shell_test {
-	from fileTree("script").include('**/*.sh').exclude('common.sh')
-	//workingDir homeutilProjectDir
-}
-

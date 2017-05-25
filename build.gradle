@@ -26,8 +26,10 @@ buildscript{
 
 
 apply plugin: 'net.tetrakoopa.poignee.util'
-version getGitVersionName
 apply plugin: 'net.tetrakoopa.shell-package'
+apply plugin: 'net.tetrakoopa.shell-test'
+
+version getGitVersionName
 
 
 shell_package {
@@ -43,4 +45,9 @@ shell_package {
 			question = "Do you want to init home (i.e. run 'home-init')?"
 		}
 	}
+}
+
+shell_test {
+	from fileTree("test/script").include('**/*.sh').exclude('common.sh').exclude('runner.sh')
+	workingDir = project.file("test")
 }
