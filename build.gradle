@@ -48,6 +48,8 @@ shell_package {
 }
 
 shell_test {
+
 	from fileTree("test/script").include('**/*.sh').exclude('common.sh').exclude('runner.sh')
+	scriptFrom project.fileTree("src").include('*.sh')
 	workingDir = project.file("test")
 }
