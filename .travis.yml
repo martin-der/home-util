@@ -26,4 +26,4 @@ deploy:
         tags: true
 
 script:
-    - ./gradlew allTests packages
+    - ./gradlew shell-test packages
