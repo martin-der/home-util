@@ -13,22 +13,27 @@ oneTimeSetUp() {
 
 prepareCompletionVars() {
 	COMP_CWORD="$1"
-	COMP_POINT="$2"
+	#COMP_POINT="$2"
 	shift 2
 	COMP_LINE="$*"
 	#read -r -a COMP_WORDS <<< $@
 	COMP_WORDS=( "$@" )
-	COMP_TYPE=go
+	#COMP_TYPE=go
 	echo "COMP_CWORD = '$COMP_CWORD'"
-	echo "COMP_POINT = '$COMP_POINT'"
+	#echo "COMP_POINT = '$COMP_POINT'"
 	echo "COMP_LINE = '$COMP_LINE'"
 	IFS=',' echo "COMP_WORDS = ${COMP_WORDS[*]}"
 	#printf '%s,' "${COMP_WORDS[@]}"
-	echo "COMP_TYPE = '$COMP_TYPE'"
-
+	#echo "COMP_TYPE = '$COMP_TYPE'"
 }
 
+NO_REPLY="<--- NO REPLY --->"
+
 getCompReplies() {
+	if [ -z ${COMPREPLY+x} ]; then
+		echo "$NO_REPLY"
+		return
+	fi
 	for r in "${COMPREPLY[@]}"
 	do
 		echo "$r"
@@ -39,6 +44,7 @@ testCompleteVerbs() {
 
 	local response expected
 	expected="fetch
+hold
 bark
 sleep
 smell
@@ -111,6 +117,17 @@ testCompleteVerbFirstArgumentStartingWithRi() {
 	"$completion_function" "${test_root_dir}/resources/smart_dog.sh"
 	response="$(getCompReplies)"
 	assertEquals "Callable dogs starting with 'ri'" "$expected" "$response"
+}
+
+testCompleteVerbNoFirstArgumentStartingWithZ() {
+
+	local response expected
+	expected="$NO_REPLY"
+
+	prepareCompletionVars 2 0 smart_dog.sh "call" "z"
+	"$completion_function" "${test_root_dir}/resources/smart_dog.sh"
+	response="$(getCompReplies)"
+	assertEquals "No callable dogs starting with 'z'" "$expected" "$response"
 }
 
 

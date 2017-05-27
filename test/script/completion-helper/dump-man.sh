@@ -7,40 +7,45 @@ oneTimeSetUp() {
 }
 
 testDumpMan() {
-	local man_text expected_man_text
+	local man_text man_text_made_static expected_man_text
 
-	expected_man_text=".TH smart_dog.sh 1 \"TODAY\" \"version 1.0\"
+	expected_man_text=".TH smart_dog.sh 1 \"SOME_DATE\" \"version 1.0\"
 .SH NAME
 smart_dog.sh - Dog interaction for newbies
 .SH SYNOPSIS
 .B smart_dog.sh
 fetch
-what...
+<what>
+[to]
+.br
+.B smart_dog.sh
+hold
+<what>
 .br
 .B smart_dog.sh
 bark
-sound...
+<sound>
 .br
 .B smart_dog.sh
 sleep
-duration...
+<duration>
 .br
 .B smart_dog.sh
 smell
 .br
 .B smart_dog.sh
 call
-name...
+<name>
 .SH DESCRIPTION
-This application helps you to interact with you dog.
-"
+This application helps your to interact with you dog."
 
 	man_text="$("${test_root_dir}/resources/smart_dog.sh" help --dump-man)"
-	return 0
-	assertLastCommandSucceededsdq
-	assertEquals "Generated man is correct" "$expected_man_text" "$man_text"
+	assertLastCommandSucceeded
+	man_text_made_static="$(sed 's/^\(\.TH smart_dog\.sh 1 \"\)\(.\+\)\(\" \"version 1.0\"\)$/\1SOME_DATE\3/' <<< "$man_text")"
+	assertEquals "Generated man is correct" "$expected_man_text" "$man_text_made_static"
 
 	echo "$man_text" > "${MDU_SHELLTEST_TEST_RESULTS_DIRECTORY}/smartdog.man"
+	echo "$man_text_made_static" > "${MDU_SHELLTEST_TEST_RESULTS_DIRECTORY}/smartdog-man_text_made_static.man"
 }
 
 runTests

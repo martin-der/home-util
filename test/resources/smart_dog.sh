@@ -5,7 +5,7 @@ source completion-helper.sh || exit 1
 
 
 function listActions() {
-	echo "fetch bark sleep smell call learn"
+	echo "fetch hold bark sleep smell call learn"
 }
 
 
@@ -28,6 +28,8 @@ function completeType() {
 function getActionArguments() {
 	case "$1" in
 		"fetch")
+			echo "<what:thing> [<to:dog_name>]" ;;
+		"hold")
 			echo "<what:thing>" ;;
 		"call")
 			echo "<name:dog_name>" ;;
@@ -70,7 +72,7 @@ function getInformation() {
 
 	[ "x$what" == "x" ] && {
 		[ "x$info" == "xsummary" ] && echo "Dog interaction for newbies"
-		[ "x$info" == "xdetail" ] && echo "This application helps you to interact with you dog."
+		[ "x$info" == "xdetail" ] && echo "This application helps your to interact with you dog."
 		return 0
 	}
 

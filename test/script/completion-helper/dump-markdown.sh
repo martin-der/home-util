@@ -18,35 +18,53 @@ Dog interaction for newbies
 
 ## Synopsis
 
-`smart_dog.sh <global_options> fetch <options> what...`
+\`smart_dog.sh <global_options> fetch <options> <what> [to]\` [detail](#Usage 1)
 
-`smart_dog.sh <global_options> bark sound...`
+\`smart_dog.sh <global_options> hold <what>\` [detail](#Usage 2)
 
-`smart_dog.sh <global_options> sleep duration...`
+\`smart_dog.sh <global_options> bark <sound>\` [detail](#Usage 3)
 
-`smart_dog.sh <global_options> smell`
+\`smart_dog.sh <global_options> sleep <duration>\` [detail](#Usage 4)
 
-`smart_dog.sh <global_options> call name...`
+\`smart_dog.sh <global_options> smell\` [detail](#Usage 5)
+
+\`smart_dog.sh <global_options> call <name>\` [detail](#Usage 6)
 
 
 ## Description
 
-This application helps you to interact with you dog.
+This application helps your to interact with you dog.
 
-fetch what...
+### Usage 1
 
-bark sound...
+\`smart_dog.sh <global_options> fetch <options> <what> \[to]\`
+##### Options
 
-sleep duration...
+### Usage 2
 
-smell
+\`smart_dog.sh <global_options> hold <what>\`
 
-call name..."
+### Usage 3
+
+\`smart_dog.sh <global_options> bark <sound>\`
+
+### Usage 4
+
+\`smart_dog.sh <global_options> sleep <duration>\`
+
+### Usage 5
+
+\`smart_dog.sh <global_options> smell\`
+
+### Usage 6
+
+\`smart_dog.sh <global_options> call <name>\`"
 
 	markdown_text="$("${test_root_dir}/resources/smart_dog.sh" help --dump-markdown)"
 	assertLastCommandSucceeded
 	assertEquals "$expected_markdown_text" "$markdown_text"
 
+	echo "$expected_markdown_text" > "${MDU_SHELLTEST_TEST_RESULTS_DIRECTORY}/smartdog-expected.md"
 	echo "$markdown_text" > "${MDU_SHELLTEST_TEST_RESULTS_DIRECTORY}/smartdog.md"
 }
 

@@ -47,6 +47,12 @@ _reply_common_completion() {
 	return 0
 }
 
+_isArgumentNonStatic() {
+	local core
+	core="$(_getArgumentCore "$1")"
+	grep "^<.*>$" <<< "$1" >/dev/null
+}
+
 _isArgumentOptionnal() {
 	grep "^\[.*\]$" <<< "$1" >/dev/null
 }
@@ -63,10 +69,14 @@ _getArgumentCore() {
 	sed "s#^\[\([^\.]\+\)\(\.\.\.\)\\?\]\$\|^\([^\.]\+\)\(\.\.\.\)\\?\$#\1\3#" <<< "$1"
 }
 _getArgumentName() {
-	sed "s#^<\([^:]\+\)\(:.\+\)\\?>\$#\1#" <<< "$1"
+	local core
+	core="$(_getArgumentCore "$1")"
+	sed "s#^<\([^:]\+\)\(:.\+\)\\?>\$#\1#" <<< "$core"
 }
 _getArgumentType() {
-	sed "s#^<\([^:]\+\):\(.\+\)\\?>\$#\2#" <<< "$1"
+	local core
+	core="$(_getArgumentCore "$1")"
+	sed "s#^<\([^:]\+\):\(.\+\)>\$#\2#" <<< "$core"
 }
 
 
@@ -122,10 +132,18 @@ _dump_man() {
 		for argument in ${argumentsRaw}; do
 			local argumentName="$(_getArgumentName "$argument")"
 			#echo -n ".Op "
-			_isArgumentOptionnal "${argument}" && {
-				_isArgumentRepeatable "${argument}" && echo "[${argumentName}]" || echo "[${argumentName}...]"
+			_isArgumentNonStatic "${argument}" && {
+				_isArgumentOptionnal "${argument}" && {
+					_isArgumentRepeatable "${argument}" && echo "[<${argumentName}>...]" || echo "[<${argumentName}>]"
+				} || {
+					_isArgumentRepeatable "${argument}" && echo "<${argumentName}>..." || echo "<${argumentName}>"
+				}
 			} || {
-				_isArgumentRepeatable "${argument}" && echo "${argumentName}" || echo "${argumentName}..."
+				_isArgumentOptionnal "${argument}" && {
+					_isArgumentRepeatable "${argument}" && echo "[${argumentName}...]" || echo "[${argumentName}]"
+				} || {
+					_isArgumentRepeatable "${argument}" && echo "${argumentName}..." || echo "${argumentName}"
+				}
 			}
 		done
 	done
@@ -141,6 +159,7 @@ _dump_markdown() {
 	local command name
 	local summary=$(___get_information summary)
 	local global_options options
+	local index
 
 	name="$_mdu_CH_application"
 	command="$name"
@@ -161,6 +180,7 @@ _dump_markdown() {
 	echo
 	global_options=$(___get_option)
 	local first=1
+	index=0
 	___list_verbs | while read -d ' ' verb ; do
 		options=$(___get_option "" "" "$verb")
 		#[ $first -eq 1 ] && first=0 || echo
@@ -171,14 +191,24 @@ _dump_markdown() {
 		[ "x$options" != "x" ] && echo -n " <options>"
 		for argument in ${argumentsRaw}; do
 			local argumentName="$(_getArgumentName "$argument")"
-			_isArgumentOptionnal "${argument}" && {
-				_isArgumentRepeatable "${argument}" && echo -n " [${argumentName}]" || echo -n " [${argumentName}...]"
+			_isArgumentNonStatic "${argument}" && {
+				_isArgumentOptionnal "${argument}" && {
+					_isArgumentRepeatable "${argument}" && echo -n " [<${argumentName}>...]" || echo -n " [<${argumentName}>]"
+				} || {
+					_isArgumentRepeatable "${argument}" && echo -n " <${argumentName}>..." || echo -n " <${argumentName}>"
+				}
 			} || {
-				_isArgumentRepeatable "${argument}" && echo -n " ${argumentName}" || echo -n " ${argumentName}..."
+				_isArgumentOptionnal "${argument}" && {
+					_isArgumentRepeatable "${argument}" && echo -n " [${argumentName}...]" || echo -n " [${argumentName}]"
+				} || {
+					_isArgumentRepeatable "${argument}" && echo -n " ${argumentName}..." || echo -n " ${argumentName}"
+				}
 			}
 		done
-		echo "\`"
+		echo -n "\`"
+		echo " [detail](#Usage $((1+$index)))"
 		echo
+		index=$(($index+1))
 	done
 	echo
 
@@ -191,20 +221,41 @@ _dump_markdown() {
 	}
 
 	first=1
+	index=0
 	___list_verbs | while read -d ' ' verb ; do
+		options=$(___get_option "" "" "$verb")
 		#[ $first -eq 1 ] && first=0 || echo
+		echo "### Usage $((1+$index))"
+		echo
 		argumentsRaw=$(___get_verb_arguments "$verb")
+		echo -n "\`$command "
+		[ "x$global_options" != "x" ] && echo -n "<global_options> "
 		echo -n "$verb"
+		[ "x$options" != "x" ] && echo -n " <options>"
 		for argument in ${argumentsRaw}; do
 			local argumentName="$(_getArgumentName "$argument")"
-			_isArgumentOptionnal "${argument}" && {
-				_isArgumentRepeatable "${argument}" && echo -n " [${argumentName}]" || echo -n " [${argumentName}...]"
+			_isArgumentNonStatic "${argument}" && {
+				_isArgumentOptionnal "${argument}" && {
+					_isArgumentRepeatable "${argument}" && echo -n " \\[<${argumentName}>...]" || echo -n " \\[<${argumentName}>]"
+				} || {
+					_isArgumentRepeatable "${argument}" && echo -n " <${argumentName}>..." || echo -n " <${argumentName}>"
+				}
 			} || {
-				_isArgumentRepeatable "${argument}" && echo -n " ${argumentName}" || echo -n " ${argumentName}..."
+				_isArgumentOptionnal "${argument}" && {
+					_isArgumentRepeatable "${argument}" && echo -n " \\[${argumentName}...]" || echo -n " \\[${argumentName}]"
+				} || {
+					_isArgumentRepeatable "${argument}" && echo -n " ${argumentName}..." || echo -n " ${argumentName}"
+				}
 			}
 		done
-		echo ""
+		echo -n "\`"
 		echo
+		[ "x$options" != "x" ] && {
+			echo -n "##### Options"
+			echo
+		}
+		echo
+		index=$(($index+1))
 	done
 	echo
 
