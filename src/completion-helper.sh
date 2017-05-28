@@ -6,7 +6,7 @@
 		echo "Exactly one argument is expected"
 		exit 2
 	}
-	if [ -e "$1" ] && [ -r "$1" ] ; then
+	if [ -e "$1" ] && [ -r "$1" ] ; then : ; else
 		echo "'$1' does not exist or is not readable" >&2
 		exit 2
 	fi
