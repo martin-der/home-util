@@ -45,7 +45,7 @@ This application helps your to interact with you dog."
 	assertEquals "Generated man is correct" "$expected_man_text" "$man_text_made_static"
 
 	echo "$man_text" > "${MDU_SHELLTEST_TEST_RESULTS_DIRECTORY}/smartdog.man"
-	echo "$man_text_made_static" > "${MDU_SHELLTEST_TEST_RESULTS_DIRECTORY}/smartdog-man_text_made_static.man"
+	echo "$man_text_made_static" > "${MDU_SHELLTEST_TEST_RESULTS_DIRECTORY}/smartdog-man_made_static.man"
 }
 
 runTests

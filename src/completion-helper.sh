@@ -6,10 +6,10 @@
 		echo "Exactly one argument is expected"
 		exit 2
 	}
-	[ -e "$1" ] && [ -r "$1" ] || {
+	if [ -e "$1" ] && [ -r "$1" ] ; then
 		echo "'$1' does not exist or is not readable" >&2
 		exit 2
-	}
+	fi
 	source "$(readlink "$(dirname "$0")/shell-util.sh")" 2>/dev/null \
 		|| source "$(dirname "$0")/shell-util.sh" 2>/dev/null \
 		|| source shell-util || exit 1
@@ -80,25 +80,13 @@ _getArgumentType() {
 }
 
 
-#core="$(_getArgumentCore "$1")" 
-#echo "- core : '$core'"
-#echo "- first couple :"
-#_getArgumentFistCouple "$core"
-#echo "- first couple follow :"
-#_getArgumentFistCoupleFollow "$core"
-#echo "- name :"
-#_getArgumentName "$core"
-#echo "- type :"
-#_getArgumentType "$core"
-#exit 0
-
 
 ___list_verbs() {
-	"$_mdu_CH_list_verbs_CB" $@
+	"$_mdu_CH_list_verbs_CB" "$@"
 	return $?
 }
 ___get_verb_arguments() {
-	"$_mdu_CH_get_verb_arguments_CB" $@
+	"$_mdu_CH_get_verb_arguments_CB" "$@"
 	return $?
 }
 ___get_option() {
@@ -112,10 +100,28 @@ ___get_information() {
 	return $?
 }
 
-_dump_man() {
-	local command name
-	local summary=$(___get_information summary)
+_display_argument() {
+	local name
+	name="$(_getArgumentName "$1")"
+	_isArgumentNonStatic "${1}" && {
+		_isArgumentOptionnal "${1}" && {
+			_isArgumentRepeatable "${1}" && echo "[<${name}>...]" || echo "[<${name}>]"
+		} || {
+			_isArgumentRepeatable "${1}" && echo "<${name}>..." || echo "<${name}>"
+		}
+	} || {
+		_isArgumentOptionnal "${1}" && {
+			_isArgumentRepeatable "${1}" && echo "[${name}...]" || echo "[${name}]"
+		} || {
+			_isArgumentRepeatable "${1}" && echo "${name}..." || echo "${name}"
+		}
+	}
+}
 
+_dump_man() {
+	local command name summary
+
+	summary=$(___get_information summary)
 	name="$_mdu_CH_application"
 	command="$name"
 
@@ -132,19 +138,6 @@ _dump_man() {
 		for argument in ${argumentsRaw}; do
 			local argumentName="$(_getArgumentName "$argument")"
 			#echo -n ".Op "
-			_isArgumentNonStatic "${argument}" && {
-				_isArgumentOptionnal "${argument}" && {
-					_isArgumentRepeatable "${argument}" && echo "[<${argumentName}>...]" || echo "[<${argumentName}>]"
-				} || {
-					_isArgumentRepeatable "${argument}" && echo "<${argumentName}>..." || echo "<${argumentName}>"
-				}
-			} || {
-				_isArgumentOptionnal "${argument}" && {
-					_isArgumentRepeatable "${argument}" && echo "[${argumentName}...]" || echo "[${argumentName}]"
-				} || {
-					_isArgumentRepeatable "${argument}" && echo "${argumentName}..." || echo "${argumentName}"
-				}
-			}
 		done
 	done
 
@@ -156,11 +149,11 @@ _dump_man() {
 }
 
 _dump_markdown() {
-	local command name
-	local summary=$(___get_information summary)
+	local command name summary
 	local global_options options
 	local index
 
+	summary=$(___get_information summary)
 	name="$_mdu_CH_application"
 	command="$name"
 
@@ -189,22 +182,7 @@ _dump_markdown() {
 		[ "x$global_options" != "x" ] && echo -n "<global_options> "
 		echo -n "$verb"
 		[ "x$options" != "x" ] && echo -n " <options>"
-		for argument in ${argumentsRaw}; do
-			local argumentName="$(_getArgumentName "$argument")"
-			_isArgumentNonStatic "${argument}" && {
-				_isArgumentOptionnal "${argument}" && {
-					_isArgumentRepeatable "${argument}" && echo -n " [<${argumentName}>...]" || echo -n " [<${argumentName}>]"
-				} || {
-					_isArgumentRepeatable "${argument}" && echo -n " <${argumentName}>..." || echo -n " <${argumentName}>"
-				}
-			} || {
-				_isArgumentOptionnal "${argument}" && {
-					_isArgumentRepeatable "${argument}" && echo -n " [${argumentName}...]" || echo -n " [${argumentName}]"
-				} || {
-					_isArgumentRepeatable "${argument}" && echo -n " ${argumentName}..." || echo -n " ${argumentName}"
-				}
-			}
-		done
+		for argument in ${argumentsRaw}; do _display_argument "$argument" ; done
 		echo -n "\`"
 		echo " [detail](#Usage $((1+$index)))"
 		echo
@@ -232,22 +210,7 @@ _dump_markdown() {
 		[ "x$global_options" != "x" ] && echo -n "<global_options> "
 		echo -n "$verb"
 		[ "x$options" != "x" ] && echo -n " <options>"
-		for argument in ${argumentsRaw}; do
-			local argumentName="$(_getArgumentName "$argument")"
-			_isArgumentNonStatic "${argument}" && {
-				_isArgumentOptionnal "${argument}" && {
-					_isArgumentRepeatable "${argument}" && echo -n " \\[<${argumentName}>...]" || echo -n " \\[<${argumentName}>]"
-				} || {
-					_isArgumentRepeatable "${argument}" && echo -n " <${argumentName}>..." || echo -n " <${argumentName}>"
-				}
-			} || {
-				_isArgumentOptionnal "${argument}" && {
-					_isArgumentRepeatable "${argument}" && echo -n " \\[${argumentName}...]" || echo -n " \\[${argumentName}]"
-				} || {
-					_isArgumentRepeatable "${argument}" && echo -n " ${argumentName}..." || echo -n " ${argumentName}"
-				}
-			}
-		done
+		for argument in ${argumentsRaw}; do _display_argument "$argument" ; done
 		echo -n "\`"
 		echo
 		[ "x$options" != "x" ] && {
