@@ -1,12 +1,7 @@
 # MDU Shell tools
 
-------
-
 [![Travis Build Status](https://api.travis-ci.org/martin-der/home-util.svg?branch=master)](https://travis-ci.org/martin-der/home-util)
 
-[![Travis Build Status](https://api.travis-ci.org/martin-der/home-util.svg?branch=develop)](https://travis-ci.org/martin-der/home-util) [Develop]
-
-------
 
 ## Configuration
 
