@@ -15,27 +15,21 @@ smart_dog.sh - Dog interaction for newbies
 .SH SYNOPSIS
 .B smart_dog.sh
 fetch
-<what>
-[to]
 .br
 .B smart_dog.sh
 hold
-<what>
 .br
 .B smart_dog.sh
 bark
-<sound>
 .br
 .B smart_dog.sh
 sleep
-<duration>
 .br
 .B smart_dog.sh
 smell
 .br
 .B smart_dog.sh
 call
-<name>
 .SH DESCRIPTION
 This application helps your to interact with you dog."
 
