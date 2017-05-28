@@ -34,7 +34,8 @@ version getGitVersionName
 
 shell_package {
 
-	from project.fileTree("src").include('*.sh', '*.py', 'README.md')
+	from project.fileTree("src").include('*.sh', '*.py')
+	from project.fileTree(".").include('README.md')
 
 	installer {
 		readme.location = 'README.md'
