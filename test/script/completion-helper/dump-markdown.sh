@@ -37,7 +37,7 @@ This application helps your to interact with you dog.
 
 ### Usage 1
 
-\`smart_dog.sh <global_options> fetch <options> <what> \[to]\`
+\`smart_dog.sh <global_options> fetch <options> <what> [to]\`
 ##### Options
 
 ### Usage 2

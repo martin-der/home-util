@@ -105,15 +105,15 @@ _display_argument() {
 	name="$(_getArgumentName "$1")"
 	_isArgumentNonStatic "${1}" && {
 		_isArgumentOptionnal "${1}" && {
-			_isArgumentRepeatable "${1}" && echo "[<${name}>...]" || echo "[<${name}>]"
+			_isArgumentRepeatable "${1}" && echo -n "[<${name}>...]" || echo -n "[<${name}>]"
 		} || {
-			_isArgumentRepeatable "${1}" && echo "<${name}>..." || echo "<${name}>"
+			_isArgumentRepeatable "${1}" && echo -n "<${name}>..." || echo -n "<${name}>"
 		}
 	} || {
 		_isArgumentOptionnal "${1}" && {
-			_isArgumentRepeatable "${1}" && echo "[${name}...]" || echo "[${name}]"
+			_isArgumentRepeatable "${1}" && echo -n "[${name}...]" || echo -n "[${name}]"
 		} || {
-			_isArgumentRepeatable "${1}" && echo "${name}..." || echo "${name}"
+			_isArgumentRepeatable "${1}" && echo -n "${name}..." || echo -n "${name}"
 		}
 	}
 }
@@ -182,7 +182,7 @@ _dump_markdown() {
 		[ "x$global_options" != "x" ] && echo -n "<global_options> "
 		echo -n "$verb"
 		[ "x$options" != "x" ] && echo -n " <options>"
-		for argument in ${argumentsRaw}; do _display_argument "$argument" ; done
+		for argument in ${argumentsRaw}; do echo -n " " ; _display_argument "$argument" ; done
 		echo -n "\`"
 		echo " [detail](#Usage $((1+$index)))"
 		echo
@@ -210,7 +210,7 @@ _dump_markdown() {
 		[ "x$global_options" != "x" ] && echo -n "<global_options> "
 		echo -n "$verb"
 		[ "x$options" != "x" ] && echo -n " <options>"
-		for argument in ${argumentsRaw}; do _display_argument "$argument" ; done
+		for argument in ${argumentsRaw}; do echo -n " " ; _display_argument "$argument" ; done
 		echo -n "\`"
 		echo
 		[ "x$options" != "x" ] && {
