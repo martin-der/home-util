@@ -2,12 +2,6 @@ group 'net.tetrakoopa'
 
 task wrapper(type: Wrapper) { gradleVersion = '3.4.1' }
 
-repositories {
-	mavenCentral()
-	mavenLocal()
-	maven { url 'https://jitpack.io' }
-}
-
 buildscript{
 	repositories{
 		mavenCentral()
