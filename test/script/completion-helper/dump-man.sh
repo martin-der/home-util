@@ -6,32 +6,10 @@ oneTimeSetUp() {
 	mkTestResultsDir
 }
 
-testDumpMan() {
+testDumpSmartdogMan() {
 	local man_text man_text_made_static expected_man_text
 
-	expected_man_text=".TH smart_dog.sh 1 \"SOME_DATE\" \"version 1.0\"
-.SH NAME
-smart_dog.sh - Dog interaction for newbies
-.SH SYNOPSIS
-.B smart_dog.sh
-fetch
-.br
-.B smart_dog.sh
-hold
-.br
-.B smart_dog.sh
-bark
-.br
-.B smart_dog.sh
-sleep
-.br
-.B smart_dog.sh
-smell
-.br
-.B smart_dog.sh
-call
-.SH DESCRIPTION
-This application helps your to interact with you dog."
+	expected_man_text="$(cat "${test_resources_dir}/smartdog-expected.man")"
 
 	man_text="$("${test_common_resources_dir}/smart_dog.sh" help --dump-man)"
 	assertLastCommandSucceeded

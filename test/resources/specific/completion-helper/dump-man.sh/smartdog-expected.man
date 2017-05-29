@@ -1,0 +1,23 @@
+.TH smart_dog.sh 1 "SOME_DATE" "version 1.0"
+.SH NAME
+smart_dog.sh - Dog interaction for newbies
+.SH SYNOPSIS
+.B smart_dog.sh
+fetch
+.br
+.B smart_dog.sh
+hold
+.br
+.B smart_dog.sh
+bark
+.br
+.B smart_dog.sh
+sleep
+.br
+.B smart_dog.sh
+smell
+.br
+.B smart_dog.sh
+call
+.SH DESCRIPTION
+This application helps your to interact with you dog.
