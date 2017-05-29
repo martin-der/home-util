@@ -7,7 +7,7 @@ oneTimeSetUp() {
 	export MDU_HUMAN_MODE=0
 	export MDU_NO_COLOR=1
 	. "${src_root_dir}/shell-util.sh" || exit 1
-	RESOURCES_DIR="${test_root_dir}/resources"
+	RESOURCES_DIR="${test_common_resources_dir}"
 
 	TMP_DIR=`mktemp -d` || exit 1
 	cp -r "$RESOURCES_DIR/kitchen" "$TMP_DIR"

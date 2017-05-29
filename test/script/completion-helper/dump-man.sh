@@ -33,7 +33,7 @@ call
 .SH DESCRIPTION
 This application helps your to interact with you dog."
 
-	man_text="$("${test_root_dir}/resources/smart_dog.sh" help --dump-man)"
+	man_text="$("${test_common_resources_dir}/smart_dog.sh" help --dump-man)"
 	assertLastCommandSucceeded
 	man_text_made_static="$(sed 's/^\(\.TH smart_dog\.sh 1 \"\)\(.\+\)\(\" \"version 1.0\"\)$/\1SOME_DATE\3/' <<< "$man_text")"
 	assertEquals "Generated man is correct" "$expected_man_text" "$man_text_made_static"

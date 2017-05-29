@@ -60,7 +60,7 @@ This application helps your to interact with you dog.
 
 \`smart_dog.sh <global_options> call <name>\`"
 
-	markdown_text="$("${test_root_dir}/resources/smart_dog.sh" help --dump-markdown)"
+	markdown_text="$("${test_common_resources_dir}/smart_dog.sh" help --dump-markdown)"
 	assertLastCommandSucceeded
 	assertEquals "$expected_markdown_text" "$markdown_text"
 

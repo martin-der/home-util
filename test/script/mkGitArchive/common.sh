@@ -3,7 +3,7 @@
 
 common_oneTimeSetUp() {
 	. "${src_root_dir}/shell-util.sh" || exit 1
-	RESOURCES_DIR="${test_root_dir}/resources"
+	RESOURCES_DIR="${test_common_resources_dir}"
 
 	TMP_DIR=`mktemp -d` || exit 2
 	trap "rm -rf '$TMP_DIR'" EXIT

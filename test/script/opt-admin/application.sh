@@ -5,7 +5,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/../runner.sh"
 
 oneTimeSetUp() {
 	. "${src_root_dir}/shell-util.sh" || exit 1
-	RESOURCES_DIR="${test_root_dir}/resources"
+	RESOURCES_DIR="${test_common_resources_dir}"
 }
 
 

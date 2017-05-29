@@ -10,7 +10,7 @@ oneTimeSetUp() {
 	__fui_engine=humble-tui
 	fui_set_builder shelter_care
 	#fui_set_builder from_json_builder
-	from_json_builder_set_file "${test_root_dir}/resources/shelter-flowui.json"
+	from_json_builder_set_file "${test_common_resources_dir}/shelter-flowui.json"
 	fui_set_expresser shelter_care_i18n
 }
 

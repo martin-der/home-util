@@ -5,7 +5,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/../runner.sh"
 
 oneTimeSetUp() {
 	#source "${src_root_dir}/completion-helper.sh" || exit 1
-	source "${test_root_dir}/resources/smart_dog.sh" help --helper-complete || exit 1
+	source "${test_common_resources_dir}/smart_dog.sh" help --helper-complete || exit 1
 	local smart_dog_completion_line="$(complete -p | grep smart_dog)"
 	completion_function="$(sed "s#^complete -F \(.*\) smart_dog\.sh\$#\1#" <<< "${smart_dog_completion_line}")"
 	echo "completion_function = $completion_function"
@@ -52,7 +52,7 @@ call
 learn"
 
 	prepareCompletionVars 1 0 smart_dog.sh ""
-	"$completion_function" "${test_root_dir}/resources/smart_dog.sh"
+	"$completion_function" "${test_common_resources_dir}/smart_dog.sh"
 	response="$(getCompReplies)"
 	assertEquals "$expected" "$response"
 }
@@ -64,7 +64,7 @@ testCompleteVerbsWithGivenOneLetter() {
 smell"
 
 	prepareCompletionVars 1 1 smart_dog.sh "s"
-	"$completion_function" "${test_root_dir}/resources/smart_dog.sh"
+	"$completion_function" "${test_common_resources_dir}/smart_dog.sh"
 	response="$(getCompReplies)"
 	assertEquals "$expected" "$response"
 }
@@ -79,7 +79,7 @@ strongheart
 snoopy"
 
 	prepareCompletionVars 2 0 smart_dog.sh "call" ""
-	"$completion_function" "${test_root_dir}/resources/smart_dog.sh"
+	"$completion_function" "${test_common_resources_dir}/smart_dog.sh"
 	response="$(getCompReplies)"
 	assertEquals "$expected" "$response"
 }
@@ -91,7 +91,7 @@ testCompleteVerbFirstArgumentStartingWithS() {
 snoopy"
 
 	prepareCompletionVars 2 1 smart_dog.sh "call" "s"
-	"$completion_function" "${test_root_dir}/resources/smart_dog.sh"
+	"$completion_function" "${test_common_resources_dir}/smart_dog.sh"
 	response="$(getCompReplies)"
 	assertEquals "Callable dogs starting with 's'" "$expected" "$response"
 }
@@ -103,7 +103,7 @@ testCompleteVerbFirstArgumentStartingWithR() {
 rintintin"
 
 	prepareCompletionVars 2 1 smart_dog.sh "call" "r"
-	"$completion_function" "${test_root_dir}/resources/smart_dog.sh"
+	"$completion_function" "${test_common_resources_dir}/smart_dog.sh"
 	response="$(getCompReplies)"
 	assertEquals "Callable dogs starting with 'r'" "$expected" "$response"
 }
@@ -114,7 +114,7 @@ testCompleteVerbFirstArgumentStartingWithRi() {
 	expected="rintintin"
 
 	prepareCompletionVars 2 1 smart_dog.sh "call" "ri"
-	"$completion_function" "${test_root_dir}/resources/smart_dog.sh"
+	"$completion_function" "${test_common_resources_dir}/smart_dog.sh"
 	response="$(getCompReplies)"
 	assertEquals "Callable dogs starting with 'ri'" "$expected" "$response"
 }
@@ -125,7 +125,7 @@ testCompleteVerbNoFirstArgumentStartingWithZ() {
 	expected="$NO_REPLY"
 
 	prepareCompletionVars 2 0 smart_dog.sh "call" "z"
-	"$completion_function" "${test_root_dir}/resources/smart_dog.sh"
+	"$completion_function" "${test_common_resources_dir}/smart_dog.sh"
 	response="$(getCompReplies)"
 	assertEquals "No callable dogs starting with 'z'" "$expected" "$response"
 }
