@@ -643,6 +643,89 @@ split_filepath() {
 
 # ---------------------- #
 #                        #
+#        Options         #
+#                        #
+# ---------------------- #
+
+__mdu_option_index=1
+reset_get_options() {
+	__mdu_option_index=1
+}
+is_option_configuration_valid() {
+	if [[ $1 =~ (^|\|)([-a-zA-Z]+)(\||$) ]] ; then return 0 ; else return 1 ; fi
+}
+
+get_option_config () {
+	local configs option regex_has_option
+	configs="$1"
+	option="$2"
+	regex_has_option="(^|\|)$(escaped_for_regex "$option")(\||:?$)"
+	while read -d ',' config; do
+		if [[ $config =~ $regex_has_option ]] ; then
+			echo "$config"
+			return 0
+		fi
+	done <<< "$configs,"
+	return 1
+}
+
+is_option_config_with_parameter () {
+	local config
+	config="$1"
+	if [[ $config =~ .+: ]] ; then return 0 ; fi
+	return 1
+}
+
+__mdu_export_option_value () {
+	eval "$1=$2"
+	eval "export $1"
+}
+get_options () {
+
+	local options_config option_config ___mdu_local_option option_index name
+	options_config="$1"
+	name="$2"
+
+	eval "OPTIND=$__mdu_option_index"
+	option_index=$(($__mdu_option_index + 2))
+
+	if [ $# -lt "$option_index" ]; then return 1 ; fi
+	___mdu_local_option=${!option_index}
+
+
+	if [[ $___mdu_local_option =~ ^-{1,2}(.*)$ ]] ; then
+		___mdu_local_option="${BASH_REMATCH[1]}"
+	else
+		return 2
+	fi
+
+	__mdu_export_option_value "$name" "$___mdu_local_option"
+
+	option_config="$(get_option_config "$options_config" "$___mdu_local_option")" || { echo "No option '$___mdu_local_option'" >&2 ; return 3 ; }
+
+	#echo "option_config = '$option_config'" >&2
+	#echo "option = '$option'" >&2
+
+	local is_option
+	is_option_config_with_parameter "$option_config"
+	is_option=$?
+	if [ $is_option -eq 0 ] ; then
+		__mdu_option_index=$(($__mdu_option_index + 1))
+		option_index=$(($__mdu_option_index + 2))
+		if [ $# -lt "$option_index" ]; then echo "Missing argument for option '$___mdu_local_option'" >&2 ; return 4 ; fi
+		eval "OPTIND=$__mdu_option_index"
+		eval "OPTARG=${!option_index}"
+	else
+		unset OPTARG
+	fi
+
+	__mdu_option_index=$(($__mdu_option_index + 1))
+
+}
+
+
+# ---------------------- #
+#                        #
 #          Misc          #
 #                        #
 # ---------------------- #
