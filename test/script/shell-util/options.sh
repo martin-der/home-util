@@ -46,43 +46,41 @@ getAnimalOptionsResult() {
 	echo "${has_ant}-${ant_count};${has_beaver};${has_cat}-${cat_name};${has_dog}"
 }
 
-ZZZtestAllOptions() {
+testAllOptions() {
 
 	get_options "$animal_options" option -a 10000 --beaver --dog --cat Felix
 	assertLastCommandSucceeded
 	assertEquals "a" "$option"
 	assertEquals "10000" "$OPTARG"
-	assertEquals "1" "$((OPTIND - 1))"
+	assertEquals "2" "$((OPTIND - 1))"
 	handleAnimalOption "$option"
 
 	get_options "$animal_options" option -a 10000 --beaver --dog --cat Felix
 	assertLastCommandSucceeded
 	assertEquals "beaver" "$option"
 	assertVariableUnbound "OPTARG is unbound" "OPTARG"
-	assertEquals "2" "$((OPTIND - 1))"
+	assertEquals "3" "$((OPTIND - 1))"
 	handleAnimalOption "$option"
 
 	get_options "$animal_options" option -a 10000 --beaver --dog --cat Felix
 	assertLastCommandSucceeded
 	assertEquals "dog" "$option"
 	assertVariableUnbound "OPTARG is unbound" "OPTARG"
-	assertEquals "3" "$((OPTIND - 1))"
+	assertEquals "4" "$((OPTIND - 1))"
 	handleAnimalOption "$option"
 
 	get_options "$animal_options" option -a 10000 --beaver --dog --cat Felix
 	assertLastCommandSucceeded
 	assertEquals "cat" "$option"
 	assertEquals "Felix" "$OPTARG"
-	assertEquals "5" "$((OPTIND - 1))"
+	assertEquals "6" "$((OPTIND - 1))"
 	handleAnimalOption "$option"
-
-	#assertEquals "6" "$((OPTIND - 1))"
 
 	local result expected
 	result="$(getAnimalOptionsResult)"
 	expected="1-10000;1;1-Felix;1"
 
-#	assertEquals "All animal options" "$expected" "$result"
+	assertEquals "All animal options" "$expected" "$result"
 }
 
 testAllOptionsStepByStep() {

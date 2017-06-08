@@ -686,7 +686,7 @@ get_options () {
 	options_config="$1"
 	name="$2"
 
-	eval "OPTIND=$__mdu_option_index"
+	OPTIND=$__mdu_option_index
 	option_index=$(($__mdu_option_index + 2))
 
 	if [ $# -lt "$option_index" ]; then return 1 ; fi
@@ -713,13 +713,14 @@ get_options () {
 		__mdu_option_index=$(($__mdu_option_index + 1))
 		option_index=$(($__mdu_option_index + 2))
 		if [ $# -lt "$option_index" ]; then echo "Missing argument for option '$___mdu_local_option'" >&2 ; return 4 ; fi
-		eval "OPTIND=$__mdu_option_index"
-		eval "OPTARG=${!option_index}"
+		OPTIND=$__mdu_option_index
+		OPTARG=${!option_index}
 	else
 		unset OPTARG
 	fi
 
 	__mdu_option_index=$(($__mdu_option_index + 1))
+	eval "OPTIND=$__mdu_option_index"
 
 }
 
