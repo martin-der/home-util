@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #@mdu-helper-capable
 
 source "$(dirname "$0")/shell-util.sh" 2>/dev/null || source shell-util || exit 1
@@ -110,6 +110,25 @@ function getActionArguments() {
 
 	return 0
 }
+function getOptions() {
+	local info option whom
+	info="$1"
+	option="$1"
+	whom="$3"
+
+	if [ "x$whom" = "x" ] ; then
+		return 0
+	fi
+
+	case "$whom" in
+		"$ACTION_APPLICATION_INSTALL_ALTERNATIVE") echo "d,default" ; return 0 ;;
+		"$ACTION_APPLICATION_GENERATE") echo "o,output-to" ; return 0 ;;
+		*) return 0
+	esac
+
+	return 0
+}
+
 function getInformation() {
 	local info="$1"
 	local name="$2"
@@ -117,8 +136,8 @@ function getInformation() {
 	local action parameterType
 
 	[ "x$what" == "x" ] && {
-		[ "x$info" == "xsummary" ] && echo "Installation of 'optionnal' packages made easy"
-		[ "x$info" == "xdetail" ] && echo "${_mdu_CH_application} eases the installation of optionnal package ( usually found under '/opt/' )"
+		[ "x$info" == "xsummary" ] && echo "Installation of 'optional' packages made easy"
+		[ "x$info" == "xdetail" ] && echo "${_mdu_CH_application} eases the installation of optional package ( usually found under '/opt/' )"
 		return 0
 	}
 
@@ -213,7 +232,7 @@ function getInformation() {
 ACTION="$1"
 shift
 
-_mdu_CH_init_builder_helper "listActions" "getActionArguments" "getInformation" "completeType" "$ACTION" $@
+_mdu_CH_init_builder_helper "listActions" "getActionArguments" "getOptions" "completeType" "getInformation" "$ACTION" $@
 
 function printHelp() {
 	_mdu_CH_print_help $@
@@ -270,21 +289,6 @@ function checkApplicationAlternativeDoesntExistOrDie() {
 }
 
 
-
-function extract {
-	local commandPrefix="$(extractArchiveCommand "$1")" || {
-		log_error "Unknown archive type"
-		return 1
-	}
-
-	log_debug "command is : $commandPrefix $1"
-	${DRYDO} ${commandPrefix} "$1" > /dev/null || {
-		log_error "Error while extracting archive"
-		return 1
-	}
-
-	return 0
-}
 
 
 function checkApplicationNameIsValid() {
@@ -407,6 +411,22 @@ function listXDGCategories() {
 [ $mdu_CH_exit -eq 1 ] && {
 	return 0
 }
+
+function extract {
+	local commandPrefix="$(extractArchiveCommand "$1")" || {
+		log_error "Unknown archive type"
+		return 1
+	}
+
+	log_debug "command is : $commandPrefix $1"
+	${DRYDO} ${commandPrefix} "$1" > /dev/null || {
+		log_error "Error while extracting archive"
+		return 1
+	}
+
+	return 0
+}
+
 
 function installAlternative() {
 	APPLICATION="$1"

@@ -36,7 +36,7 @@ modifyProject2() {
 
 # tar -tzf file.tar.gz | wc -l
 
-testZipModifiedFiles() {
+ZZtestZipModifiedFiles() {
 	modifyProject || exit 2
 	( cd "${FOOBAR_PROJECT_DIR}" && mkArchive -m )
 	assertEquals "make archive" 0 $?
@@ -46,7 +46,7 @@ testZipModifiedFiles() {
 	assertTrue "foobar was not in the archive" "[ ! -e \"$OUTPUT_DIRECTORY/foobar_project/foobar\" ]"
 	assertEquals "1 files in output" 1 "$(count_files_in "${OUTPUT_DIRECTORY}/foobar_project")"
 }
-testZipMoreModifiedFiles() {
+ZZtestZipMoreModifiedFiles() {
 	modifyProject || exit 2
 	modifyProject2 || exit 2
 	( cd "${FOOBAR_PROJECT_DIR}" && mkArchive -m )
@@ -57,7 +57,7 @@ testZipMoreModifiedFiles() {
 	assertSameFiles "foobar has been unzipped" "${FOOBAR_PROJECT_DIR}/foobar" "${OUTPUT_DIRECTORY}/foobar_project/foobar"
 	assertEquals "2 files in output" 2 "$(count_files_in "${OUTPUT_DIRECTORY}/foobar_project")"
 }
-testZipNewFiles() {
+ZZtestZipNewFiles() {
 	modifyProject || exit 2
 	( cd "${FOOBAR_PROJECT_DIR}" && mkArchive -n )
 	assertLastCommandSucceeded "Make archive"
@@ -68,7 +68,7 @@ testZipNewFiles() {
 	assertTrue "foobar was not in the archive" "[ ! -e \"$OUTPUT_DIRECTORY/foobar_project/foobar\" ]"
 	assertEquals "1 files in output" 1 "$(count_files_in "${OUTPUT_DIRECTORY}/foobar_project")"
 }
-testZipNewAndModifiedFiles() {
+ZZtestZipNewAndModifiedFiles() {
 	modifyProject || exit 2
 	modifyProject2 || exit 2
 	( cd "${FOOBAR_PROJECT_DIR}" && mkArchive -m -n )
@@ -81,21 +81,21 @@ testZipNewAndModifiedFiles() {
 	assertEquals "3 files in output" 3 "$(count_files_in "${OUTPUT_DIRECTORY}/foobar_project")"
 }
 
-testFailCreatingEmptyZipWithModifiedFiles() {
+ZZtestFailCreatingEmptyZipWithModifiedFiles() {
 	( cd "${FOOBAR_PROJECT_DIR}" && mkArchive -m 2>/dev/null )
 	assertLastCommandFailed "Make archive" ""
 }
-testCreatingEmptyZipWithModifiedFiles() {
+ZZtestCreatingEmptyZipWithModifiedFiles() {
 	( cd "${FOOBAR_PROJECT_DIR}" && mkArchive -m -e )
 	assertLastCommandSucceeded "Make archive"
 	( cd "${OUTPUT_DIRECTORY}" && unzip_mute_empty_warning "$MDU_BUP_DIRECTORY/foobar_project-*.zip" >/dev/null )
 	assertLastCommandSucceeded "Unzip archive"
 }
-testFailCreatingEmptyZipWithNewFiles() {
+ZZtestFailCreatingEmptyZipWithNewFiles() {
 	( cd "${FOOBAR_PROJECT_DIR}" && mkArchive -n 2>/dev/null )
 	assertLastCommandFailed "Make archive" ""
 }
-testCreatingEmptyZipWithNewFiles() {
+ZZtestCreatingEmptyZipWithNewFiles() {
 	( cd "${FOOBAR_PROJECT_DIR}" && mkArchive -n -e )
 	assertLastCommandSucceeded "Make archive"
 	( cd "${OUTPUT_DIRECTORY}" && unzip_mute_empty_warning "$MDU_BUP_DIRECTORY/foobar_project-*.zip" >/dev/null )

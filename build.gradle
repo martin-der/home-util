@@ -11,9 +11,9 @@ buildscript{
 
 	dependencies {
 		//classpath "net.tetrakoopa.poignee:util:0.1-SNAPSHOT"
-		//classpath "net.tetrakoopa.gradle.plugin.shell:shell-package:0.1-SNAPSHOT"
-		//classpath "net.tetrakoopa.gradle.plugin.shell:shell-test:0.1-SNAPSHOT"
-		classpath "com.github.martin-der.gradle-shell-plugin:shell:${property('version.mdu.shell')}"
+		classpath "net.tetrakoopa.gradle.plugin.shell:shell-package:0.1-SNAPSHOT"
+		classpath "net.tetrakoopa.gradle.plugin.shell:shell-test:0.1-SNAPSHOT"
+		//classpath "com.github.martin-der.gradle-shell-plugin:shell:${property('version.mdu.shell')}"
 		classpath "com.github.martin-der.poignee:util:${property('version.mdu.gradle.util')}"
 	}
 }
@@ -28,8 +28,8 @@ version getGitVersionName
 
 shell_package {
 
-	from project.fileTree("src").include('*.sh', '*.py')
-	from project.fileTree(".").include('README.md')
+	from fileTree("src").include('*.sh', '*.py')
+	from fileTree(".").include('README.md')
 
 	installer {
 		readme.location = 'README.md'
@@ -45,6 +45,10 @@ shell_package {
 shell_test {
 
 	from fileTree("test/script").include('**/*.sh').exclude('common.sh').exclude('runner.sh')
-	scriptFrom project.fileTree("src").include('*.sh')
+	scriptFrom fileTree("src").include('*.sh')
 	workingDir = project.file("test")
+
+	naming {
+		removeSuffix = false
+	}
 }

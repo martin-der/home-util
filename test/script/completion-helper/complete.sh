@@ -4,8 +4,10 @@ source "$(dirname "${BASH_SOURCE[0]}")/../runner.sh"
 
 
 oneTimeSetUp() {
-	#source "${src_root_dir}/completion-helper.sh" || exit 1
-	source "${test_common_resources_dir}/smart_dog.sh" help --helper-complete || exit 1
+	source "${test_common_resources_dir}/smart_dog.sh" help --helper-complete || {
+		echo "Failed to init completion" >&2
+		exit 1
+	}
 	local smart_dog_completion_line="$(complete -p | grep smart_dog)"
 	completion_function="$(sed "s#^complete -F \(.*\) smart_dog\.sh\$#\1#" <<< "${smart_dog_completion_line}")"
 }

@@ -83,23 +83,46 @@ testAllOptions() {
 	assertEquals "All animal options" "$expected" "$result"
 }
 
-testAllOptionsStepByStep() {
-	get_options "$animal_options" option -a 10000 --beaver --dog --cat Felix
-}
 
 testAllOptionsWithExtraArguments() {
 
-	while get_options "$animal_options" option -a 10000 --beaver --dog --cat Felix and more animals ; do
-		handleAnimalOption "$option"
-	done
+	get_options "$animal_options" option -a 10000 --beaver --dog --cat Felix and more animals
+	assertLastCommandSucceeded
+	assertEquals "a" "$option"
+	assertEquals "10000" "$OPTARG"
+	assertEquals "2" "$((OPTIND - 1))"
+	handleAnimalOption "$option"
 
+	get_options "$animal_options" option -a 10000 --beaver --dog --cat Felix and more animals
+	assertLastCommandSucceeded
+	assertEquals "beaver" "$option"
+	assertVariableUnbound "OPTARG is unbound" "OPTARG"
+	assertEquals "3" "$((OPTIND - 1))"
+	handleAnimalOption "$option"
+
+	get_options "$animal_options" option -a 10000 --beaver --dog --cat Felix and more animals
+	assertLastCommandSucceeded
+	assertEquals "dog" "$option"
+	assertVariableUnbound "OPTARG is unbound" "OPTARG"
+	assertEquals "4" "$((OPTIND - 1))"
+	handleAnimalOption "$option"
+
+	get_options "$animal_options" option -a 10000 --beaver --dog --cat Felix and more animals
+	assertLastCommandSucceeded
+	assertEquals "cat" "$option"
+	assertEquals "Felix" "$OPTARG"
 	assertEquals "6" "$((OPTIND - 1))"
+	handleAnimalOption "$option"
 
 	local result expected
 	result="$(getAnimalOptionsResult)"
 	expected="1-10000;1;1-Felix;1"
 
 	assertEquals "All animal options" "$expected" "$result"
+
+	#shift 6
+
+	##assertEquals "All animal extra options" "Felix and more animals" "ee  $@"
 }
 
 testOverrideArgumentWithSecondDeclaration() {

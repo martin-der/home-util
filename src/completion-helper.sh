@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 
 [ "x${BASH_SOURCE[0]}" == "x${0}" ] && {
@@ -30,6 +30,7 @@ _mdu_CH_completion_running=0
 _mdu_CH_application="$(basename "${BASH_SOURCE[1]}")"
 
 _mdu_CH_verb_locution="verb"
+_mdu_CH_help_verb="help"
 
 
 _reply_common_completion() {
@@ -89,9 +90,13 @@ ___get_verb_arguments() {
 	"$_mdu_CH_get_verb_arguments_CB" "$@"
 	return $?
 }
-___get_option() {
+___list_types() {
+	"$_mdu_CH_complete_type_CB" "$@"
+	return $?
+}
+___get_options() {
 	# info option whom
-	"$_mdu_CH_get_option_CB" "${1:-}" "${2:-}" "${3:-}"
+	"$_mdu_CH_get_options_CB" "${1:-}" "${2:-}" "${3:-}"
 	return $?
 }
 ___get_information() {
@@ -120,6 +125,7 @@ _display_argument() {
 
 _dump_man() {
 	local command name summary
+	local global_options options
 
 	summary=$(___get_information summary)
 	name="$_mdu_CH_application"
@@ -129,17 +135,24 @@ _dump_man() {
 	echo ".SH NAME"
 	echo "$name - $summary"
 	echo ".SH SYNOPSIS"
+	global_options="$(___get_options)"
 	local first=1
-	___list_verbs | while read -d ' '  verb ; do
-		[ $first -eq 1 ] && first=0 || echo ".br"
+	index=0
+	___list_verbs | while read -d ' ' verb ; do
+		echo ".SH qsdqsd $verb"
+		options=$(___get_options "" "" "$verb")
+		#[ $first -eq 1 ] && first=0 || echo
 		argumentsRaw=$(___get_verb_arguments "$verb")
+		echo ".SH $command"
 		echo ".B $command"
-		echo "$verb"
-		for argument in ${argumentsRaw}; do
-			local argumentName="$(_getArgumentName "$argument")"
-			#echo -n ".Op "
-		done
+		[ "x$global_options" != "x" ] && echo "<global_options> "
+		echo -n "$verb"
+		[ "x$options" != "x" ] && echo -n " <options>"
+		for argument in ${argumentsRaw}; do echo -n " " ; _display_argument "$argument" ; done
+		echo
+		index=$(($index+1))
 	done
+	echo
 
 	local detail=$(___get_information detail)
 	[ "x$detail" != "x" ] && {
@@ -171,11 +184,11 @@ _dump_markdown() {
 
 	echo "## Synopsis"
 	echo
-	global_options=$(___get_option)
+	global_options=$(___get_options)
 	local first=1
 	index=0
 	___list_verbs | while read -d ' ' verb ; do
-		options=$(___get_option "" "" "$verb")
+		options=$(___get_options "" "" "$verb")
 		#[ $first -eq 1 ] && first=0 || echo
 		argumentsRaw=$(___get_verb_arguments "$verb")
 		echo -n "\`$command "
@@ -201,7 +214,7 @@ _dump_markdown() {
 	first=1
 	index=0
 	___list_verbs | while read -d ' ' verb ; do
-		options=$(___get_option "" "" "$verb")
+		options=$(___get_options "" "" "$verb")
 		#[ $first -eq 1 ] && first=0 || echo
 		echo "### Usage $((1+$index))"
 		echo
@@ -225,125 +238,12 @@ _dump_markdown() {
 
 }
 
-_mdu_auto_completion() {
-
-	_mdu_CH_completion_running=1
-	#_mdu_CH_application="${COMP_WORDS[0]}"
-	_mdu_CH_application="${1##*/}"
-
-	#. "$_mdu_CH_application"
-	. "${1}"
-
-	local cur prev
-	COMPREPLY=()
-	cur="${COMP_WORDS[COMP_CWORD]}"
-
-	local verb verbs arguments customValues
-
-	case $COMP_CWORD in
-		1)
-			verbs=$(___list_verbs)
-			COMPREPLY=( $(compgen -W "$verbs" -- ${cur}) )
-			;;
-		*)
-			verb="${COMP_WORDS[1]}"
-			[ "x$verb" == "xhelp" ] && {
-				[ $COMP_CWORD -eq 2 ] && {
-					verbs=$(___list_verbs)
-					COMPREPLY=( $(compgen -W "$verbs" -- ${cur}) )
-				}
-			} || {
-				arguments=$(___get_verb_arguments "$verb") && {
-					argumentsTemplatesArray=($arguments)
-					argumentTemplate="${argumentsTemplatesArray[COMP_CWORD-2]}"
-					argumentName="$(_getArgumentName "$argumentTemplate")"
-					argumentType="$(_getArgumentType "$argumentTemplate")"
-					previousArguments=("${COMP_WORDS[@]:1:COMP_CWORD-1}")
-					#notify -r 2 "all : ${COMP_WORDS[*]}\nindex : ${COMP_CWORD}\ncurrent : ${cur}\nprevious : ${previousArguments[*]}"
-					_reply_common_completion "$argumentType" || {
-						customValues="$("$_mdu_CH_complete_type_CB" "$argumentType" "${previousArguments[@]}" )"
-						COMPREPLY=( $(compgen -W "$customValues" -- ${cur}) )
-					}
-				}
-			}
-			;;
-	esac
-
-}
-
-
-_mdu_CH_set_callbacks() {
-	_mdu_CH_list_verbs_CB="$1"
-	export _mdu_CH_list_verbs_CB
-	_mdu_CH_get_verb_arguments_CB="$2"
-	export _mdu_CH_get_verb_arguments_CB
-	_mdu_CH_get_option_CB="$3"
-	export _mdu_CH_get_option_CB
-	_mdu_CH_get_information_CB="$4"
-	export _mdu_CH_get_information_CB
-	_mdu_CH_complete_type_CB="$5"
-	export _mdu_CH_complete_type_CB
-
-	[ "x$_mdu_CH_list_verbs_CB" == x ] && { echo "[_mdu_CH_help] callback 'list_verbs'(1) is missing" >&2 ; return 1 ; }
-	[ "x$_mdu_CH_get_verb_arguments_CB" == x ] && { echo "[_mdu_CH_help] callback 2 'get_verb_arguments'(2) is missing" >&2; return 1 ; }
-}
-
-_mdu_CH_init_builder_helper() {
-
-	_mdu_CH_set_callbacks "$@"
-	shift 5
-
-	[ ! -z ${1+x} -a "x$1" == "xhelp" ] || return
-	shift
-
-	[ -z ${1+x} ] && return 0
-
-	[ "$1" == "--dump-man" ] && {
-		_dump_man
-		exit 0
-	}
-
-	[ "$1" == "--dump-markdown" ] && {
-		_dump_markdown
-		exit 0
-	}
-
-	[ "$1" == "--man" ] && {
-		_dump_man | man /dev/stdin
-		exit 0
-	}
-
-	[ "$1" == "--helper-complete" ] && {
-		local _complete_options=
-		local application_name="$(basename "$_mdu_CH_application")"
-		complete ${_complete_options} -F _mdu_auto_completion "$application_name"
-		mdu_CH_exit=1
-		export mdu_CH_exit
-		return 0
-	}
-}
-
-
-_print_paragraph()  {
-	title="$1"
-
-	local format=1
-	[ $format -eq 1 ] && {
-		local FMT_CNT_paragraphe_title="\033[1;37m"
-		#local FMT_CNT_paragraphe_title="\033[0;37m"
-		#local FMT_CNT_paragraphe_title="\033[1;32m"
-		local FMT_CNT_reset="\033[0;0m"
-	}
-	local emPrefix="    "
-
-	echo -e "${FMT_CNT_paragraphe_title}${title}${FMT_CNT_reset}"
-	while read l ; do
-		echo "${emPrefix}${l}"
-	done
-
-}
-
-_mdu_CH_print_help() {
+# @description Print help
+#
+# @arg $1 string an verb, if omitted the global synopsis is printed
+#
+# @exitcode 0
+mdu_CH_print_help() {
 
 	local prefixUsage="Usage"
 	local prefixSummary="Summary"
@@ -364,7 +264,7 @@ _mdu_CH_print_help() {
 
 		verb="$1"
 
-		[ "x$verb" == "xhelp" ] && {
+		[ "x$verb" == "x$_mdu_CH_help_verb" ] && {
 			echo "Are you kidding me ?"
 			arguments="<${_mdu_CH_verb_locution}:${_mdu_CH_verb_locution}>"
 			summary="Show help about <${_mdu_CH_verb_locution}>"
@@ -455,19 +355,176 @@ _mdu_CH_print_help() {
 	fi
 }
 
+
+_mdu_auto_completion() {
+
+	_mdu_CH_completion_running=1
+	#_mdu_CH_application="${COMP_WORDS[0]}"
+	_mdu_CH_application="${1##*/}"
+
+	#. "$_mdu_CH_application"
+	. "${1}"
+
+	local cur prev
+	COMPREPLY=()
+	cur="${COMP_WORDS[COMP_CWORD]}"
+
+	local verb verbs arguments customValues
+
+	case $COMP_CWORD in
+		1)
+			verbs=$(___list_verbs)
+			COMPREPLY=( $(compgen -W "$verbs" -- ${cur}) )
+			;;
+		*)
+			verb="${COMP_WORDS[1]}"
+			[ "x$verb" == "x$_mdu_CH_help_verb" ] && {
+				[ $COMP_CWORD -eq 2 ] && {
+					verbs=$(___list_verbs)
+					COMPREPLY=( $(compgen -W "$verbs" -- ${cur}) )
+				}
+			} || {
+				arguments=$(___get_verb_arguments "$verb") && {
+					argumentsTemplatesArray=($arguments)
+					argumentTemplate="${argumentsTemplatesArray[COMP_CWORD-2]}"
+					argumentName="$(_getArgumentName "$argumentTemplate")"
+					argumentType="$(_getArgumentType "$argumentTemplate")"
+					previousArguments=("${COMP_WORDS[@]:1:COMP_CWORD-1}")
+					#notify -r 2 "all : ${COMP_WORDS[*]}\nindex : ${COMP_CWORD}\ncurrent : ${cur}\nprevious : ${previousArguments[*]}"
+					_reply_common_completion "$argumentType" || {
+						customValues="$(___list_types "$argumentType" "${previousArguments[@]}" )"
+						COMPREPLY=( $(compgen -W "$customValues" -- ${cur}) )
+					}
+				}
+			}
+			;;
+	esac
+
+}
+
+
+_mdu_CH_set_callbacks() {
+
+	[ "$#" != 5 ] && { echo "[_mdu_CH_help] expected 5 callback" >&2 ; return 1 ; }
+
+	_mdu_CH_list_verbs_CB="$1"
+	export _mdu_CH_list_verbs_CB
+	_mdu_CH_get_verb_arguments_CB="$2"
+	export _mdu_CH_get_verb_arguments_CB
+	_mdu_CH_get_options_CB="$3"
+	export _mdu_CH_get_options_CB
+	_mdu_CH_complete_type_CB="$4"
+	export _mdu_CH_complete_type_CB
+	_mdu_CH_get_information_CB="$5"
+	export _mdu_CH_get_information_CB
+
+	[ "x$_mdu_CH_list_verbs_CB" == x ] && { echo "[_mdu_CH_help] callback 'list_verbs'(1) is missing" >&2 ; return 1 ; }
+	[ "x$_mdu_CH_get_verb_arguments_CB" == x ] && { echo "[_mdu_CH_help] callback 2 'get_verb_arguments'(2) is missing" >&2; return 1 ; }
+
+	return 0
+}
+
+
+mdu_CH_is_help_command() {
+	if [ ! -z ${1+x} ] && [ "x$1" == "x$_mdu_CH_help_verb" ] ; then return 0 ; else  return 1 ; fi
+}
+
+mdu_CH_handle_help_command() {
+
+	[ "x${1:-}" == "x" ] && {
+		echo "Error parameter missing" >&2
+		return 1
+	}
+
+	[ "$1" == "--dump-man" ] && {
+		_dump_man
+		return 0
+	}
+
+	[ "$1" == "--man" ] && {
+		_dump_man | man /dev/stdin
+		return 0
+	}
+
+	[ "$1" == "--dump-markdown" ] && {
+		_dump_markdown
+		return 0
+	}
+
+	[ "$1" == "--helper-complete" ] && {
+		local _complete_options=
+		local application_name
+		if [ "x${2:-}" != "x" ]; then
+			application_name="$2"
+		else
+			application_name="$(basename "$_mdu_CH_application")"
+		fi
+		complete ${_complete_options} -F _mdu_auto_completion "$application_name"
+		mdu_CH_exit=1
+		export mdu_CH_exit
+		return 0
+	}
+
+	echo "Error unknown parameter '$1'" >&2
+	return 1
+}
+
+_print_paragraph()  {
+	title="$1"
+
+	local format=1
+	[ $format -eq 1 ] && {
+		local FMT_CNT_paragraphe_title="\033[1;37m"
+		#local FMT_CNT_paragraphe_title="\033[0;37m"
+		#local FMT_CNT_paragraphe_title="\033[1;32m"
+		local FMT_CNT_reset="\033[0;0m"
+	}
+	local emPrefix="    "
+
+	echo -e "${FMT_CNT_paragraphe_title}${title}${FMT_CNT_reset}"
+	while read l ; do
+		echo "${emPrefix}${l}"
+	done
+}
+
+# @description handle help command
+#
+# @arg $1 string callback to list verbs
+# @arg $2 string callback to get verb argument
+# @arg $3 string callback to get options
+# @arg $4 string callback to complete a type
+# @arg $4 string callback to get information
+# @arg $6 string one of `dump-man`, `man`, `dump-markdown` or `helper-complete`
+#
+# @exitcode 1 if bad parameters were supplied
+mdu_HH_do_help() {
+
+	_mdu_CH_set_callbacks "$1" "$2" "$3" "$4" "$5"
+	shift 5
+
+	mdu_CH_handle_help_command "$@"
+}
+
+
 _mdu_CH_show_helper_help() {
+	echo "This script can be used two different ways :"
+	echo
 	echo "| Sourced |"
-	echo "    When this script is sourced"
-	echo "    caller must provide four callbacks:"
-	echo "- getInformation <info> [<verb>]"
+	echo "\`---------'"
+	echo "    After this script has been sourced"
+	echo "    caller must provide five callbacks:"
 	echo "- listVerbs"
 	echo "- getVerbArguments <verb>"
+	echo "- getOptions <verb>"
 	echo "- completeType <type> <verb> [<previous_arg>...]"
+	echo "- getInformation <info> [<verb>]"
+	echo
 	echo "| Executed |"
+	echo "\`----------'"
 	echo "    When this script is executed"
 	echo "    it accepts one parameter:"
 	echo "- the path of a script"
-	echo "return 0 and echo 'Capable' if the script given has parameter can do automatic completion"
+	echo "return 0 and echo 'Capable' if the script given as parameter can do automatic completion"
 	echo "return non 0 and echo 'Not Capable' otherwise"
 }
 

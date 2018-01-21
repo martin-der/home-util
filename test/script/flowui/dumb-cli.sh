@@ -2,7 +2,7 @@
 
 source "$(dirname "${BASH_SOURCE[0]}")/../runner.sh"
 
-exit 0
+#exit 0
 
 oneTimeSetUp() {
 	. "${src_root_dir}/flowui.sh"
@@ -10,7 +10,7 @@ oneTimeSetUp() {
 	__fui_engine=humble-tui
 	fui_set_builder shelter_care
 	#fui_set_builder from_json_builder
-	from_json_builder_set_file "${test_common_resources_dir}/shelter-flowui.json"
+	from_json_builder_set_file "${test_common_resources_dir}/shelter-flowui.json" || exit 1
 	fui_set_expresser shelter_care_i18n
 }
 
