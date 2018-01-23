@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 all_tests=`find test/ -regex 'test/script/.*/.*\.sh' -exec echo '{}' \;`
 

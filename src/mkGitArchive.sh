@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 source "$(readlink "$(dirname "$0")/shell-util.sh")" 2>/dev/null \
 || source "$(dirname "$0")/shell-util.sh" 2>/dev/null \

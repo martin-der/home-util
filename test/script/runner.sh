@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 src_root_dir="${MDU_SHELLTEST_PROJECT_DIRECTORY}/src"
 test_root_dir="${MDU_SHELLTEST_PROJECT_DIRECTORY}/test"

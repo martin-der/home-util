@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 TAG="[INIT-USER-HOME]"
 export TAG

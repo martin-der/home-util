@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # @foobar-middle @foobar-right
 
 

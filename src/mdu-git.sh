@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 source "$(dirname "$0")/shell-util.sh" 2>/dev/null || source shell-util  || exit 1
 load_source_once config-util sh || exit 1
