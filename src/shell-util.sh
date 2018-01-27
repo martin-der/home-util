@@ -345,7 +345,7 @@ function log_error()  {
 # @exitcode 2 'attributes' line was invalid ( ex. does start with # )
 # @exitcode 0 if successful
 extract_script_attributes_line() {
-	sed -e '2q' -e '2d' -e '/^#!\/.*\/bash/d' "$1"
+	sed -e '2q' -e '2d' -e '/^#!\/.\+/d' "$1"
 }
 
 # @description Extract attributes line from a shell script
