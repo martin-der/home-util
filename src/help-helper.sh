@@ -23,14 +23,14 @@
 }
 
 
-[ "x${_mdu_CH_completion_running-}" == "x1" ] && return 0
+[ "x${_mdu_HH_completion_running-}" == "x1" ] && return 0
 
-mdu_CH_exit=0
-_mdu_CH_completion_running=0
-_mdu_CH_application="$(basename "${BASH_SOURCE[1]}")"
+mdu_HH_exit=0
+_mdu_HH_completion_running=0
+_mdu_HH_application="$(basename "${BASH_SOURCE[1]}")"
 
-_mdu_CH_verb_locution="verb"
-_mdu_CH_help_verb="help"
+_mdu_HH_verb_locution="verb"
+_mdu_HH_help_verb="help"
 
 
 _reply_common_completion() {
@@ -54,7 +54,7 @@ _isArgumentNonStatic() {
 	grep "^<.*>$" <<< "$1" >/dev/null
 }
 
-_isArgumentOptionnal() {
+_isArgumentOptional() {
 	grep "^\[.*\]$" <<< "$1" >/dev/null
 }
 _isArgumentRepeatable() {
@@ -83,25 +83,25 @@ _getArgumentType() {
 
 
 ___list_verbs() {
-	"$_mdu_CH_list_verbs_CB" "$@"
+	"$_mdu_HH_list_verbs_CB" "$@"
 	return $?
 }
 ___get_verb_arguments() {
-	"$_mdu_CH_get_verb_arguments_CB" "$@"
+	"$_mdu_HH_get_verb_arguments_CB" "$@"
 	return $?
 }
 ___list_types() {
-	"$_mdu_CH_complete_type_CB" "$@"
+	"$_mdu_HH_complete_type_CB" "$@"
 	return $?
 }
 ___get_options() {
 	# info option whom
-	"$_mdu_CH_get_options_CB" "${1:-}" "${2:-}" "${3:-}"
+	"$_mdu_HH_get_options_CB" "${1:-}" "${2:-}" "${3:-}"
 	return $?
 }
 ___get_information() {
 	# info name what
-	"$_mdu_CH_get_information_CB" "${1:-}" "${2:-}" "${3:-}"
+	"$_mdu_HH_get_information_CB" "${1:-}" "${2:-}" "${3:-}"
 	return $?
 }
 
@@ -109,13 +109,13 @@ _display_argument() {
 	local name
 	name="$(_getArgumentName "$1")"
 	_isArgumentNonStatic "${1}" && {
-		_isArgumentOptionnal "${1}" && {
+		_isArgumentOptional "${1}" && {
 			_isArgumentRepeatable "${1}" && echo -n "[<${name}>...]" || echo -n "[<${name}>]"
 		} || {
 			_isArgumentRepeatable "${1}" && echo -n "<${name}>..." || echo -n "<${name}>"
 		}
 	} || {
-		_isArgumentOptionnal "${1}" && {
+		_isArgumentOptional "${1}" && {
 			_isArgumentRepeatable "${1}" && echo -n "[${name}...]" || echo -n "[${name}]"
 		} || {
 			_isArgumentRepeatable "${1}" && echo -n "${name}..." || echo -n "${name}"
@@ -128,7 +128,7 @@ _dump_man() {
 	local global_options options
 
 	summary=$(___get_information summary)
-	name="$_mdu_CH_application"
+	name="$_mdu_HH_application"
 	command="$name"
 
 	echo ".TH $name 1 \"$(date +"%d %b %Y")\" \"version 1.0\""
@@ -167,7 +167,7 @@ _dump_markdown() {
 	local index
 
 	summary=$(___get_information summary)
-	name="$_mdu_CH_application"
+	name="$_mdu_HH_application"
 	command="$name"
 
 	echo "$name"
@@ -243,7 +243,7 @@ _dump_markdown() {
 # @arg $1 string an verb, if omitted the global synopsis is printed
 #
 # @exitcode 0
-mdu_CH_print_help() {
+mdu_HH_print_help() {
 
 	local prefixUsage="Usage"
 	local prefixSummary="Summary"
@@ -256,7 +256,7 @@ mdu_CH_print_help() {
 
 	if [ $# == 0 ] ; then
 
-		_print_paragraph "${prefixUsage}" <<< "$_mdu_CH_application <action> [<parameter>...]"
+		_print_paragraph "${prefixUsage}" <<< "$_mdu_HH_application <action> [<parameter>...]"
 
 		___list_verbs | sort | _print_paragraph "$prefixActions"
 
@@ -264,10 +264,10 @@ mdu_CH_print_help() {
 
 		verb="$1"
 
-		[ "x$verb" == "x$_mdu_CH_help_verb" ] && {
+		[ "x$verb" == "x$_mdu_HH_help_verb" ] && {
 			echo "Are you kidding me ?"
-			arguments="<${_mdu_CH_verb_locution}:${_mdu_CH_verb_locution}>"
-			summary="Show help about <${_mdu_CH_verb_locution}>"
+			arguments="<${_mdu_HH_verb_locution}:${_mdu_HH_verb_locution}>"
+			summary="Show help about <${_mdu_HH_verb_locution}>"
 		} || {
 			arguments=$(___get_verb_arguments "$verb")
 			summary=$(___get_information "summary" "$verb" "verb")
@@ -277,12 +277,12 @@ mdu_CH_print_help() {
 		local argumentsArray=($arguments)
 
 		(
-			echo -e -n "$_mdu_CH_application $verb"
+			echo -e -n "$_mdu_HH_application $verb"
 			[ "x$arguments" != "x"  ] && {
 				for argument in "${argumentsArray[@]}"; do
 					argumentCore="$(_getArgumentCore "${argument}")"
 					argumentName="$(_getArgumentName "${argumentCore}")"
-					_isArgumentOptionnal "${argument}" && {
+					_isArgumentOptional "${argument}" && {
 						_isArgumentRepeatable "${argument}" && echo "[${argumentName}]" || echo "[${argumentName}...]"
 						echo -e -n " [<${argumentName}>]"
 					} || {
@@ -356,13 +356,13 @@ mdu_CH_print_help() {
 }
 
 
-_mdu_auto_completion() {
+_mdu_HH_auto_completion() {
 
-	_mdu_CH_completion_running=1
-	#_mdu_CH_application="${COMP_WORDS[0]}"
-	_mdu_CH_application="${1##*/}"
+	_mdu_HH_completion_running=1
+	#_mdu_HH_application="${COMP_WORDS[0]}"
+	_mdu_HH_application="${1##*/}"
 
-	#. "$_mdu_CH_application"
+	#. "$_mdu_HH_application"
 	. "${1}"
 
 	local cur prev
@@ -378,7 +378,7 @@ _mdu_auto_completion() {
 			;;
 		*)
 			verb="${COMP_WORDS[1]}"
-			[ "x$verb" == "x$_mdu_CH_help_verb" ] && {
+			[ "x$verb" == "x$_mdu_HH_help_verb" ] && {
 				[ $COMP_CWORD -eq 2 ] && {
 					verbs=$(___list_verbs)
 					COMPREPLY=( $(compgen -W "$verbs" -- ${cur}) )
@@ -403,36 +403,36 @@ _mdu_auto_completion() {
 }
 
 
-_mdu_CH_set_callbacks() {
+_mdu_HH_set_callbacks() {
 
-	[ "$#" != 5 ] && { echo "[_mdu_CH_help] expected 5 callback" >&2 ; return 1 ; }
+	[ "$#" != 5 ] && { echo "[_mdu_HH_help] expected 5 callback" >&2 ; return 1 ; }
 
-	_mdu_CH_list_verbs_CB="$1"
-	export _mdu_CH_list_verbs_CB
-	_mdu_CH_get_verb_arguments_CB="$2"
-	export _mdu_CH_get_verb_arguments_CB
-	_mdu_CH_get_options_CB="$3"
-	export _mdu_CH_get_options_CB
-	_mdu_CH_complete_type_CB="$4"
-	export _mdu_CH_complete_type_CB
-	_mdu_CH_get_information_CB="$5"
-	export _mdu_CH_get_information_CB
+	_mdu_HH_list_verbs_CB="$1"
+	export _mdu_HH_list_verbs_CB
+	_mdu_HH_get_verb_arguments_CB="$2"
+	export _mdu_HH_get_verb_arguments_CB
+	_mdu_HH_get_options_CB="$3"
+	export _mdu_HH_get_options_CB
+	_mdu_HH_complete_type_CB="$4"
+	export _mdu_HH_complete_type_CB
+	_mdu_HH_get_information_CB="$5"
+	export _mdu_HH_get_information_CB
 
-	[ "x$_mdu_CH_list_verbs_CB" == x ] && { echo "[_mdu_CH_help] callback 'list_verbs'(1) is missing" >&2 ; return 1 ; }
-	[ "x$_mdu_CH_get_verb_arguments_CB" == x ] && { echo "[_mdu_CH_help] callback 2 'get_verb_arguments'(2) is missing" >&2; return 1 ; }
+	[ "x$_mdu_HH_list_verbs_CB" == x ] && { echo "[_mdu_HH_help] callback 'list_verbs'(1) is missing" >&2 ; return 1 ; }
+	[ "x$_mdu_HH_get_verb_arguments_CB" == x ] && { echo "[_mdu_HH_help] callback 2 'get_verb_arguments'(2) is missing" >&2; return 1 ; }
 
 	return 0
 }
 
 
-mdu_CH_is_help_command() {
-	if [ ! -z ${1+x} ] && [ "x$1" == "x$_mdu_CH_help_verb" ] ; then return 0 ; else  return 1 ; fi
+mdu_HH_is_help_command() {
+	if [ ! -z ${1+x} ] && [ "x$1" == "x$_mdu_HH_help_verb" ] ; then return 0 ; else  return 1 ; fi
 }
 
-mdu_CH_handle_help_command() {
+mdu_HH_handle_help_command() {
 
 	[ "x${1:-}" == "x" ] && {
-		echo "Error parameter missing" >&2
+		mdu_HH_print_help
 		return 1
 	}
 
@@ -457,11 +457,11 @@ mdu_CH_handle_help_command() {
 		if [ "x${2:-}" != "x" ]; then
 			application_name="$2"
 		else
-			application_name="$(basename "$_mdu_CH_application")"
+			application_name="$(basename "$_mdu_HH_application")"
 		fi
-		complete ${_complete_options} -F _mdu_auto_completion "$application_name"
-		mdu_CH_exit=1
-		export mdu_CH_exit
+		complete ${_complete_options} -F _mdu_HH_auto_completion "$application_name"
+		mdu_HH_exit=1
+		export mdu_HH_exit
 		return 0
 	}
 
@@ -493,20 +493,21 @@ _print_paragraph()  {
 # @arg $2 string callback to get verb argument
 # @arg $3 string callback to get options
 # @arg $4 string callback to complete a type
-# @arg $4 string callback to get information
+# @arg $5 string callback to get information
 # @arg $6 string one of `dump-man`, `man`, `dump-markdown` or `helper-complete`
 #
 # @exitcode 1 if bad parameters were supplied
 mdu_HH_do_help() {
 
-	_mdu_CH_set_callbacks "$1" "$2" "$3" "$4" "$5"
+	_mdu_HH_set_callbacks "$1" "$2" "$3" "$4" "$5"
+
 	shift 5
 
-	mdu_CH_handle_help_command "$@"
+	mdu_HH_handle_help_command "$@"
 }
 
 
-_mdu_CH_show_helper_help() {
+_mdu_HH_show_helper_help() {
 	echo "This script can be used two different ways :"
 	echo
 	echo "| Sourced |"
@@ -529,5 +530,5 @@ _mdu_CH_show_helper_help() {
 }
 
 
-[[ $_ != $0 ]] || { _mdu_CH_show_helper_help ; exit 20 ; }
+[[ $_ != $0 ]] || { _mdu_HH_show_helper_help ; exit 20 ; }
 

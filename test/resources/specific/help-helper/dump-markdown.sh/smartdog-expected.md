@@ -11,7 +11,7 @@ Dog interaction for newbies
 
 `smart_dog.sh <global_options> hold <what>` [detail](#Usage 2)
 
-`smart_dog.sh <global_options> bark <sound>` [detail](#Usage 3)
+`smart_dog.sh <global_options> bark [sound]` [detail](#Usage 3)
 
 `smart_dog.sh <global_options> sleep <duration>` [detail](#Usage 4)
 
@@ -22,12 +22,11 @@ Dog interaction for newbies
 
 ## Description
 
-This application helps your to interact with you dog.
+This application helps you to interact with your dog.
 
 ### Usage 1
 
 `smart_dog.sh <global_options> fetch <options> <what> [to]`
-
 ##### Options
 
 ### Usage 2
@@ -36,7 +35,7 @@ This application helps your to interact with you dog.
 
 ### Usage 3
 
-`smart_dog.sh <global_options> bark <sound>`
+`smart_dog.sh <global_options> bark [sound]`
 
 ### Usage 4
 

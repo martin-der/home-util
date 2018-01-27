@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #@mdu-helper-capable
 
-source completion-helper.sh || exit 1
+source help-helper.sh || exit 1
 
 
 function listActions() {
@@ -103,7 +103,7 @@ function getInformation() {
 
 [ "xhelp" == "x${1:-}" ] && {
 	shift
-	_mdu_CH_init_builder_helper "listActions" "getActionArguments" "getOption" "completeType" "getInformation" $@
+	mdu_HH_do_help "listActions" "getActionArguments" "getOption" "completeType" "getInformation" $@
 }
 
 

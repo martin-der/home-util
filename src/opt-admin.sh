@@ -2,7 +2,7 @@
 #@mdu-helper-capable
 
 source "$(dirname "$0")/shell-util.sh" 2>/dev/null || source shell-util || exit 1
-load_source_once completion-helper sh || exit 1
+load_source_once help-helper sh || exit 1
 load_source_once resource sh || exit 1
 
 
@@ -137,7 +137,7 @@ function getInformation() {
 
 	[ "x$what" == "x" ] && {
 		[ "x$info" == "xsummary" ] && echo "Installation of 'optional' packages made easy"
-		[ "x$info" == "xdetail" ] && echo "${_mdu_CH_application} eases the installation of optional package ( usually found under '/opt/' )"
+		[ "x$info" == "xdetail" ] && echo "${_mdu_HH_application} eases the installation of optional package ( usually found under '/opt/' )"
 		return 0
 	}
 
@@ -232,10 +232,12 @@ function getInformation() {
 ACTION="$1"
 shift
 
-_mdu_CH_init_builder_helper "listActions" "getActionArguments" "getOptions" "completeType" "getInformation" "$ACTION" $@
+[ "x$ACTION" = "x$ACTION_HELP" ] && {
+	mdu_HH_do_help "listActions" "getActionArguments" "getOptions" "completeType" "getInformation" "$ACTION" $@
+}
 
 function printHelp() {
-	_mdu_CH_print_help $@
+	mdu_HH_print_help $@
 }
 
 function checkApplicationExists() {
@@ -408,7 +410,7 @@ function listXDGCategories() {
 	echo "AudioVideo Audio Video Development Education Game Graphics Network Office Science Settings System Utility"
 }
 
-[ $mdu_CH_exit -eq 1 ] && {
+[ $mdu_HH_exit -eq 1 ] && {
 	return 0
 }
 

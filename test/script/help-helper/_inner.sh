@@ -3,7 +3,7 @@
 source "$(dirname "${BASH_SOURCE[0]}")/../runner.sh"
 
 oneTimeSetUp() {
-	source "${src_root_dir}/completion-helper.sh" || exit 1
+	source "${src_root_dir}/help-helper.sh" || exit 1
 }
 
 
@@ -14,7 +14,7 @@ testNormalArgument() {
 	_isArgumentRepeatable "$argument"
 	assertNotSame 0 $?
 
-	_isArgumentOptionnal "$argument"
+	_isArgumentOptional "$argument"
 	assertNotSame 0 $?
 
 	core="$(_getArgumentCore "$argument")"
@@ -30,7 +30,7 @@ testOptionalArgument() {
 	local argument core name type
 	argument="[<foo:bar>]"
 
-	_isArgumentOptionnal "$argument"
+	_isArgumentOptional "$argument"
 	assertEquals 0 $?
 
 	_isArgumentRepeatable "$argument"
@@ -49,7 +49,7 @@ testRepeatableArgument() {
 	local argument core name type
 	argument="<foo:bar>..."
 
-	_isArgumentOptionnal "$argument"
+	_isArgumentOptional "$argument"
 	assertNotSame 0 $?
 
 	_isArgumentRepeatable "$argument"
@@ -68,7 +68,7 @@ testOptionalAndRepeatableArgument() {
 	local argument core name type
 	argument="[<foo:bar>...]"
 
-	_isArgumentOptionnal "$argument"
+	_isArgumentOptional "$argument"
 	assertEquals 0 $?
 
 	_isArgumentRepeatable "$argument"
@@ -83,7 +83,7 @@ testOptionalAndRepeatableArgument() {
 	assertEquals "Extract type from optional repeatable argument" "bar" "$type"
 }
 
-#_isArgumentOptionnal() {
+#_isArgumentOptional() {
 #	grep "^\[.*\]$" <<< "$1" >/dev/null
 #}
 #_isArgumentRepeatable() {

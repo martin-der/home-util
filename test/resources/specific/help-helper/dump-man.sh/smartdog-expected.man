@@ -1,0 +1,37 @@
+.TH smart_dog.sh 1 "SOME_DATE" "version 1.0"
+.SH NAME
+smart_dog.sh - Dog interaction for newbies
+.SH SYNOPSIS
+.SH qsdqsd fetch
+.SH smart_dog.sh
+.B smart_dog.sh
+<global_options> 
+fetch <options> <what> [to]
+.SH qsdqsd hold
+.SH smart_dog.sh
+.B smart_dog.sh
+<global_options> 
+hold <what>
+.SH qsdqsd bark
+.SH smart_dog.sh
+.B smart_dog.sh
+<global_options> 
+bark [sound]
+.SH qsdqsd sleep
+.SH smart_dog.sh
+.B smart_dog.sh
+<global_options> 
+sleep <duration>
+.SH qsdqsd smell
+.SH smart_dog.sh
+.B smart_dog.sh
+<global_options> 
+smell
+.SH qsdqsd call
+.SH smart_dog.sh
+.B smart_dog.sh
+<global_options> 
+call <name>
+
+.SH DESCRIPTION
+This application helps you to interact with your dog.

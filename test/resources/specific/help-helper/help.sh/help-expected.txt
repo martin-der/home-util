@@ -1,0 +1,4 @@
+[1;37mUsage[0;0m
+    smart_dog.sh <action> [<parameter>...]
+[1;37mAvailable actions[0;0m
+    fetch hold bark sleep smell call learn

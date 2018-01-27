@@ -42,7 +42,7 @@ getCompReplies() {
 }
 
 testCompletionFunctionIsRegistered() {
-	assertEquals "Completion function is registered" "_mdu_auto_completion" "$completion_function" || exit "$MDU_SHELLTEST_TEST_ASSERTION_FAILURE_EXIT_CODE"
+	assertEquals "Completion function is registered" "_mdu_HH_auto_completion" "$completion_function" || exit "$MDU_SHELLTEST_TEST_ASSERTION_FAILURE_EXIT_CODE"
 }
 
 testCompleteVerbs() {

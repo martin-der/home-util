@@ -21,7 +21,7 @@ directory.local=$HOME/local
 link.executable.sourceDirectory=$HOME/dev/prog
 link.executable.elements=home-util/shell-util.sh\
 home-util/config-util.sh\
-home-util/completion-helper.sh\
+home-util/help-helper.sh\
 home-util/opt-admin.sh\
 home-util/mdu-git.sh\
 home-util/mkGitArchive.sh\

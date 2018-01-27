@@ -16,7 +16,7 @@ testDumpHelp() {
 	assertLastCommandSucceeded
 	assertEquals "Generated help is correct" "$expected_help_text" "$help_text"
 
-	echo "testDumpHelp: $help_text" > "${MDU_SHELLTEST_TEST_RESULTS_DIRECTORY}/help.txt"
+	echo "$help_text" > "${MDU_SHELLTEST_TEST_RESULTS_DIRECTORY}/help.txt"
 }
 
 
