@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
 
+test "x${MDU_SHELL_UTIL:-}" = "xMDU-SHELL-UTIL" && return 0
+MDU_SHELL_UTIL=MDU-SHELL-UTIL
 
 LOG_LEVEL_DEBUG=4
 LOG_LEVEL_INFO=3
@@ -503,7 +505,7 @@ function decorate_n()  {
 	echo -n "$text"
 }
 
-escaped_for_regex() {
+function escaped_for_regex() {
 	sed -e 's/[]\/$*.^|[]/\\&/g' <<< "$1"
 }
 
@@ -522,7 +524,7 @@ function line_isComment_withSharp() {
 # @arg $1 string `line`
 #
 # @exitcode 0 If the line is empty
-# @exitcode !0 If the line contains other character than ' '
+# @exitcode !0 If the line contains any other character than ' '
 function line_isEmpty() {
 	grep -Eq '^[ 	]*$' <<< "$1" && return 0 || return 1
 }
@@ -541,7 +543,22 @@ function _mdu_properties_value_from_line() {
 	}
 	return 1
 }
+function _mdu_properties_continuation() {
+	local previous="$1"
+	local actual="$2"
+	grep -Eq '^[ 	]*-	.*' <<< "${actual}" && {
+		sed 's/^[ 	]*-	\(.*\)$/\1/' <<< "${actual}"
+		return 0
+	}
+	return 1
+}
 
+# @description Get a `value` for a `key` from a `text`
+# Deprecated : use `properties_find`
+function find_property {
+	properties_find $@
+	return $?
+}
 # @description Get a `value` for a `key` from a `text`
 #
 # Text is
@@ -554,31 +571,54 @@ function _mdu_properties_value_from_line() {
 # ```
 #
 # @arg $1 string `key`
-# @arg $2 string *optionnal* `text` to be search in
+# @arg $2 string *optional* `text` to be search in
 # @stdin `text` to be search in ( *only* when arg $2 is not provided )
-# @stdout corresponding  `value` (if any was found) to the `key`
+# @stdout corresponding `value` (if any was found) to the `key`
 #
 # @exitcode 0 if a `value` was found
 # @exitcode !0 if no `value` was found
-function find_property {
+function properties_find {
+	local found=0
+	local value
+	local continuation
 	[ -z ${2+x} ] && {
 		while read l ; do
-			_mdu_properties_value_from_line "$l" "$1" && return 0
+			if [ ${found} = 0 ]; then
+				value="$(_mdu_properties_value_from_line "$l" "$1")" && {
+					found=1
+					echo "${value}"
+				}
+			else
+				continuation="$(_mdu_properties_continuation "${value}" "${l}")" && {
+					echo "${continuation}"
+					value="${continuation}"
+				} || {
+					return 0
+				}
+			fi
 		done
 		return 1
 	}
 
 	while read l ; do
-		_mdu_properties_value_from_line "$l" "$1" && return 0
+		if [ ${found} = 0 ]; then
+			value="$(_mdu_properties_value_from_line "$l" "$1")" && {
+				found=1
+				echo "${value}"
+			}
+		else
+			continuation="$(_mdu_properties_continuation "${value}" "${l}")" && {
+				echo "${continuation}"
+				value="${continuation}"
+			} || {
+				return 0
+			}
+		fi
 	done <<< "$2"
 	return 1
 }
-function properties_find {
-	find_property $@
-	return $?
-}
 function properties_findTyped {
-	find_property $@
+	properties_find $@
 	return $?
 }
 
@@ -609,6 +649,7 @@ function line_KeyValue_getValue() {
 
 
 # @description Split file fullpath into different parts
+#
 # Original code seen [here on stackoverflow](http://stackoverflow.com/a/1403489)
 #
 # @arg $1 string fullpath
@@ -748,8 +789,29 @@ function get_options () {
 #                        #
 # ---------------------- #
 
+# @description Check if a string can be used as variable name
+#
+# @arg $1 string the name to check
+#
+# @exitcode 0 if it can used as variable
+# @exitcode 1 otherwise
+function is_valid_variable_name() {
+	[[ $1 =~ ^[a-zA-Z_]([a-zA-Z01-9_])+$ ]] && return 0 || return 1
+}
+
 function command_exists() {
 	which "$1" >/dev/null 2>&1
 	return $?
 }
+
+function expand_vars() {
+	local s
+	if [ $# -eq 0 ]; then
+		s="$(cat)"
+	else
+		s="$1"
+	fi
+	eval "echo \"${s}\""
+}
+
 

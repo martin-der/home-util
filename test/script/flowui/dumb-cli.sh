@@ -27,6 +27,7 @@ shelter_care_i18n() {
 				"species:[cow]") echo "Cow"; return 0 ;;
 				"species:[snake]") echo "Snake"; return 0 ;;
 				"gender") echo "Gender"; return 0 ;;
+				"predator") echo "Predator"; return 0 ;;
 				"gender:[male]") echo "Male"; return 0 ;;
 				"gender:[female]") echo "Female"; return 0 ;;
 				"medical-care") echo "Require medical care"; return 0 ;;
@@ -50,8 +51,47 @@ shelter_care_i18n() {
 shelter_care() {
 	local what="$1" which="$2" part="$3"
 	case "$what" in
-		entrance)
-			echo "get-animal"
+		type)
+			case "$which" in
+				name)
+					echo 'string:[^ ]{2,}'
+					;;
+				species)
+					echo '[dog|cat|mouse|cow|snake|turtle]'
+					;;
+				email)
+					echo 'string:^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$'
+					;;
+			esac
+			;;
+		component)
+			case "$which" in
+				animal)
+					echo "name:name"
+					echo "species:species:m"
+					echo "gender:[male|female]:m"
+					echo "medical-care:boolean"
+					echo "find-own-food:boolean"
+					echo "picture:path"
+					echo "predator:species*"
+					return 0
+					;;
+				diet)
+					echo "food:string:m:[^\s]+"
+					echo "quantity:integer:m:>0"
+					return 0
+					;;
+				habitat)
+					echo "place:[rock|desert|bush|forest|pond|river|sea]*:m"
+					echo "temperature:integer::<50,>-50"
+					return 0
+					;;
+				care-taker)
+					echo "name:name"
+					echo "temperature:integer::<50,>-50"
+					return 0
+					;;
+			esac
 			;;
 		page)
 			case "$which" in
@@ -115,28 +155,9 @@ shelter_care() {
 					;;
 			esac
 			;;
-		component)
-			case "$which" in
-				animal)
-					echo "name:string::[^ ]{2,}"
-					echo "species:[dog|cat|mouse|cow|snake|turtle]:m"
-					echo "gender:[male|female]:m"
-					echo "medical-care:boolean"
-					echo "find-own-food:boolean"
-					return 0
-					;;
-				diet)
-					echo "food:string:m:[^\s]+"
-					echo "quantity:integer:m:>0"
-					return 0
-					;;
-				habitat)
-					echo "place:[rock|desert|bush|forest|pond|river|sea]*:m"
-					echo "temperature:integer::<50,>-50"
-					return 0
-					;;
-
-			esac
+		entrance)
+			echo "get-animal"
+			;;
 	esac
 	return 0
 }
@@ -147,8 +168,11 @@ testReceiveAnimal() {
 }
 
 [ "x${1:-}" == "xdemo" ] && {
+	src_root_dir="$(dirname "${BASH_SOURCE[0]}")/../../../src"
+	test_common_resources_dir="$(dirname "${BASH_SOURCE[0]}")/../../resources/common"
 	oneTimeSetUp ;
 	fui_set_variable_for_page "get-animal" "animal" "name" "Caroline"
+	fui_set_variable_for_page "get-animal" "animal" "picture" "/tmp/"
 	fui_set_variable_for_page "get-animal" "animal" "species" "turtle"
 	fui_run_first_page
 	fui_list_variables

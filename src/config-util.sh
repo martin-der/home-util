@@ -7,7 +7,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/shell-util.sh" 2>/dev/null || source shel
 # @arg $1 string key
 # @arg $2 string value
 # @arg $3 string list of '<confKey>=<envVar>' ( separated by CR )
-# @arg $4 string [optional] prefix, added to the name of created environment var
+# @arg $4? string prefix, added to the name of created environment var
 #
 # @exitcode 0 If a a variable is created
 # @exitcode >0 otherwise
@@ -33,7 +33,7 @@ function convertConfigKeyAndExportToEnvVariableIfExists() {
 		[ $? -ne 0 ] && return 2
 	}
 	log_debug "export '$env_name'='$VALUE'"
-	export "$env_name"="$VALUE"
+	export "${env_name}"="$VALUE"
 	return 0
 }
 

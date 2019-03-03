@@ -1,12 +1,14 @@
 group 'net.tetrakoopa'
 
-task wrapper(type: Wrapper) { gradleVersion = '3.4.1' }
+wrapper { gradleVersion = '5.1' }
 
 buildscript{
 	repositories{
 		mavenCentral()
 		mavenLocal()
 		maven { url 'https://jitpack.io' }
+		maven { url "https://plugins.gradle.org/m2/" }
+		maven { url "http://dl.bintray.com/gesellix/gradle-plugins" }
 	}
 
 	dependencies {
@@ -14,29 +16,86 @@ buildscript{
 		classpath "net.tetrakoopa.gradle.plugin.shell:shell-package:0.1-SNAPSHOT"
 		classpath "net.tetrakoopa.gradle.plugin.shell:shell-test:0.1-SNAPSHOT"
 		//classpath "com.github.martin-der.gradle-shell-plugin:shell:${property('version.mdu.shell')}"
-		classpath "com.github.martin-der.poignee:util:${property('version.mdu.gradle.util')}"
+		//classpath "com.github.martin-der.poignee:util:${property('version.mdu.gradle.util')}"
+		classpath "net.tetrakoopa.poignee:util:${property('version.mdu.gradle.util')}"
+		//classpath "com.netflix.nebula:gradle-ospackage-plugin:6.1.1"
+		classpath "de.gesellix:gradle-debian-plugin:16"
 	}
 }
 
 
-apply plugin: 'net.tetrakoopa.poignee.util'
+//apply plugin: 'java'
+apply plugin: 'net.tetrakoopa.util'
 apply plugin: 'net.tetrakoopa.shell-package'
 apply plugin: 'net.tetrakoopa.shell-test'
+//apply plugin: 'nebula.deb'
+apply plugin: 'pkg-debian'
 
-version getGitVersionName
+version VERSION_MAPPER.DROP_LEADING_V(gitVersionName())
+
+
+task check() {
+
+}
+
+task testCollection() {
+//	def files = fileTree("src") {
+//		into('toto')
+//	}
+//
+//	copy {
+//		from files
+//		into file('/tmp/oooo')
+//	}
+
+}
 
 
 shell_package {
 
-	from fileTree("src").include('*.sh', '*.py')
-	from fileTree(".").include('README.md')
+	source {
+		from ("src") {
+			into "bin"
+			include('**/*.sh', '*.py')
+			rename { SCRIPT_NAME_MAPPER.REMOVE_SUFFIX(it) }
+		}
+		from file('README.md')
+	}
+
+	documentation {
+		tableOfContent = true
+		lot {
+			into "share/doc"
+		}
+		lot {
+			outputDir = new File(project.buildDir,'manuals')
+			into "man"
+		}
+	}
+
+	banner {
+		content.path = file('package/banner.txt')
+	}
 
 	installer {
 		readme.location = 'README.md'
+
+		prefix.alternative '/in/uranus'
+
+		rule {
+			name "binary"
+			description "Core content of the package.\nThose are the scripts provided by Home-Util."
+//			filter 'bin/*'
+//			into "bin"
+		}
+		rule {
+			name "man"
+			importance 'recommended'
+			description "Documentation of the scripts"
+		}
+
 		userScript {
-			script {
-				location = "home-init.sh"
-			}
+			script.location = "bin/home-init"
 			question = "Do you want to init home (i.e. run 'home-init')?"
 		}
 	}
@@ -46,9 +105,103 @@ shell_test {
 
 	from fileTree("test/script").include('**/*.sh').exclude('common.sh').exclude('runner.sh')
 	scriptFrom fileTree("src").include('*.sh')
-	workingDir = project.file("test")
+	workingDir = file("test")
 
 	naming {
-		removeSuffix = false
+		removeSuffix = true
 	}
 }
+
+
+//def packageName = 'home-util'
+//File debianDir = file("${buildDir}/package/debian")
+//
+//
+//task prepareDebResources {
+//	File debianTemplateDir = file("package/debian/template")
+//	doFirst {
+//		debianDir.mkdir()
+//	}
+//	def user = gitUserName()
+//	def email = gitUserEmail()
+//
+//	def controlVariables = [:]
+//
+//	def debianVersion = version
+//
+//
+//
+//	controlVariables.put('package', packageName)
+//	controlVariables.put('version', debianVersion)
+//	controlVariables.put('maintainer.name', user)
+//	controlVariables.put('maintainer.email', email)
+//	controlVariables.put('upstream-contact.name', user)
+//	controlVariables.put('upstream-contact.email', email)
+//
+//	controlVariables.put('distribution', 'unstable')
+//
+//	copy {
+//		from(debianTemplateDir.absolutePath){
+//			filter { c ->
+//				controlVariables.each { ck, cv ->
+//					try {
+//						ck = regexEscape(ck)
+//						c = c.replaceAll("\\{\\{${ck}\\}\\}", regexTransformedEscape(cv))
+//					} catch (java.lang.IllegalArgumentException e) {
+//						throw new RuntimeException("bad value : '${cv}'", e)
+//					}
+//				}
+//				return c
+//			}
+//		}
+//		into file(debianDir.absolutePath)
+//	}
+//
+//	def changelogEntries = gitCommitMessages('%s', gitLastTag(), 'HEAD')
+//
+//	def logFile = file(debianDir.absolutePath+"/changelog")
+//	changelogEntries.each {
+//		logFile <<" * ${it}\n"
+//	}
+//
+//}
+
+//def binScripts = project.fileTree("src").include('*.sh', '*.py')
+//
+//debian {
+//	packagename = "home-util"
+//	//publications = ['webapp']
+//	controlDirectory = file("${buildDir}/package/debian/control").absolutePath
+//	changelogFile = file("${buildDir}/package/debian/changelog").absolutePath
+//
+//	data {
+//		def baseDir = file("src").absolutePath
+////		dir {
+////			name = file("src").absolutePath
+////
+////			mapper {
+////				filename = { path -> "usr/bin/" + path }
+////				//fileMode = "755"
+////			}
+////		}
+//		binScripts.each { f ->
+//			file {
+//				name = f.absolutePath
+//				target = "usr/bin/${f.name}.ZZZ"
+//			}
+//		}
+//
+//		file {
+//			name = "${debianDir.absolutePath}/copyright"
+//			target = "usr/share/doc/${packageName}/copyright"
+//		}
+////		link {
+////			path = "/etc/packagename/"
+////			name = "var/lib/packagename/conf"
+////		}
+//	}
+//}
+//
+//afterEvaluate {
+//	tasks['buildDeb'].dependsOn prepareDebResources
+//}

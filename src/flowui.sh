@@ -16,10 +16,27 @@ FUI_ERROR_BAD_BUILDER=4
 FUI_ERROR_INVALID_COMPONENT_DESC=5
 FUI_ERROR_INVALID_INPUT_DESC=6
 
+__error_content=""
 
 
+
+fui__reset_errors() {
+	__error_content=""
+}
+fui__get_errors() {
+	echo "${__error_content}"
+}
 __print_error() {
-	echo "$1" >&2
+#	[ "x$__error_content" != "x" ] && __error_content="
+#$__error_content"
+
+	[ $# -gt 2 ] && {
+		__error_content="${__error_content}[$2 ${3:.}] $1
+"
+	} || {
+		__error_content="${__error_content}$1
+"
+	}
 }
 __print_error_missing_param() {
 	echo "Parameter '$2'($1) required" >&2
@@ -33,6 +50,41 @@ __check_param_is_given() {
 __check_builder_or_print_error() {
 	[ "${__fui_builder:-}" == "x" ] && { echo "no builder configured, use 'fui_set_builder <builder-function>'" >&2 ; return 1 ; }
 	return 0
+}
+
+
+
+# @description Change the cursor appearance
+#
+# @arg $1 block|left|bottom shape
+# @arg $2 1|0 blink or not
+#
+# @exitcode `0` parameters are correct, `1` otherwise
+fui__term_ctrl__cursor_appearance() {
+	local c s
+	s="$1"
+	b="$2"
+
+	case $s in
+		block) c=2 ;;
+		bottom) c=4 ;;
+		left) c=6 ;;
+		*)
+			echo "Unknown shape '$s'" >&2
+			return 1
+		;;
+	esac
+	[ "x$b" = "x1" ] && c=$(($c - 1))
+	echo -en "\e[$c q"
+}
+
+# @description Change the cursor color
+#
+# @arg $1 string HTML like color ( i.e. #ff0000 for red )
+#
+# @exitcode 0
+fui__term_ctrl__cursor_color() {
+	echo -en "\e]12;$1\a"
 }
 
 
@@ -137,6 +189,10 @@ fui_get_variable_key_by_indexes() {
 					[[ "$input" =~ ^([^:]+):([^:]+)(:([^:]*))?(:(.*))?$ ]] && {
 						name="${BASH_REMATCH[1]}"
 						fui_get_variable_key "$component_name" "$name"
+						return 0
+					} || {
+						__print_error "Bad syntax for component#${for_component} input#${for_input} : '${input}'"
+						return 2
 					}
 				}
 				input_index=$(($input_index+1))
@@ -144,6 +200,7 @@ fui_get_variable_key_by_indexes() {
 		}
 		component_index=$(($component_index+1))
 	done
+	return 1
 }
 
 #
@@ -197,12 +254,12 @@ fui_get_variable() {
 	fui_get_variable_by_key "$i"
 }
 fui_get_variable_by_key() {
-	local i
-	i="$1"
-	[ -z ${!i+x} ] && return 1 || {
-		echo -n -e "${!i-}"
-		return 0
-	}
+	local k
+	k="$1"
+	[ -z ${!k+x} ] && return 1
+	echo -n -e "${!k-}"
+	return 0
+
 }
 #
 # param 1 component
@@ -220,11 +277,12 @@ fui_set_variable() {
 #
 fui_set_variable_for_page() {
 	local page="$1" component="$2" input="$3"
-	i="$(fui_get_variable_key_for_page "$page" "$component" "$input")"
-	fui_set_variable_by_key "$i" "$4"
+	local name
+	name="$(fui_get_variable_key_for_page "$page" "$component" "$input")"
+	fui_set_variable_by_key "$name" "$4"
 }
 fui_set_variable_by_key() {
-	local i
+	local k
 	i="$1"
 	#read -d"\0" "$i" <<<"$3"
 	read -r "$i" <<<"$2"

@@ -282,12 +282,19 @@ mdu_HH_print_help() {
 				for argument in "${argumentsArray[@]}"; do
 					argumentCore="$(_getArgumentCore "${argument}")"
 					argumentName="$(_getArgumentName "${argumentCore}")"
-					_isArgumentOptional "${argument}" && {
-						_isArgumentRepeatable "${argument}" && echo "[${argumentName}]" || echo "[${argumentName}...]"
-						echo -e -n " [<${argumentName}>]"
+					echo -n " "
+					_isArgumentOptionnal "${argument}" && {
+						if _isArgumentNonStatic "${argument}" ; then
+							_isArgumentRepeatable "${argument}" && echo -n "[<${argumentName}>...]" || echo -n "[<${argumentName}>]"
+						else
+							_isArgumentRepeatable "${argument}" && echo -n "[${argumentName}]..." || echo -n "[${argumentName}]"
+						fi
 					} || {
-						_isArgumentRepeatable "${argument}" && echo "[${argumentName}]" || echo "[${argumentName}...]"
-						echo -e -n " <${argumentName}>"
+						if _isArgumentNonStatic "${argument}" ; then
+							_isArgumentRepeatable "${argument}" && echo -n "<${argumentName}>..." || echo -n "<${argumentName}>"
+						else
+							_isArgumentRepeatable "${argument}" && echo -n "${argumentName}..." || echo -n "${argumentName}"
+						fi
 					}
 				done
 			}
