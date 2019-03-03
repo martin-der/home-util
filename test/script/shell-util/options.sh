@@ -57,7 +57,7 @@ testAllOptions() {
 
 	get_options "$animal_options" option -a 10000 --beaver --dog --cat Felix
 	assertLastCommandSucceeded
-	assertEquals "beaver" "$option"
+	assertEquals "b" "$option"
 	assertVariableUnbound "OPTARG is unbound" "OPTARG"
 	assertEquals "3" "$((OPTIND - 1))"
 	handleAnimalOption "$option"
@@ -95,7 +95,7 @@ testAllOptionsWithExtraArguments() {
 
 	get_options "$animal_options" option -a 10000 --beaver --dog --cat Felix and more animals
 	assertLastCommandSucceeded
-	assertEquals "beaver" "$option"
+	assertEquals "b" "$option"
 	assertVariableUnbound "OPTARG is unbound" "OPTARG"
 	assertEquals "3" "$((OPTIND - 1))"
 	handleAnimalOption "$option"

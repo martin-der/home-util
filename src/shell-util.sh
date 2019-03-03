@@ -647,18 +647,23 @@ split_filepath() {
 #                        #
 # ---------------------- #
 
-__mdu_option_index=1
+__mdu_parameter_index=1
 reset_get_options() {
-	__mdu_option_index=1
+	__mdu_parameter_index=1
 }
 is_option_configuration_valid() {
 	if [[ $1 =~ (^|\|)([-a-zA-Z]+)(\||$) ]] ; then return 0 ; else return 1 ; fi
 }
 
-get_option_config () {
-	local configs option regex_has_option
+__mdu_get_option_first_name () {
+	[[ $1 =~ ^([^|:]*) ]] || return 1
+	echo "${BASH_REMATCH[1]}"
+}
+__mdu_get_option_config () {
+	local configs option
 	configs="$1"
 	option="$2"
+	local regex_has_option
 	regex_has_option="(^|\|)$(escaped_for_regex "$option")(\||:?$)"
 	while read -d ',' config; do
 		if [[ $config =~ $regex_has_option ]] ; then
@@ -676,52 +681,64 @@ is_option_config_with_parameter () {
 	return 1
 }
 
-__mdu_export_option_value () {
-	eval "$1=$2"
-	eval "export $1"
-}
-get_options () {
+# @description Parse command line arguments, one by one
+#
+# Next parameter to be parsed index is hold by the global variable `__mdu_parameter_index`.
+#
+# @arg $1 string configuration of possible options ( ex `h|help,c|check,n|name:` )
+# @arg $2 string name of the variable that must hold the option found
+#
+# @exitcode 0 when a option is found
+# @exitcode 1 when there was no more parameter to parse
+# @exitcode 2 when the remaining parameter(s) is(/are) no option
+# @exitcode 3 if a wrong option is encountered
+# @exitcode 8 if parameter `name` (`$2`) is not a valid variable name
+# @exitcode 9 if parameter `name` (`$2`) is not a valid variable name
+function get_options () {
 
-	local options_config option_config ___mdu_local_option option_index name
+	local options_config name
 	options_config="$1"
 	name="$2"
 
-	OPTIND=$__mdu_option_index
-	option_index=$(($__mdu_option_index + 2))
+	is_valid_variable_name "$name" || exit 9
 
-	if [ $# -lt "$option_index" ]; then return 1 ; fi
-	___mdu_local_option=${!option_index}
+	local option_config parameter parameter_index
+
+	[ "x${__mdu_parameter_index:-}" = x ] && __mdu_parameter_index=0
+
+	parameter_index=$(($__mdu_parameter_index + 2))
+	OPTIND=$__mdu_parameter_index
+
+	if [ $# -lt "$parameter_index" ]; then return 1 ; fi
+	parameter=${!parameter_index}
 
 
-	if [[ $___mdu_local_option =~ ^-{1,2}(.*)$ ]] ; then
-		___mdu_local_option="${BASH_REMATCH[1]}"
+	if [[ $parameter =~ ^-{1,2}(.*)$ ]] ; then
+		parameter="${BASH_REMATCH[1]}"
 	else
 		return 2
 	fi
 
-	__mdu_export_option_value "$name" "$___mdu_local_option"
+	option_config="$(__mdu_get_option_config "$options_config" "$parameter")" || { echo "No option '$parameter'" >&2 ; return 3 ; }
 
-	option_config="$(get_option_config "$options_config" "$___mdu_local_option")" || { echo "No option '$___mdu_local_option'" >&2 ; return 3 ; }
+	eval "${name}=$(__mdu_get_option_first_name "$option_config")"
 
 	#echo "option_config = '$option_config'" >&2
 	#echo "option = '$option'" >&2
 
-	local is_option
-	is_option_config_with_parameter "$option_config"
-	is_option=$?
-	if [ $is_option -eq 0 ] ; then
-		__mdu_option_index=$(($__mdu_option_index + 1))
-		option_index=$(($__mdu_option_index + 2))
-		if [ $# -lt "$option_index" ]; then echo "Missing argument for option '$___mdu_local_option'" >&2 ; return 4 ; fi
-		OPTIND=$__mdu_option_index
-		OPTARG=${!option_index}
+	if is_option_config_with_parameter "$option_config" ; then
+		__mdu_parameter_index=$(($__mdu_parameter_index + 1))
+		parameter_index=$(($__mdu_parameter_index + 2))
+		if [ $# -lt ${parameter_index} ]; then echo "Missing argument for option '$parameter'" >&2 ; return 4 ; fi
+		OPTARG=${!parameter_index}
 	else
 		unset OPTARG
 	fi
 
-	__mdu_option_index=$(($__mdu_option_index + 1))
-	eval "OPTIND=$__mdu_option_index"
+	__mdu_parameter_index=$(($__mdu_parameter_index + 1))
+	OPTIND=${__mdu_parameter_index}
 
+	return 0
 }
 
 
