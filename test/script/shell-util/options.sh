@@ -20,14 +20,14 @@ setUp() {
 }
 
 tearDown() {
-	reset_get_options
+	mdu_get_options_reset
 }
 
 handleAnimalOption() {
 	local o
 	o="$1"
 
-	case $o in
+	case ${o} in
 		a|ant)
 			has_ant=1
 			ant_count="${OPTARG}"
