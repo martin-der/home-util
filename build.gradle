@@ -12,13 +12,8 @@ buildscript{
 	}
 
 	dependencies {
-		//classpath "net.tetrakoopa.poignee:util:0.1-SNAPSHOT"
-		classpath "net.tetrakoopa.gradle.plugin.shell:shell-package:0.1-SNAPSHOT"
-		classpath "net.tetrakoopa.gradle.plugin.shell:shell-test:0.1-SNAPSHOT"
-		//classpath "com.github.martin-der.gradle-shell-plugin:shell:${property('version.mdu.shell')}"
-		//classpath "com.github.martin-der.poignee:util:${property('version.mdu.gradle.util')}"
+		classpath  "net.tetrakoopa.gradle-shell-plugin:shell:${property('version.mdu.shell')}"
 		classpath "net.tetrakoopa.poignee:util:${property('version.mdu.gradle.util')}"
-		//classpath "com.netflix.nebula:gradle-ospackage-plugin:6.1.1"
 		classpath "de.gesellix:gradle-debian-plugin:16"
 	}
 }
