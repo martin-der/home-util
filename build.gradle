@@ -75,15 +75,17 @@ shell_package {
 	installer {
 		readme.location = 'README.md'
 
-		prefix.alternative '/in/uranus'
+		prefix.alternative "/opt/mdu/pkg/home-util.d/home-util-${project.version}"
 
-		rule {
+		makeExecutable = false
+
+		component {
 			name "binary"
 			description "Core content of the package.\nThose are the scripts provided by Home-Util."
 //			filter 'bin/*'
 //			into "bin"
 		}
-		rule {
+		component {
 			name "man"
 			importance 'recommended'
 			description "Documentation of the scripts"
@@ -99,7 +101,6 @@ shell_package {
 shell_test {
 
 	from fileTree("test/script").include('**/*.sh').exclude('common.sh').exclude('runner.sh')
-	scriptFrom fileTree("src").include('*.sh')
 	workingDir = file("test")
 
 	naming {
