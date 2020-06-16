@@ -58,38 +58,46 @@ MDU_NO_COLOR=${MDU_NO_COLOR:-0}
 
 # ---------------------- #
 #                        #
-#        Include         #
+#    Script Sourcing     #
 #                        #
 # ---------------------- #
 
 _mdu_loaded_scripts=( "." )
 
+# @description Get the path of a script source
 #
-# Load source
-#	param 1/0 : once
-#	param <name> : script name
-#	return same as @see load_source
+# @example
+#   load_source 1 my_script sh py
 #
-function _mdu_source_if_exists() {
-	[ -r "$2" ] && {
-		local linked="$(readlink -f "$2")"
-		log_debug " Found '$2' in '$linked' (once:$1)"
+# @arg string the `path` of the script
+# @arg integer `1`/`0` if the script must be fetch once
+#
+# @stdout the `path` of the script if it was not already used or if `fetch once` is not `1`
+#
+# @exitcode 254 If script is not readable or does not exist
+# @exitcode 0 If script was found and is readable
+# @exitcode [1-253] If script returned an error ( if error code was 254, then 253 is returned instead )
+function _mdu_get_script() {
+		local real_path
+		real_path="$(readlink -f "$1")"
+		#log_debug " Found '$1' in '$real_path'"
 		[ $1 -ne 0 ] && {
-			log_debug "  Sourced ? (${_mdu_loaded_scripts[*]})"
+			#log_debug "  Sourced ? (${_mdu_loaded_scripts[*]})"
 			for loaded in "${_mdu_loaded_scripts[@]}"; do
-				[ "$loaded" == "$linked" ] && return 0;
+				[ "$loaded" == "$real_path" ] && return 0;
 			done
 		}
 		#log_debug "  Sourcing '$2'"
-		_mdu_loaded_scripts+=("$linked")
+		_mdu_loaded_scripts+=("$real_path")
 		#log_debug "   \\-> Sourced : (${_mdu_loaded_scripts[*]})"
-		source "$2"
+		[ -r "$2" ] || return 254
+
+		source "$real_path"
 		local result=$?
 		[ ${result} -eq 0 ] && return 0
 		log_error "Error sourcing '$2' : returned $?"
 		[ ${result} -eq 254 ] && return 253
 		return ${result}
-	}
 	return 254
 }
 
@@ -104,21 +112,21 @@ function _mdu_load_source_O_WS() {
 	local result only_once script suffixed
 	only_once=$1
 	shift
-	script=$1
+	script=$2
 	shift
 	log_debug "Try '$script'..."
-	_mdu_source_if_exists ${only_once} "$script"
-	result=$?
-	[ $result -ne 254 ] && return $result
+	[ -e "$script" ] && {
+		_mdu_source ${only_once} "$script"
+		return $?
+	}
 
 	for suffix in "$@" ; do
 		suffixed="${script}.${suffix}"
 		log_debug "Try suffixed '$suffixed'..."
-		_mdu_source_if_exists ${only_once} "$suffixed"
-		result=$?
-		[ $result -ne 254 ] && {
-			log_debug "  '$suffixed' returned $result"
-			return $result
+		[ -e "$script" ] && {
+			log_debug "Found suffixed '$suffixed'..."
+			_mdu_source ${only_once} "$suffixed"
+			return $?
 		}
 	done
 	return 254
@@ -215,7 +223,7 @@ ICON_ERROR="${RED_BOLD}/!\\\\${COLOR_RESET}"
 ICON_INFO="${BLUE_BOLD}(*)${COLOR_RESET}"
 ICON_DEBUG="${GREEN_BOLD}[#]${COLOR_RESET}"
 
-function _mdu_getLogLevel {
+function _mdu_getLogLevel() {
 	local level=${MDU_LOG_LEVEL:-${LOG_LEVEL:-default}}
 	[ "x$level" = xDEBUG -o "x$level" = xdebug ] && return ${LOG_LEVEL_DEBUG}
 	[ "x$level" = xINFO -o "x$level" = xinfo ] && return ${LOG_LEVEL_INFO}
@@ -341,22 +349,40 @@ function log_error()  {
 # @example
 #   hasScriptAttribute my_script.sh
 #
-# @arg $1 string path to the `script`
+# @arg string path to the `script`
 #
 # @exitcode 1 If script could not be read
 # @exitcode 2 'attributes' line was invalid ( ex. does start with # )
 # @exitcode 0 if successful
-extract_script_attributes_line() {
+_mdu_extract_script_attributes_line() {
 	sed -e '2q' -e '2d' -e '/^#!\/.\+/d' "$1"
 }
+
+mdu_AA_get_line_attributes() {
+	[[ $1 =~ ^#[\ \t]*(@[a-zA-Z_][a-zA-Z_01-9]+)([^\n]+)(\n|$) ]] && {
+		:
+	}
+}
+mdu_AA_get_line_attribute() {
+	local extra
+	[[ $1 =~ ^[[:blank:]]*#[[:blank:]]*@([a-zA-Z_][a-zA-Z_01-9]+)([[:blank:]]*|([[:blank:]]+(.*[^[:blank:]])))[[:space:]]*$ ]] && {
+		extra="${BASH_REMATCH[4]}"
+		if [ "x" = "x${extra}" ] ; then
+			echo "${BASH_REMATCH[1]}"
+		else
+			echo "${BASH_REMATCH[1]} ${extra}"
+		fi
+	}
+}
+
 
 # @description Extract attributes line from a shell script
 #
 # @example
 #   hasScriptAttribute somewhere/my_script.sh foobar
 #
-# @arg $1 string path to the `script`
-# @arg $2 string `attribute` of which the presence must be checked
+# @arg string path to the `script`
+# @arg string `attribute` of which the presence must be checked
 #
 # @exitcode 1 If `script` could not be read
 # @exitcode 2 _attributes line_ was invalid ( ex. does start with # )
@@ -364,17 +390,24 @@ extract_script_attributes_line() {
 # @exitcode 0 the `attribute` exists
 #
 # @see extract_script_attributes_line
-has_script_attribute() {
+mdu_AA_has_script_attribute() {
 	local script="$1" attribute="$2"
-	local attributesLine
+	local line
 	attribute="$(escaped_for_regex "$attribute")"
-	attributesLine="$(extract_script_attributes_line "$script")" || return $?
-	[[ "${attributesLine}" =~ ^#([\ \t]*|.*[\ \t]+)@${attribute}([\ \t]*|[\ \t]+.*)$ ]] || return 3
+	line="$(extract_script_attributes_line "$script")" || return $?
+	[[ "${line}" =~ ^#([\ \t]*|.*[\ \t]+)@${attribute}([\ \t]*|[\ \t]+.*)$ ]] || return 3
 	return 0
 }
 
+# ---------------------- #
+#                        #
+#   Script Injection     #
+#                        #
+# ---------------------- #
 
 
+
+# @block string_util
 # ---------------------- #
 #                        #
 #      String util       #
@@ -383,7 +416,7 @@ has_script_attribute() {
 
 # @description Get the value of a decoration key
 #
-# @arg $1 string key
+# @arg  string key
 #
 # @stdout value of the decoration
 #
@@ -400,8 +433,8 @@ mdu_getTextDecoration() {
 }
 # @description Set the value of a decoration
 #
-# @arg $1 string key
-# @arg $2 string value
+# @arg string key
+# @arg string value
 #
 # @exitcode 0
 mdu_setTextDecoration() {
@@ -412,7 +445,7 @@ mdu_setTextDecoration() {
 }
 # @description Check if a decoration exists
 #
-# @arg $1 string key
+# @arg string key
 #
 # @exitcode 0 if a decoration for this key  exists
 # @exitcode !0 if no decoration for this key  exists
@@ -423,9 +456,9 @@ mdu_isSetTextDecoration() {
 }
 # @description Remove a decoration
 #
-# @arg $1 string key
+# @arg string key
 #
-# @exitcode 0
+# @exitcode 0 q
 mdu_unsetTextDecoration() {
 	local prefix="_mdu_text_decoration__"
 	local i="${prefix}$1"
@@ -512,7 +545,7 @@ function escaped_for_regex() {
 
 # @description Check if a `line` is a comment with '#'
 #
-# @arg $1 string `line`
+# @arg string `line`
 #
 # @exitcode 0 If the line is a comment
 # @exitcode !0 If the line is not a comment
@@ -521,7 +554,7 @@ function line_isComment_withSharp() {
 }
 # @description Check if a `line` is empty
 #
-# @arg $1 string `line`
+# @arg string `line`
 #
 # @exitcode 0 If the line is empty
 # @exitcode !0 If the line contains any other character than ' '
@@ -570,8 +603,8 @@ function find_property {
 # keyN=valueN
 # ```
 #
-# @arg $1 string `key`
-# @arg $2 string *optional* `text` to be search in
+# @arg string `key`
+# @arg string *optional* `text` to be search in
 # @stdin `text` to be search in ( *only* when arg $2 is not provided )
 # @stdout corresponding `value` (if any was found) to the `key`
 #
@@ -628,7 +661,7 @@ function properties_findTyped {
 # key=value
 # ```
 #
-# @arg $1 string `line`
+# @arg string `line`
 #
 # @exitcode 0
 function line_KeyValue_getKey() {
@@ -640,7 +673,7 @@ function line_KeyValue_getKey() {
 # key=value
 # ```
 #
-# @arg $1 string `line`
+# @arg string `line`
 #
 # @exitcode 0
 function line_KeyValue_getValue() {
@@ -652,7 +685,7 @@ function line_KeyValue_getValue() {
 #
 # Original code seen [here on stackoverflow](http://stackoverflow.com/a/1403489)
 #
-# @arg $1 string fullpath
+# @arg string fullpath
 #
 # @stdout
 # the parts of the path, one per line
@@ -684,15 +717,22 @@ split_filepath() {
 
 # ---------------------- #
 #                        #
-#        Options         #
+#    Script Injection    #
+#                        #
+# ---------------------- #
+
+
+# ---------------------- #
+#                        #
+#    Script Options      #
 #                        #
 # ---------------------- #
 
 __mdu_parameter_index=1
-reset_get_options() {
+mdu_get_options_reset() {
 	__mdu_parameter_index=1
 }
-is_option_configuration_valid() {
+mdu_is_option_configuration_valid() {
 	if [[ $1 =~ (^|\|)([-a-zA-Z]+)(\||$) ]] ; then return 0 ; else return 1 ; fi
 }
 
@@ -715,7 +755,7 @@ __mdu_get_option_config () {
 	return 1
 }
 
-is_option_config_with_parameter () {
+mdu_is_option_config_with_parameter () {
 	local config
 	config="$1"
 	if [[ $config =~ .+: ]] ; then return 0 ; fi
@@ -726,8 +766,8 @@ is_option_config_with_parameter () {
 #
 # Next parameter to be parsed index is hold by the global variable `__mdu_parameter_index`.
 #
-# @arg $1 string configuration of possible options ( ex `h|help,c|check,n|name:` )
-# @arg $2 string name of the variable that must hold the option found
+# @arg string configuration of possible options ( ex `h|help,c|check,n|name:` )
+# @arg string name of the variable that must hold the option found
 #
 # @exitcode 0 when a option is found
 # @exitcode 1 when there was no more parameter to parse
@@ -791,7 +831,7 @@ function get_options () {
 
 # @description Check if a string can be used as variable name
 #
-# @arg $1 string the name to check
+# @arg string the name to check
 #
 # @exitcode 0 if it can used as variable
 # @exitcode 1 otherwise
