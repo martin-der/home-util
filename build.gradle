@@ -24,7 +24,7 @@ apply plugin: 'net.tetrakoopa.util'
 apply plugin: 'net.tetrakoopa.shell-package'
 apply plugin: 'net.tetrakoopa.shell-test'
 //apply plugin: 'nebula.deb'
-apply plugin: 'pkg-debian'
+//apply plugin: 'pkg-debian'
 
 version VERSION_MAPPER.DROP_LEADING_V(gitVersionName())
 
