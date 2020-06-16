@@ -2,14 +2,14 @@
 
 source "$(dirname "${BASH_SOURCE[0]}")/shell-util.sh" 2>/dev/null || source shell-util  || exit 1
 
-# @description If `key` is in the list, then an environment variable named `[prefix]envVar>` is exported.
+# @description If `key` is in the list, then an environment variable named `[prefix]envVar` is exported.
 #
 # @arg $1 string key
 # @arg $2 string value
 # @arg $3 string list of '<confKey>=<envVar>' ( separated by CR )
 # @arg $4? string prefix, added to the name of created environment var
 #
-# @exitcode 0 If a a variable is created
+# @exitcode 0 If a variable is created
 # @exitcode >0 otherwise
 #
 # @example convertConfigKeyAndExportToEnvVariableIfExists name
@@ -25,14 +25,14 @@ function convertConfigKeyAndExportToEnvVariableIfExists() {
 
 	env_type="$(mdu_variable_getType "$env_name")"
 	env_name="$(mdu_variable_getName "$env_name")"
-	log_debug "env_name = '$env_name'"
+	log_debug "env_name = '${env_name}'"
 	env_name="$PREFIX$env_name"
-	log_debug "env_type='$env_type'"
+	log_debug "env_type='${env_name}'"
 	[ "x$env_type" != "x" ] && {
-		VALUE="$(convertVariable "$env_type" "$VALUE")"
+		VALUE="$(convertVariable "${env_name}" "$VALUE")"
 		[ $? -ne 0 ] && return 2
 	}
-	log_debug "export '$env_name'='$VALUE'"
+	log_debug "export '${env_name}'='$VALUE'"
 	export "${env_name}"="$VALUE"
 	return 0
 }
