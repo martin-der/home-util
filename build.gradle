@@ -12,14 +12,13 @@ buildscript{
 	}
 
 	dependencies {
-		classpath  "net.tetrakoopa.gradle-shell-plugin:shell:${property('version.mdu.shell')}"
+		classpath "net.tetrakoopa.gradle-shell-plugin:shell:${property('version.mdu.shell')}"
 		classpath "net.tetrakoopa.poignee:util:${property('version.mdu.gradle.util')}"
 		classpath "de.gesellix:gradle-debian-plugin:16"
 	}
 }
 
 
-//apply plugin: 'java'
 apply plugin: 'net.tetrakoopa.util'
 apply plugin: 'net.tetrakoopa.shell-package'
 apply plugin: 'net.tetrakoopa.shell-test'
@@ -95,6 +94,10 @@ shell_package {
 			script.location = "bin/home-init"
 			question = "Do you want to init home (i.e. run 'home-init')?"
 		}
+	}
+
+	output {
+		distributionDirectory 'dist'
 	}
 }
 
