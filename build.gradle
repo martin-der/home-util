@@ -28,23 +28,6 @@ apply plugin: 'net.tetrakoopa.shell-test'
 version VERSION_MAPPER.DROP_LEADING_V(gitVersionName())
 
 
-task check() {
-
-}
-
-task testCollection() {
-//	def files = fileTree("src") {
-//		into('toto')
-//	}
-//
-//	copy {
-//		from files
-//		into file('/tmp/oooo')
-//	}
-
-}
-
-
 shell_package {
 
 	source {
@@ -90,7 +73,7 @@ shell_package {
 			description "Documentation of the scripts"
 		}
 
-		userScript {
+		userScript  {
 			script.location = "bin/home-init"
 			question = "Do you want to init home (i.e. run 'home-init')?"
 		}
