@@ -27,7 +27,7 @@ deploy:
     api_key:
         secure: "E9h98cB7g1zmty7S6gFoWzuWSwWPAaDcsbqLnWxCc+dE1iXhcRgWFCEj8cV4z8ohimy5wJaSp1IKcfgHzJPxKsDwHMj8ZbT7HzGi2DRyihrtPmeqt4F7w2m8wljDVL5omtQirSLpc+SqHRbq/xrVV/11ZXDckRjbDjpYjURZrcimYSsMlisRDuMz4HKJ/VmTCfujXk6GsrwXYMexKvY5mwdHAXNM4IhIp1v1nV6CpLNH3Yt+XnmilgIgABQGhapYwSZqW+GIIQDSrgZt9vAW4MZdkd6Ph6SNGcmmb+yjTY/O0nqh/8Zz4y/YYQN5qTX8x0nfq/NxtJ65gwM8P+v4WVvwYM4fB0TJmMpfkxN4x0CZTS4rTfn84iU0jpKPEB54jyrRHVl7l4ZrdWk51wQJ6sLrrI5Rj+raEpuzlGjGjr6vSAZQ97B0PoJKP5z/axI8/bIpK/oRZA6Xe4XXgbpCdc4cSnFMB+ltUL3LAhvtkQySr6WKt2EGZb3ca/jSYD1u1hLue/USEmZclrCKEu47P6hF0sTcHfhlyEpBkAp8qbxICbq4ASqQp8aOlXN0dozY4PwVOkp6/bBwsmyX+X7tFP/bXS2x028N7cAKSv5PtRvQmUjqr1KVhPg8BopnB2XPoMo4oVPdVutZ9G8E8iNU/Mwx0OwzV93PHdflOIjccs8="
     file_glob: true
-    file: dist/*
+    file: build/dist/*
     skip_cleanup: true
     on:
         tags: true
