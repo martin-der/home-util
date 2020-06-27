@@ -414,6 +414,18 @@ mdu_AA_has_script_attribute() {
 #                        #
 # ---------------------- #
 
+mdu_trim_right() {
+    local var="$1"
+    echo -n "${var%"${var##*[![:space:]]}"}"
+}
+mdu_trim_left() {
+    local var="$1"
+    echo -n "${var#"${var%%[![:space:]]*}"}"
+}
+mdu_trim() {
+	mdu_trim_left `mdu_trim_right "$1"`
+}
+
 # @description Get the value of a decoration key
 #
 # @arg  string key
