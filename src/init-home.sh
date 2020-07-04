@@ -51,7 +51,7 @@ function parseConfig() {
 		VALUE=$(eval "echo \"$VALUE\"")
 
 		log_debug "Key = $KEY Value = $VALUE"
-		convertConfigKeyAndExportToEnvVariableIfExists "$KEY" "$VALUE" "$CONFIG_2_ENV_LIST" "$ENV_PREFIX" || {
+		convertConfigKeyToVariable "$KEY" "$VALUE" "$CONFIG_2_ENV_LIST" "$ENV_PREFIX" || {
 			log_warn "Unknown config '$KEY'"
 		}
 	done <<< "$config"

@@ -21,7 +21,7 @@ function parseConfig() {
 		VALUE="$(echo "$VALUE" | sed 's/^\"\(.*\)\"$/\1/')"
 
 		log_debug "Key = $KEY    Value = $VALUE"
-		convertConfigKeyAndExportToEnvVariableIfExists "$KEY" "$VALUE" "$CONFIG_2_ENV_LIST" "$ENV_PREFIX" || {
+		convertConfigKeyToVariable "$KEY" "$VALUE" "$CONFIG_2_ENV_LIST" "$ENV_PREFIX" || {
 			log_warn "Unknown config '$KEY'"
 		}
 	done < "$CONFIG_FILE"

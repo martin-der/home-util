@@ -25,6 +25,21 @@ tearDown() {
 	:
 }
 
+testSimpleInclude() {
+	local result expected
+	expected="Some black grape in the kitchen\
+"
+	export MDU_SOURCE_OPTIONS=n
+
+	result="$(load_source "$TMP_DIR/kitchen/grape.sh")"
+	assertEquals 0 $?
+	assertEquals "$expected" "$result"
+
+	result="$(load_source "$TMP_DIR/kitchen/grape" "sh")"
+	assertEquals 0 $?
+	assertEquals "$expected" "$result"
+}
+
 
 testRecursiveInclude() {
 	local result expected
@@ -44,15 +59,15 @@ That was a nice meal"
 
 testIncludeScriptNotFound() {
 	local result expected
-	expected="[ERROR] Error sourcing '$TMP_DIR/what' : not found"
+	expected="[ERROR] Failed to source '$TMP_DIR/what' : not found"
 	result="$(load_source "$TMP_DIR/what" sh 2>&1)"
 	assertEquals 254 $?
 	assertEquals "$expected" "$result"
 }
+
 testInnerIncludeScriptNotFound() {
 	local result expected
-	expected="[ERROR] Error sourcing 'holy-grail' : not found
-[ERROR] Error sourcing '$TMP_DIR/journey.sh' : returned 1"
+	expected="[ERROR] Failed to source 'holy-grail' : not found"
 	result="$(load_source "$TMP_DIR/journey" sh 2>&1)"
 	assertEquals 1 $?
 	assertEquals "$expected" "$result"
@@ -77,7 +92,6 @@ testIncludeLinkedFirstThenRealScript() {
 	local result expected
 	expected="A yellow apple in the drawer 1
 An orange in the drawer 1
-A banana in the kitchen
 A fruit basket in the drawer 1"
 	result="$(load_source "$TMP_DIR/kitchen/fruits-basket" sh)"
 	assertEquals 0 $?

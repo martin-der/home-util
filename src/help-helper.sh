@@ -13,7 +13,7 @@
 	source "$(readlink "$(dirname "$0")/shell-util.sh")" 2>/dev/null \
 		|| source "$(dirname "$0")/shell-util.sh" 2>/dev/null \
 		|| source shell-util || exit 1
-	has_script_attribute "$1" "mdu-helper-capable" && {
+	mdu_script_has_attribute "$1" "mdu-helper-capable" && {
 		echo "Capable"
 		exit 0
 	} || {

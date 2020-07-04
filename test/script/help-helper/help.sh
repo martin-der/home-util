@@ -7,13 +7,13 @@ oneTimeSetUp() {
 }
 
 
-testDumpHelp() {
+disabled_test_DumpHelp() {
 	local help_text expected_help_text
 
 	expected_help_text="$(cat "${test_resources_dir}/help-expected.txt")"
 
 	help_text="$("${test_common_resources_dir}/smart_dog.sh" help)"
-	assertLastCommandSucceeded
+	__assertLastCommandSucceeded $?
 	assertEquals "Generated help is correct" "$expected_help_text" "$help_text"
 
 	echo "$help_text" > "${MDU_SHELLTEST_TEST_RESULTS_DIRECTORY}/help.txt"

@@ -3,7 +3,6 @@
 source "$(dirname "${BASH_SOURCE[0]}")/../runner.sh" || exit 4
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh" || exit 4
 
-
 oneTimeSetUp() {
 	common_oneTimeSetUp
 }
@@ -36,7 +35,7 @@ modifyProject2() {
 
 # tar -tzf file.tar.gz | wc -l
 
-ZZtestZipModifiedFiles() {
+test_ZipModifiedFiles() {
 	modifyProject || exit 2
 	( cd "${FOOBAR_PROJECT_DIR}" && mkArchive -m )
 	assertEquals "make archive" 0 $?
@@ -46,7 +45,7 @@ ZZtestZipModifiedFiles() {
 	assertTrue "foobar was not in the archive" "[ ! -e \"$OUTPUT_DIRECTORY/foobar_project/foobar\" ]"
 	assertEquals "1 files in output" 1 "$(count_files_in "${OUTPUT_DIRECTORY}/foobar_project")"
 }
-ZZtestZipMoreModifiedFiles() {
+test_ZipMoreModifiedFiles() {
 	modifyProject || exit 2
 	modifyProject2 || exit 2
 	( cd "${FOOBAR_PROJECT_DIR}" && mkArchive -m )
@@ -57,58 +56,58 @@ ZZtestZipMoreModifiedFiles() {
 	assertSameFiles "foobar has been unzipped" "${FOOBAR_PROJECT_DIR}/foobar" "${OUTPUT_DIRECTORY}/foobar_project/foobar"
 	assertEquals "2 files in output" 2 "$(count_files_in "${OUTPUT_DIRECTORY}/foobar_project")"
 }
-ZZtestZipNewFiles() {
+test_ZipNewFiles() {
 	modifyProject || exit 2
 	( cd "${FOOBAR_PROJECT_DIR}" && mkArchive -n )
-	assertLastCommandSucceeded "Make archive"
+	__assertLastCommandSucceeded $? "Make archive"
 	( cd "${OUTPUT_DIRECTORY}" && unzip "$MDU_BUP_DIRECTORY/foobar_project-*.zip" >/dev/null )
-	assertLastCommandSucceeded "Unzip archive"
+	__assertLastCommandSucceeded $? "Unzip archive"
 	assertSameFiles "newfile.txt has been unzipped" "${FOOBAR_PROJECT_DIR}/newfile.txt" "${OUTPUT_DIRECTORY}/foobar_project/newfile.txt"
 	assertTrue "greeting.txt was not in the archive" "[ ! -e \"$OUTPUT_DIRECTORY/foobar_project/greeting.txt\" ]"
 	assertTrue "foobar was not in the archive" "[ ! -e \"$OUTPUT_DIRECTORY/foobar_project/foobar\" ]"
 	assertEquals "1 files in output" 1 "$(count_files_in "${OUTPUT_DIRECTORY}/foobar_project")"
 }
-ZZtestZipNewAndModifiedFiles() {
+test_ZipNewAndModifiedFiles() {
 	modifyProject || exit 2
 	modifyProject2 || exit 2
 	( cd "${FOOBAR_PROJECT_DIR}" && mkArchive -m -n )
-	assertLastCommandSucceeded "Make archive"
+	__assertLastCommandSucceeded $? "Make archive"
 	( cd "${OUTPUT_DIRECTORY}" && unzip "$MDU_BUP_DIRECTORY/foobar_project-*.zip" >/dev/null )
-	assertLastCommandSucceeded "Unzip archive"
+	__assertLastCommandSucceeded $? "Unzip archive"
 	assertSameFiles "foobar has been unzipped" "${FOOBAR_PROJECT_DIR}/foobar" "${OUTPUT_DIRECTORY}/foobar_project/foobar"
 	assertSameFiles "greeting.txt has been unzipped" "${FOOBAR_PROJECT_DIR}/greeting.txt" "${OUTPUT_DIRECTORY}/foobar_project/greeting.txt"
 	assertSameFiles "newfile.txt has been unzipped" "${FOOBAR_PROJECT_DIR}/newfile.txt" "${OUTPUT_DIRECTORY}/foobar_project/newfile.txt"
 	assertEquals "3 files in output" 3 "$(count_files_in "${OUTPUT_DIRECTORY}/foobar_project")"
 }
 
-ZZtestFailCreatingEmptyZipWithModifiedFiles() {
+test_FailCreatingEmptyZipWithModifiedFiles() {
 	( cd "${FOOBAR_PROJECT_DIR}" && mkArchive -m 2>/dev/null )
-	assertLastCommandFailed "Make archive" ""
+	__assertLastCommandFailed $? "Make archive" ""
 }
-ZZtestCreatingEmptyZipWithModifiedFiles() {
+test_CreatingEmptyZipWithModifiedFiles() {
 	( cd "${FOOBAR_PROJECT_DIR}" && mkArchive -m -e )
-	assertLastCommandSucceeded "Make archive"
+	__assertLastCommandSucceeded $? "Make archive"
 	( cd "${OUTPUT_DIRECTORY}" && unzip_mute_empty_warning "$MDU_BUP_DIRECTORY/foobar_project-*.zip" >/dev/null )
-	assertLastCommandSucceeded "Unzip archive"
+	__assertLastCommandSucceeded $? "Unzip archive"
 }
-ZZtestFailCreatingEmptyZipWithNewFiles() {
+zztest_FailCreatingEmptyZipWithNewFiles() {
 	( cd "${FOOBAR_PROJECT_DIR}" && mkArchive -n 2>/dev/null )
-	assertLastCommandFailed "Make archive" ""
+	__assertLastCommandFailed "Make archive" ""
 }
-ZZtestCreatingEmptyZipWithNewFiles() {
+test_testCreatingEmptyZipWithNewFiles() {
 	( cd "${FOOBAR_PROJECT_DIR}" && mkArchive -n -e )
-	assertLastCommandSucceeded "Make archive"
+	__assertLastCommandSucceeded $? "Make archive"
 	( cd "${OUTPUT_DIRECTORY}" && unzip_mute_empty_warning "$MDU_BUP_DIRECTORY/foobar_project-*.zip" >/dev/null )
-	assertLastCommandSucceeded "Unzip archive"
+	__assertLastCommandSucceeded $? "Unzip archive"
 }
 
 
 #testZipNoPrefixModifiedFiles() {
 #	modifyProject || exit 2
 #	( cd "${FOOBAR_PROJECT_DIR}" && mkArchive -m -p "" )
-#	assertLastCommandSucceeded "Make archive"
+#	__assertLastCommandSucceeded $? "Make archive"
 #	( cd "${OUTPUT_DIRECTORY}" && unzip "$MDU_BUP_DIRECTORY/foobar_project-*.zip" >/dev/null )
-#	assertLastCommandSucceeded "Unzip archive"
+#	__assertLastCommandSucceeded $? "Unzip archive"
 #	assertSameFiles "greeting.txt has been unzipped" "${FOOBAR_PROJECT_DIR}/greeting.txt" "${OUTPUT_DIRECTORY}/greeting.txt"
 #	assertTrue "foobar was not in the archive" "[ ! -e \"${OUTPUT_DIRECTORY}/foobar\" ]"
 #	assertEquals "1 files in output" 1 "$(count_files_in "${OUTPUT_DIRECTORY}")"
@@ -117,9 +116,9 @@ ZZtestCreatingEmptyZipWithNewFiles() {
 #	modifyProject || exit 2
 #	modifyProject2 || exit 2
 #	( cd "${FOOBAR_PROJECT_DIR}" && mkArchive -m -p "" )
-#	assertLastCommandSucceeded "Make archive"
+#	__assertLastCommandSucceeded $? "Make archive"
 #	( cd "${OUTPUT_DIRECTORY}" && unzip "$MDU_BUP_DIRECTORY/foobar_project-*.zip" >/dev/null )
-#	assertLastCommandSucceeded "Unzip archive"
+#	__assertLastCommandSucceeded $? "Unzip archive"
 #	assertSameFiles "greeting.txt has been unzipped" "${FOOBAR_PROJECT_DIR}/greeting.txt" "${OUTPUT_DIRECTORY}/greeting.txt"
 #	assertSameFiles "foobar has been unzipped" "${FOOBAR_PROJECT_DIR}/foobar" "${OUTPUT_DIRECTORY}/foobar"
 #	assertEquals "2 files in output" 2 "$(count_files_in "${OUTPUT_DIRECTORY}")"
@@ -127,9 +126,9 @@ ZZtestCreatingEmptyZipWithNewFiles() {
 #testZipNoPrefixNewFiles() {
 #	modifyProject || exit 2
 #	( cd "${FOOBAR_PROJECT_DIR}" && mkArchive -n -p "" )
-#	assertLastCommandSucceeded "Make archive"
+#	__assertLastCommandSucceeded $? "Make archive"
 #	( cd "${OUTPUT_DIRECTORY}" && unzip "$MDU_BUP_DIRECTORY/foobar_project-*.zip" >/dev/null )
-#	assertLastCommandSucceeded "Unzip archive"
+#	__assertLastCommandSucceeded $? "Unzip archive"
 #	assertSameFiles "newfile.txt has been unzipped" "${FOOBAR_PROJECT_DIR}/newfile.txt" "${OUTPUT_DIRECTORY}/newfile.txt"
 #	assertTrue "greeting.txt was not in the archive" "[ ! -e \"${OUTPUT_DIRECTORY}/greeting.txt\" ]"
 #	assertTrue "foobar was not in the archive" "[ ! -e \"${OUTPUT_DIRECTORY}/foobar\" ]"
@@ -139,24 +138,24 @@ ZZtestCreatingEmptyZipWithNewFiles() {
 #	modifyProject || exit 2
 #	modifyProject2 || exit 2
 #	( cd "${FOOBAR_PROJECT_DIR}" && mkArchive -m -n -p "" )
-#	assertLastCommandSucceeded "Make archive"
+#	__assertLastCommandSucceeded $? "Make archive"
 #	( cd "${OUTPUT_DIRECTORY}" && unzip "$MDU_BUP_DIRECTORY/foobar_project-*.zip" >/dev/null )
-#	assertLastCommandSucceeded "Unzip archive"
+#	__assertLastCommandSucceeded $? "Unzip archive"
 #	assertSameFiles "foobar has been unzipped" "${FOOBAR_PROJECT_DIR}/foobar" "${OUTPUT_DIRECTORY}/foobar"
 #	assertSameFiles "greeting.txt has been unzipped" "${FOOBAR_PROJECT_DIR}/greeting.txt" "${OUTPUT_DIRECTORY}/greeting.txt"
 #	assertSameFiles "newfile.txt has been unzipped" "${FOOBAR_PROJECT_DIR}/newfile.txt" "${OUTPUT_DIRECTORY}/newfile.txt"
 #	assertEquals "3 files in output" 3 "$(count_files_in "${OUTPUT_DIRECTORY}")"
 #}
 #
-testFailCreatingEmptyZipNoPrefixWithModifiedFiles() {
+__testFailCreatingEmptyZipNoPrefixWithModifiedFiles() {
 	( cd "${FOOBAR_PROJECT_DIR}" && mkArchive -m -p "" 2>/dev/null )
-	assertLastCommandFailed "Make archive" ""
+	__assertLastCommandFailed $? "Make archive" ""
 }
 #testCreatingEmptyZipNoPrefixWithModifiedFiles() {
 #	( cd "${FOOBAR_PROJECT_DIR}" && mkArchive -m -p "" -e )
-#	assertLastCommandSucceeded "Make archive"
+#	__assertLastCommandSucceeded $? "Make archive"
 #	( cd "${OUTPUT_DIRECTORY}" && unzip_mute_empty_warning "$MDU_BUP_DIRECTORY/foobar_project-*.zip" >/dev/null )
-#	assertLastCommandSucceeded "Unzip archive"
+#	__assertLastCommandSucceeded $? "Unzip archive"
 #}
 #testFailCreatingEmptyZipNoPrefixWithNewFiles() {
 #	( cd "${FOOBAR_PROJECT_DIR}" && mkArchive -n -p "" 2>/dev/null )
@@ -164,9 +163,9 @@ testFailCreatingEmptyZipNoPrefixWithModifiedFiles() {
 #}
 #testCreatingEmptyZipNoPrefixWithNewFiles() {
 #	( cd "${FOOBAR_PROJECT_DIR}" && mkArchive -n -p "" -e )
-#	assertLastCommandSucceeded "Make archive"
+#	__assertLastCommandSucceeded $? "Make archive"
 #	( cd "${OUTPUT_DIRECTORY}" && unzip_mute_empty_warning "$MDU_BUP_DIRECTORY/foobar_project-*.zip" >/dev/null )
-#	assertLastCommandSucceeded "Unzip archive"
+#	__assertLastCommandSucceeded $? "Unzip archive"
 #}
 
 

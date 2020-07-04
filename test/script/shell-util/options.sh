@@ -49,28 +49,28 @@ getAnimalOptionsResult() {
 testAllOptions() {
 
 	get_options "$animal_options" option -a 10000 --beaver --dog --cat Felix
-	assertLastCommandSucceeded
+	__assertLastCommandSucceeded $?
 	assertEquals "a" "$option"
 	assertEquals "10000" "$OPTARG"
 	assertEquals "2" "$((OPTIND - 1))"
 	handleAnimalOption "$option"
 
 	get_options "$animal_options" option -a 10000 --beaver --dog --cat Felix
-	assertLastCommandSucceeded
+	__assertLastCommandSucceeded $?
 	assertEquals "b" "$option"
 	assertVariableUnbound "OPTARG is unbound" "OPTARG"
 	assertEquals "3" "$((OPTIND - 1))"
 	handleAnimalOption "$option"
 
 	get_options "$animal_options" option -a 10000 --beaver --dog --cat Felix
-	assertLastCommandSucceeded
+	__assertLastCommandSucceeded $?
 	assertEquals "dog" "$option"
 	assertVariableUnbound "OPTARG is unbound" "OPTARG"
 	assertEquals "4" "$((OPTIND - 1))"
 	handleAnimalOption "$option"
 
 	get_options "$animal_options" option -a 10000 --beaver --dog --cat Felix
-	assertLastCommandSucceeded
+	__assertLastCommandSucceeded $?
 	assertEquals "cat" "$option"
 	assertEquals "Felix" "$OPTARG"
 	assertEquals "6" "$((OPTIND - 1))"
@@ -87,28 +87,28 @@ testAllOptions() {
 testAllOptionsWithExtraArguments() {
 
 	get_options "$animal_options" option -a 10000 --beaver --dog --cat Felix and more animals
-	assertLastCommandSucceeded
+	__assertLastCommandSucceeded $?
 	assertEquals "a" "$option"
 	assertEquals "10000" "$OPTARG"
 	assertEquals "2" "$((OPTIND - 1))"
 	handleAnimalOption "$option"
 
 	get_options "$animal_options" option -a 10000 --beaver --dog --cat Felix and more animals
-	assertLastCommandSucceeded
+	__assertLastCommandSucceeded $?
 	assertEquals "b" "$option"
 	assertVariableUnbound "OPTARG is unbound" "OPTARG"
 	assertEquals "3" "$((OPTIND - 1))"
 	handleAnimalOption "$option"
 
 	get_options "$animal_options" option -a 10000 --beaver --dog --cat Felix and more animals
-	assertLastCommandSucceeded
+	__assertLastCommandSucceeded $?
 	assertEquals "dog" "$option"
 	assertVariableUnbound "OPTARG is unbound" "OPTARG"
 	assertEquals "4" "$((OPTIND - 1))"
 	handleAnimalOption "$option"
 
 	get_options "$animal_options" option -a 10000 --beaver --dog --cat Felix and more animals
-	assertLastCommandSucceeded
+	__assertLastCommandSucceeded $?
 	assertEquals "cat" "$option"
 	assertEquals "Felix" "$OPTARG"
 	assertEquals "6" "$((OPTIND - 1))"

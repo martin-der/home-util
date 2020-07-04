@@ -16,31 +16,31 @@ tearDown() {
 }
 
 
-testDefaultArchivesPresence() {
+test_DefaultArchivesPresence() {
 	( cd "${FOOBAR_PROJECT_DIR}" && mkArchive )
-	assertLastCommandSucceeded "Make archive"
+	__assertLastCommandSucceeded $? "Make archive"
 	assertEquals "2 files in backup directory" 2 "$(count_files_in "${MDU_BUP_DIRECTORY}")"
 }
 
-testArchivesPresenceSourceOnly() {
+test_ArchivesPresenceSourceOnly() {
 	( cd "${FOOBAR_PROJECT_DIR}" && mkArchive -k )
-	assertLastCommandSucceeded "Make archive"
+	__assertLastCommandSucceeded $? "Make archive"
 	assertEquals "1 file in backup directory" 1 "$(count_files_in "${MDU_BUP_DIRECTORY}")"
 }
-testArchivesPresenceSourceWithGit() {
+test_ArchivesPresenceSourceWithGit() {
 	( cd "${FOOBAR_PROJECT_DIR}" && mkArchive -g )
-	assertLastCommandSucceeded "Make archive"
+	__assertLastCommandSucceeded $? "Make archive"
 	assertEquals "1 file in backup directory" 1 "$(count_files_in "${MDU_BUP_DIRECTORY}")"
 }
-testArchivesPresenceSourceOnlyAndSourceWithGit() {
+test_ArchivesPresenceSourceOnlyAndSourceWithGit() {
 	( cd "${FOOBAR_PROJECT_DIR}" && mkArchive -k -g )
-	assertLastCommandSucceeded "Make archive"
+	__assertLastCommandSucceeded $? "Make archive"
 	assertEquals "2 files in backup directory" 2 "$(count_files_in "${MDU_BUP_DIRECTORY}")"
 }
 
-testArchivesPresenceAll() {
+test_ArchivesPresenceAll() {
 	( cd "${FOOBAR_PROJECT_DIR}" && mkArchive -k -g -m -n -e )
-	assertLastCommandSucceeded "Make archive"
+	__assertLastCommandSucceeded $? "Make archive"
 	assertEquals "3 files in backup directory" 3 "$(count_files_in "${MDU_BUP_DIRECTORY}")"
 }
 

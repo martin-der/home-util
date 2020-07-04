@@ -4,7 +4,7 @@ src_root_dir="${MDU_SHELLTEST_PROJECT_DIRECTORY}/src"
 test_root_dir="${MDU_SHELLTEST_PROJECT_DIRECTORY}/test"
 
 test_common_resources_dir="${test_root_dir}/resources/common"
-test_resources_dir="${test_root_dir}/resources/specific/${MDU_SHELLTEST_TEST_NAME}"
+test_resources_dir="${test_root_dir}/resources/specific/${MDU_SHELLTEST_TEST_RELATIVE_PATH}"
 
 export PATH="$src_root_dir:$PATH"
 

@@ -15,7 +15,7 @@ checkSplitting() {
 	expected="$2"
 
 	result="$(split_filepath "$path")"
-	assertLastCommandSucceeded
+	__assertLastCommandSucceeded $?
 	assertEquals "Split '${path}'" "$expected" "$result"
 }
 

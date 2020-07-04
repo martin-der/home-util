@@ -10,6 +10,11 @@ LOG_LEVEL_WARN=2
 LOG_LEVEL_ERROR=1
 LOG_LEVEL_NONE=0
 
+cat > /tmp/idbg.txt
+__i_dbg() {
+	echo $@ >> /tmp/idbg.txt
+}
+
 
 DEFAULT_LOG_LEVEL=${LOG_LEVEL_WARN}
 
@@ -65,70 +70,85 @@ MDU_NO_COLOR=${MDU_NO_COLOR:-0}
 _mdu_loaded_scripts=( "." )
 
 # @description Get the path of a script source
+# @private
 #
-# @example
-#   load_source 1 my_script sh py
-#
+# @arg integer `1`/`0` if the script must be sourced only once
 # @arg string the `path` of the script
-# @arg integer `1`/`0` if the script must be fetch once
 #
 # @stdout the `path` of the script if it was not already used or if `fetch once` is not `1`
 #
 # @exitcode 254 If script is not readable or does not exist
 # @exitcode 0 If script was found and is readable
 # @exitcode [1-253] If script returned an error ( if error code was 254, then 253 is returned instead )
+#
+# @example
+#   load_source 1 my_script sh py
 function _mdu_get_script() {
-		local real_path
-		real_path="$(readlink -f "$1")"
-		#log_debug " Found '$1' in '$real_path'"
-		[ $1 -ne 0 ] && {
-			#log_debug "  Sourced ? (${_mdu_loaded_scripts[*]})"
-			for loaded in "${_mdu_loaded_scripts[@]}"; do
-				[ "$loaded" == "$real_path" ] && return 0;
-			done
-		}
-		#log_debug "  Sourcing '$2'"
-		_mdu_loaded_scripts+=("$real_path")
-		#log_debug "   \\-> Sourced : (${_mdu_loaded_scripts[*]})"
-		[ -r "$2" ] || return 254
+	local real_path
+	real_path="$(readlink -f "$2")"
+	__i_dbg "[_mdu_get_script] request '$2' => '$real_path'"
+	#log_debug " Found '$1' in '$real_path'"
+	[ $1 -ne 0 ] && {
+		#log_debug "  Sourced ? (${_mdu_loaded_scripts[*]})"
+		for loaded in "${_mdu_loaded_scripts[@]}"; do
+			[ "$loaded" == "$real_path" ] && return 0;
+		done
+	}
+	#log_debug "  Sourcing '$2'"
+	_mdu_loaded_scripts+=("$real_path")
+	#log_debug "   \\-> Sourced : (${_mdu_loaded_scripts[*]})"
+	[ -r "$2" ] || return 254
 
-		source "$real_path"
-		local result=$?
-		[ ${result} -eq 0 ] && return 0
-		log_error "Error sourcing '$2' : returned $?"
-		[ ${result} -eq 254 ] && return 253
-		return ${result}
-	return 254
+	source "$real_path"
+	local result=$?
+	__i_dbg "[_mdu_get_script] result = $result"
+	[ ${result} -eq 0 ] && return 0
+	#log_error "Failed to source '$2' : returned ${result}"
+	[ ${result} -eq 254 ] && return 253
+	return ${result}
 }
 
 
+
+# @description Load source, using trying with different suffixes if needed
 #
-# Load source
-#	param 1/0 : [O]nce
-#	param <name>
-#	param ... : [W]ith [S]uffixes
+# @arg 1/0 : Once
+# @arg 1/0 : Finalizable
+# @arg string <name>
+# @arg ... : [W]ith [S]uffixes
 #
 function _mdu_load_source_O_WS() {
-	local result only_once script suffixed
+	local result only_once finalizable script suffixed
 	only_once=$1
 	shift
-	script=$2
+	finalizable=$1
 	shift
+	script=$1
+	shift
+	__i_dbg "[_mdu_load_source_O_WS] request '$request'"
 	log_debug "Try '$script'..."
 	[ -e "$script" ] && {
-		_mdu_source ${only_once} "$script"
+		#if [ $finalizable -ne 0 ] ; then
+			_mdu_get_script ${only_once} "$script"
+		#else
+		#	_mdu_load_source_O_WS ${only_once} 0 "$suffixed"
+		#fi
 		return $?
 	}
 
 	for suffix in "$@" ; do
 		suffixed="${script}.${suffix}"
+		__i_dbg "[_mdu_load_source_O_WS] request '$request' suffixed '$suffixed'"
 		log_debug "Try suffixed '$suffixed'..."
-		[ -e "$script" ] && {
+		[ -e "$suffixed" ] && {
+			__i_dbg "[_mdu_load_source_O_WS] request '$request' Found suffixed '$suffixed'"
 			log_debug "Found suffixed '$suffixed'..."
-			_mdu_source ${only_once} "$suffixed"
+			_mdu_load_source ${only_once} 0 "$suffixed"
 			return $?
 		}
 	done
+
+	__i_dbg "[_mdu_load_source_O_WS] request '$request' not Found"
 	return 254
 }
 
@@ -150,15 +170,20 @@ function _mdu_load_source() {
 	done
 	shift
 
-	local sourced_file request parent
+
+	local sourced_file finalizable request parent
+	finalizable=$1
+	shift
 	request="$1"
+	__i_dbg "[_mdu_load_source] request '$request'"
 	shift
 	[ "x${request:0:1}" != "x/" ] && {
 		[ ${around_linked}  -ne 0 ] && {
+			__i_dbg "[_mdu_load_source] unlink request '$request'"
 			local parent="${BASH_SOURCE[2]}"
 			while [ -h "$parent" ] ; do
 				sourced_file="$(dirname "$(readlink -m "${parent}")")/$request"
-				_mdu_load_source_O_WS ${only_once} "$sourced_file" $@
+				_mdu_load_source_O_WS ${only_once} 0 "$sourced_file" $@
 				result=$?
 				[ ${result} -ne 254 ] && return ${result}
 				#log_debug "'$request' not found as \"near link\" '$sourced_file' ( parent '$parent' => '$(readlink "${parent}")' )"
@@ -167,18 +192,29 @@ function _mdu_load_source() {
 		}
 
 		sourced_file="$(dirname "${BASH_SOURCE[2]}")/$request"
-		_mdu_load_source_O_WS ${only_once} "$sourced_file" $@
+		__i_dbg "[_mdu_load_source] unlinked request '$sourced_file'"
+		_mdu_load_source_O_WS ${only_once} 1 "$sourced_file" $@
 		result=$?
+		__i_dbg "[_mdu_load_source] _mdu_load_source_O_WS result = '$result'"
 		[ ${result} -ne 254 ] && return ${result}
 		#log_debug "'$request' not found as '$sourced_file'"
 
 	}
-	_mdu_load_source_O_WS ${only_once} "$request" $@
+
+	__i_dbg "[_mdu_load_source] > ?"
+	if [ $finalizable -ne 0 ] ; then
+		__i_dbg "[_mdu_load_source] > _mdu_get_script request '$request' $@"
+		_mdu_get_script ${only_once} "$script"
+	else
+		__i_dbg "[_mdu_load_source] > _mdu_load_source_O_WS request '$request' $@"
+		_mdu_load_source_O_WS ${only_once} $finalizable "$request" "$@"
+	fi
 	result=$?
+	__i_dbg "[_mdu_load_source] > ? result = '$result'"
 	[ ${result} -eq 0 ] && return 0
 	[ ${result} -eq 254 ] &&  {
 		#log_debug "'$request' not found directly as '$request'"
-		log_error "Error sourcing '$request' : not found"
+		log_error "Failed to source '$request' : not found"
 		return 254
 	}
 	return ${result}
@@ -196,13 +232,15 @@ function _mdu_load_source() {
 # @exitcode 0 If script was sourced without error
 # @exitcode [1-253] If script returned an error ( if error code was 254, then 253 is returned instead )
 function load_source() {
-	_mdu_load_source "" $@
+	__i_dbg "[load_source] > _mdu_load_source_O_WS request '$1'"
+	_mdu_load_source "" 0 $@
 }
 # @description Source a `script`, but do it only once
 #
 # @see load_source
 function load_source_once() {
-	_mdu_load_source 1 $@
+	__i_dbg "[load_source_once] > _mdu_load_source_O_WS request '$1'"
+	_mdu_load_source 1 0 $@
 }
 
 
@@ -390,11 +428,11 @@ mdu_AA_get_line_attribute() {
 # @exitcode 0 the `attribute` exists
 #
 # @see extract_script_attributes_line
-mdu_AA_has_script_attribute() {
+mdu_script_has_attribute() {
 	local script="$1" attribute="$2"
 	local line
 	attribute="$(escaped_for_regex "$attribute")"
-	line="$(extract_script_attributes_line "$script")" || return $?
+	line="$(_mdu_extract_script_attributes_line "$script")" || return $?
 	[[ "${line}" =~ ^#([\ \t]*|.*[\ \t]+)@${attribute}([\ \t]*|[\ \t]+.*)$ ]] || return 3
 	return 0
 }
@@ -631,11 +669,11 @@ function properties_find {
 			if [ ${found} = 0 ]; then
 				value="$(_mdu_properties_value_from_line "$l" "$1")" && {
 					found=1
-					echo "${value}"
+					mdu_trim "${value}"
 				}
 			else
 				continuation="$(_mdu_properties_continuation "${value}" "${l}")" && {
-					echo "${continuation}"
+					mdu_trim "${continuation}"
 					value="${continuation}"
 				} || {
 					return 0
@@ -649,11 +687,11 @@ function properties_find {
 		if [ ${found} = 0 ]; then
 			value="$(_mdu_properties_value_from_line "$l" "$1")" && {
 				found=1
-				echo "${value}"
+				mdu_trim "${value}"
 			}
 		else
 			continuation="$(_mdu_properties_continuation "${value}" "${l}")" && {
-				echo "${continuation}"
+				mdu_trim "${continuation}"
 				value="${continuation}"
 			} || {
 				return 0
@@ -767,7 +805,7 @@ __mdu_get_option_config () {
 	return 1
 }
 
-mdu_is_option_config_with_parameter () {
+mdu_option_is_config_with_parameter () {
 	local config
 	config="$1"
 	if [[ $config =~ .+: ]] ; then return 0 ; fi
@@ -819,7 +857,7 @@ function get_options () {
 	#echo "option_config = '$option_config'" >&2
 	#echo "option = '$option'" >&2
 
-	if is_option_config_with_parameter "$option_config" ; then
+	if mdu_option_is_config_with_parameter "$option_config" ; then
 		__mdu_parameter_index=$(($__mdu_parameter_index + 1))
 		parameter_index=$(($__mdu_parameter_index + 2))
 		if [ $# -lt ${parameter_index} ]; then echo "Missing argument for option '$parameter'" >&2 ; return 4 ; fi

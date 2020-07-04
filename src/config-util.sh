@@ -7,20 +7,23 @@ source "$(dirname "${BASH_SOURCE[0]}")/shell-util.sh" 2>/dev/null || source shel
 # @arg $1 string key
 # @arg $2 string value
 # @arg $3 string list of '<confKey>=<envVar>' ( separated by CR )
-# @arg $4? string prefix, added to the name of created environment var
+# @arg $4? string prefix, added to the name of created environment var **must be** a valid identifier
 #
 # @exitcode 0 If a variable is created
 # @exitcode >0 otherwise
 #
-# @example convertConfigKeyAndExportToEnvVariableIfExists name
-function convertConfigKeyAndExportToEnvVariableIfExists() {
+# @example
+#  `convertConfigKeyToVariable server.ip 127.0.0.1 $list_of_key_value`
+#  where `list_of_key_value` = `server.ip=IP`
+#  will create a variable `IP`=`127.0.0.1`
+function convertConfigKeyToVariable() {
 	local KEY="$1"
 	local VALUE="$2"
 	local KEY_TO_ENV_LIST="$3"
 	local PREFIX="${4:-}"
 	local env_name env_type
 
-	env_name="$(find_property "$KEY" <<< "$KEY_TO_ENV_LIST" )"
+	env_name="$(properties_find "$KEY" <<< "$KEY_TO_ENV_LIST" )"
 	[ $? -ne 0 ] && return 1
 
 	env_type="$(mdu_variable_getType "$env_name")"

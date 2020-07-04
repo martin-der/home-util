@@ -18,9 +18,9 @@ tearDown() {
 
 testZipWithGitContent() {
 	( cd "${FOOBAR_PROJECT_DIR}" && mkArchive -g -a zip )
-	assertLastCommandSucceeded "Make archive"
+	__assertLastCommandSucceeded $? "Make archive"
 	( cd "${OUTPUT_DIRECTORY}" && unzip "$MDU_BUP_DIRECTORY/foobar_project-*.zip" >/dev/null ; )
-	assertLastCommandSucceeded "Unzip archive"
+	__assertLastCommandSucceeded $? "Unzip archive"
 	assertSameFiles "foobar has been unzipped" "${FOOBAR_PROJECT_DIR}/foobar" "${OUTPUT_DIRECTORY}/foobar_project/foobar"
 	assertSameFiles "greeting.txt has been unzipped" "${FOOBAR_PROJECT_DIR}/greeting.txt" "${OUTPUT_DIRECTORY}/foobar_project/greeting.txt"
 	assertSameFiles "README.txt has been unzipped" "${FOOBAR_PROJECT_DIR}/README.txt" "${OUTPUT_DIRECTORY}/foobar_project/README.txt"
@@ -31,10 +31,10 @@ testZipWithGitContent() {
 testCustomBackupDirectory() {
 	mkdir "${MDU_BUP_DIRECTORY}/warehouse"
 	( cd "${FOOBAR_PROJECT_DIR}" && mkArchive -B "${MDU_BUP_DIRECTORY}/warehouse" )
-	assertLastCommandSucceeded "Make archive"
+	__assertLastCommandSucceeded $? "Make archive"
 	assertEquals "2 files in backup dir ( the zip and the tar.gz )" 2 "$(count_files_in "${MDU_BUP_DIRECTORY}/warehouse")"
 	( cd "${OUTPUT_DIRECTORY}" && unzip "$MDU_BUP_DIRECTORY/warehouse/foobar_project-*.zip" >/dev/null )
-	assertLastCommandSucceeded "Unzip archive"
+	__assertLastCommandSucceeded $? "Unzip archive"
 	assertSameFiles "foobar has been unzipped" "${FOOBAR_PROJECT_DIR}/foobar" "${OUTPUT_DIRECTORY}/foobar_project/foobar"
 	assertSameFiles "greeting.txt has been unzipped" "${FOOBAR_PROJECT_DIR}/greeting.txt" "${OUTPUT_DIRECTORY}/foobar_project/greeting.txt"
 	assertSameFiles "README.txt has been unzipped" "${FOOBAR_PROJECT_DIR}/README.txt" "${OUTPUT_DIRECTORY}/foobar_project/README.txt"
