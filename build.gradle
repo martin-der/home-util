@@ -87,11 +87,14 @@ shell_package {
 shell_test {
 
 	from fileTree("test/script").include('**/*.sh').exclude('common.sh').exclude('runner.sh')
+	scriptFrom fileTree("src").include('**/*.sh')
 	workingDir = file("test")
 
 	naming {
 		removeSuffix = true
 	}
+
+	check {}
 }
 
 
