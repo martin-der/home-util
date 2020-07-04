@@ -4,7 +4,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/../runner.sh"
 
 #exit 0
 
-oneTimeSetUp() {
+__oneTimeSetUp() {
 	. "${src_root_dir}/flowui.sh"
 	. "${src_root_dir}/flowui-builder-json.sh"
 	__fui_engine=humble-tui
