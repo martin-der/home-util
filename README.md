@@ -5,7 +5,7 @@
 
 ## Configuration
 
-Running the script `home-init.sh` will initialize the user home directory.
+Run `home-init.sh` to initialize the user home directory.
 The behavior of this script is controlled by the file `.config/mdu/init.properties`
 
 Sample configuration :
